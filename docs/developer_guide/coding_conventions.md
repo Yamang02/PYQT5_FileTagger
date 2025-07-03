@@ -43,3 +43,16 @@
 -   **테스트 코드**: 모든 테스트 코드는 원본 코드와 동일한 디렉토리 구조를 가지는 `tests/` 디렉토리 내에 위치시킵니다. (예: `tests/core/test_tag_manager.py`)
 
 이러한 모듈화 정책을 통해 각 파일의 책임이 명확해지고, 코드 변경 시 영향을 받는 범위를 최소화할 수 있습니다.
+
+## AI Agent Role Clarification (project_mandatory)
+
+- **GEMINI**: The AI agent representing the planning team. Responsible for managing official documents (such as `docs/conversation_log.md`), project policies, decision records, and official issue tracking.
+- **Cursor**: The AI agent representing the development team. Responsible for code implementation, debugging, experiments, internal technical discussions, code reviews, and temporary decisions. Manages the development team's internal log (`docs/developer_guide/dev_notes.md`).
+- When a discussion or decision needs to be formalized, Cursor summarizes it in `dev_notes.md` and GEMINI migrates the summary to the official document (`conversation_log.md`).
+
+## 개발팀 내부 기록 및 역할(CURSOR)
+
+- Cursor(개발팀 에이전트)는 개발팀의 일원으로서, 내부 기술 논의, 디버깅, 실험, 코드 리뷰, 임시 결정사항 등을 `docs/developer_guide/dev_notes.md`에 기록·관리한다.
+- 공식화가 필요한 논의나 결정은 요약하여 GEMINI(기획팀) 측 공식 문서(`docs/conversation_log.md`)로 이관한다.
+- 세션이 바뀌어도 dev_notes.md의 기록을 참고하여 일관된 개발 맥락을 유지한다.
+- 개발팀의 실무적 히스토리, 온보딩, 회고 등에 dev_notes.md를 적극 활용한다.

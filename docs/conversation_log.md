@@ -67,7 +67,7 @@
 - **논의 및 결정**: 
   - **도구 도입**: `ruff` (린터/포맷터) 및 `mypy` (정적 타입 검사) 도입. `pre-commit` 훅스를 통한 자동화 권장.
   - **개발 철학 유지**: 명확한 문서화(`project_mandatory.mdc`, `tagging_feature_spec.md`) 및 코드 리뷰(셀프 리뷰 포함)를 통해 고수준의 설계 원칙 유지.
-- **조치**: `requirements.txt`에 `ruff`, `mypy`, `pre-commit` 추가. `project_mandatory.mdc`에 코드 품질 및 일관성 섹션 추가 및 관련 규칙 업데이트.
+  - **조치**: `requirements.txt`에 `ruff`, `mypy`, `pre-commit` 추가. `project_mandatory.mdc`에 코드 품질 및 일관성 섹션 추가 및 관련 규칙 업데이트.
 
 ### 12. 개발 정책 및 문서화
 - **요청**: 개발팀의 주석 및 문서화 정책(Google style docstring, 인라인 주석) 및 파일 분리(모듈화) 정책에 대한 PM 전달 메시지 확인.
@@ -81,3 +81,18 @@
   - **이슈 분석**: `QuickTagsWidget`이 파일 미선택 시 활성화되는 문제 확인.
   - **UI/UX 정책 확정**: 파일 미선택 시 `QuickTagsWidget` 전체를 비활성화하여 사용자의 혼란 방지 및 태그 관리 명확성 확보. `docs/issues.md`에 해당 정책 반영 및 이슈 상태 `[기획 논의 완료]`로 업데이트.
   - **태그 검색 자동 완성**: 향후 태그 검색 기능 구현 시 자동 완성 필요성 인지. 태그 추가/수정 시의 비활성화 정책과 검색 시의 자동 완성은 별개의 UI/UX 맥락으로 구분하여 설계하기로 결정. `docs/developer_guide/tagging_feature_spec.md`에 '향후 기능 고려사항: 태그 검색 시 자동 완성' 섹션 추가.
+
+### 14. QuickTagsWidget 이슈 상세 현황 및 구조 개선 제안
+- **요청**: QuickTagsWidget 이슈에 대한 상세 현황, 영향, 구조적 개선 제안 및 기획팀의 정책 재확인 요청.
+- **논의 및 결정**:
+  - **현황 분석**: `QuickTagsWidget`의 `setEnabled(False)` 및 내부 상태 변수 이중 차단 시도에도 불구하고 UI와 논리 상태 불일치 문제 발생.
+  - **UI/UX 정책 재확인**: "파일 미선택 시 태그 관련 모든 입력/버튼 완전 비활성화" 정책은 확정된 기획 의도임을 재확인.
+  - **구조 개선 제안 승인**: `TagUIStateManager`와 같은 상태 관리 전용 클래스 도입 제안을 긍정적으로 검토하고 적극 지지함.
+  - **추가 요청**: `TagUIStateManager`가 `main_window.py`와 각 위젯 사이에서 어떤 방식으로 상태를 전달하고 제어할지에 대한 간략한 아키텍처 스케치나 흐름도 공유 요청.
+- **조치**: `docs/issues.md`에 해당 이슈의 상세 현황, 영향, 구조적 개선 제안 및 기획팀의 의사결정 내용 반영. 이슈 상태를 `[구조 개선 승인]`으로 업데이트. `docs/developer_guide/tagging_feature_spec.md`에 `TagUIStateManager` 도입에 대한 설계 내용 추가.
+
+## 2025-07-04 feat/tag-autocomplete 브랜치 개발팀 회고 진행
+
+- 개발팀이 docs/developer_guide/retrospectives/retrospective_feat_tag-autocomplete.md에 회고록을 작성함.
+- 주요 내용: QuickTagsWidget 비활성화 문제 등 태그 UI 상태관리 이슈를 TagUIStateManager 도입으로 구조적으로 해결. 정책 일관성, 코드 품질, 문서화, 협업 프로세스 등에서 개선점 도출.
+- 회고를 통해 중앙 집중식 상태관리, 정책-코드-문서 동기화, 테스트 강화의 중요성을 재확인함.

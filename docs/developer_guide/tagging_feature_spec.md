@@ -135,4 +135,27 @@ FileTagger 애플리케이션의 핵심 기능인 파일 태깅 시스템에 대
 -   **참고 및 재사용**: `TagInputWidget`에 구현된 태그 자동 완성 로직을 참고하여 재사용하거나, 검색 기능의 특성에 맞게 확장하여 구현합니다.
 -   **UI/UX 분리**: 태그 추가/수정 시의 비활성화 정책과 태그 검색 시의 자동 완성은 서로 다른 UI/UX 맥락으로 구분하여 설계 및 구현합니다. 검색 기능은 파일 선택 여부와 관계없이 독립적으로 동작할 수 있도록 합니다.
 
+### 4.6. 태그 UI 상태 관리 (TagUIStateManager 도입)
+
+태그 관련 UI 위젯들의 활성/비활성 및 상태 관리를 일관성 있게 처리하기 위해 `TagUIStateManager`(가칭) 클래스를 도입합니다.
+
+-   **역할**: `main_window.py`와 `TagInputWidget`, `QuickTagsWidget` 등 태그 관련 위젯들 사이에서 UI 상태를 중앙 집중적으로 관리하고 제어합니다.
+-   **목적**:
+    -   UI와 논리 상태의 불일치 문제 해소.
+    -   코드 구조 명확화 및 유지보수성 향상.
+    -   향후 다중 파일 선택, 태그 일괄 편집 등 기능 확장 시 일관된 상태 관리 제공.
+-   **상호작용 개념**:
+    -   `main_window.py`는 파일 선택/해제, 필터링 등 주요 애플리케이션 상태 변화를 `TagUIStateManager`에 알립니다.
+    -   `TagUIStateManager`는 이 상태 변화에 따라 `TagInputWidget`과 `QuickTagsWidget` 등의 `set_enabled()` 또는 `set_state()`와 같은 메서드를 호출하여 UI 상태를 갱신하도록 지시합니다.
+    -   각 위젯은 직접적으로 내부 상태를 판단하지 않고, `TagUIStateManager`의 명령에 따라 자신의 UI 상태를 갱신합니다.
+
+```mermaid
+graph TD
+    A[MainWindow] -->|파일 선택/해제, 필터링| B(TagUIStateManager)
+    B -->|UI 상태 업데이트 지시| C[TagInputWidget]
+    B -->|UI 상태 업데이트 지시| D[QuickTagsWidget]
+    C -->|태그 변경 시그널| B
+    D -->|태그 토글 시그널| B
+```
+
 ---

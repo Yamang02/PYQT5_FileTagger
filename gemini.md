@@ -39,6 +39,7 @@ FileTagger는 파일에 태그를 부여하고 관리할 수 있는 데스크탑
 - `docs/user_guide`: 사용자 매뉴얼, 기능 설명 등 사용자 관련 문서를 포함합니다.
 - `docs/developer_guide`: 개발 환경 설정, 코드 컨벤션, 아키텍처 등 개발자 관련 문서를 포함합니다.
 - `docs/api`: API 명세서 등 기술적인 상세 문서를 포함합니다.
+- `docs/developer_guide/dev_notes.md`: 개발팀 내부의 기술적 논의, 디버깅 과정, 실험 결과 등을 자유롭게 기록하는 문서입니다. 주요 결정사항은 `docs/conversation_log.md`로 요약 이관됩니다.
 
 ## Gemini의 작업 워크플로우
 
