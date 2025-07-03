@@ -14,6 +14,7 @@ from models.tagged_file import TaggedFile
 from core.tag_manager import TagManager
 from widgets.tag_input_widget import TagInputWidget
 from widgets.quick_tags_widget import QuickTagsWidget
+from widgets.batch_tagging_panel import BatchTaggingPanel
 from core.tag_ui_state_manager import TagUIStateManager
 
 # --- 이상적인 경로 설정 ---
@@ -43,6 +44,7 @@ class MainWindow(QMainWindow, form_class):
         self.setup_ui_components()
         self.setup_tag_input_widget()  # TagInputWidget 설정 추가
         self.setup_quick_tags_widget()  # QuickTagsWidget 설정 추가
+        self.setup_batch_tagging_panel()  # BatchTaggingPanel 설정 추가
         self.connect_signals()
 
         # 모든 위젯 등록이 끝난 후, 태그 관련 UI를 비활성화 상태로 초기화
@@ -65,6 +67,10 @@ class MainWindow(QMainWindow, form_class):
         file_menu = self.menuBar().addMenu("&File")
         self.open_dir_action = QAction("&Open Directory...", self)
         file_menu.addAction(self.open_dir_action)
+
+        # 일괄 태그 메뉴 추가
+        self.batch_tag_action = QAction("&일괄 태그 추가...", self)
+        file_menu.addAction(self.batch_tag_action)
 
         # 필터 관련 메뉴 추가
         filter_menu = self.menuBar().addMenu("&Filter")
@@ -169,6 +175,54 @@ class MainWindow(QMainWindow, form_class):
             traceback.print_exc()
             print(f"[MainWindow] QuickTagsWidget 설정 중 오류: {e}")
 
+    def setup_batch_tagging_panel(self):
+        """BatchTaggingPanel을 설정합니다."""
+        try:
+            # BatchTaggingPanel 생성
+            self.batch_tagging_panel = BatchTaggingPanel(self.tag_manager, self)
+            
+            # 패널을 별도의 공간에 배치하기 위해 새로운 컨테이너 생성
+            # 기존 splitter_content에 새로운 위젯 추가
+            from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
+            
+            # 일괄 태그 패널을 위한 전용 컨테이너 생성
+            self.batch_panel_container = QWidget()
+            batch_layout = QVBoxLayout(self.batch_panel_container)
+            batch_layout.setContentsMargins(0, 0, 0, 0)
+            
+            # 패널 제목
+            title_label = QLabel("일괄 태그 추가")
+            title_label.setStyleSheet("""
+                QLabel {
+                    font-size: 12px;
+                    font-weight: bold;
+                    color: #333;
+                    padding: 8px;
+                    background-color: #f5f5f5;
+                    border-bottom: 1px solid #ddd;
+                }
+            """)
+            batch_layout.addWidget(title_label)
+            
+            # 일괄 태그 패널 추가
+            batch_layout.addWidget(self.batch_tagging_panel)
+            
+            # 패널을 splitter_content에 추가 (오른쪽에 배치)
+            self.splitter_content.addWidget(self.batch_panel_container)
+            
+            # 초기에는 숨김
+            self.batch_panel_container.setVisible(False)
+            
+            # splitter 비율 설정 (파일 목록:태그 패널:일괄 태그 패널 = 2:1:1)
+            self.splitter_content.setSizes([400, 200, 200])
+            
+            print("[MainWindow] BatchTaggingPanel 설정 완료")
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"[MainWindow] BatchTaggingPanel 설정 중 오류: {e}")
+
     def deferred_load_directory_tree(self):
         """
         QFileSystemModel과 같이 잠재적으로 느린 초기화 코드를
@@ -227,6 +281,9 @@ class MainWindow(QMainWindow, form_class):
         # QuickTagsWidget 시그널 연결
         if hasattr(self, "quick_tags_widget"):
             self.quick_tags_widget.tag_toggled.connect(self.on_quick_tag_toggled)
+
+        # 일괄 태그 메뉴 시그널 연결
+        self.batch_tag_action.triggered.connect(self.show_batch_tagging_panel)
 
     # --- Slot (Event Handler) Methods ---
 
@@ -381,6 +438,28 @@ class MainWindow(QMainWindow, form_class):
             self.clear_filter_action.setEnabled(False)
             self.update_file_list(self.current_path)
             self.statusbar.showMessage("필터가 해제되었습니다", 2000)
+
+    def show_batch_tagging_panel(self):
+        """일괄 태그 패널을 표시합니다."""
+        if hasattr(self, "batch_panel_container"):
+            # 현재 선택된 디렉토리로 패널 설정
+            if hasattr(self, "current_path") and self.current_path:
+                self.batch_tagging_panel.set_directory(self.current_path)
+            else:
+                # 디렉토리가 선택되지 않은 경우 기본 경로 설정
+                self.batch_tagging_panel.set_directory(os.path.dirname(__file__))
+            
+            # 패널 컨테이너를 표시
+            self.batch_panel_container.setVisible(True)
+            self.batch_tagging_panel.setVisible(True)
+            
+            # splitter 비율 재조정 (일괄 태그 패널이 보이도록)
+            self.splitter_content.setSizes([400, 200, 300])
+            
+            self.statusbar.showMessage("일괄 태그 패널이 열렸습니다", 2000)
+        else:
+            print("[MainWindow] batch_panel_container가 초기화되지 않았습니다.")
+            self.statusbar.showMessage("일괄 태그 패널 초기화 오류", 3000)
 
     def closeEvent(self, event):
         """

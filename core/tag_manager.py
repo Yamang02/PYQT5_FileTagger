@@ -1,4 +1,5 @@
 import urllib.parse
+import os
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 import config  # config.py 파일을 import
@@ -113,6 +114,83 @@ class TagManager:
 
         documents = self.collection.find({"tags": tag})
         return [doc["_id"] for doc in documents]
+
+    def add_tags_to_directory(self, directory_path, tags, recursive=False, file_extensions=None):
+        """
+        특정 디렉토리 내의 파일들에 대해 일괄적으로 태그를 추가합니다.
+
+        Args:
+            directory_path (str): 대상 디렉토리 경로
+            tags (list[str]): 추가할 태그 리스트
+            recursive (bool): 하위 디렉토리 포함 여부 (기본값: False)
+            file_extensions (list[str]): 필터링할 파일 확장자 리스트 (기본값: None, 모든 파일)
+
+        Returns:
+            dict: 처리 결과 정보 (성공한 파일 수, 실패한 파일 수, 오류 메시지 등)
+        """
+        if self.collection is None:
+            print("[TagManager] DB 연결이 없어 일괄 태그 추가를 수행할 수 없습니다.")
+            return {"success": False, "error": "Database connection not available"}
+
+        if not os.path.exists(directory_path):
+            return {"success": False, "error": f"Directory not found: {directory_path}"}
+
+        import os
+        from pathlib import Path
+
+        target_files = []
+        
+        # 파일 확장자 필터링 함수
+        def should_include_file(file_path):
+            if file_extensions is None:
+                return True
+            return any(file_path.lower().endswith(ext.lower()) for ext in file_extensions)
+
+        try:
+            # 디렉토리 내 파일 수집
+            if recursive:
+                for root, dirs, files in os.walk(directory_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        if should_include_file(file_path):
+                            target_files.append(file_path)
+            else:
+                for item in os.listdir(directory_path):
+                    item_path = os.path.join(directory_path, item)
+                    if os.path.isfile(item_path) and should_include_file(item_path):
+                        target_files.append(item_path)
+
+            if not target_files:
+                return {"success": True, "message": "No files found matching criteria", "processed": 0}
+
+            # 벌크 업데이트를 위한 작업 준비
+            bulk_operations = []
+            for file_path in target_files:
+                # 기존 태그 가져오기
+                existing_doc = self.collection.find_one({"_id": file_path})
+                existing_tags = existing_doc.get("tags", []) if existing_doc else []
+                
+                # 중복 제거하면서 새 태그 추가
+                new_tags = list(set(existing_tags + tags))
+                
+                bulk_operations.append(
+                    {"updateOne": {"filter": {"_id": file_path}, "update": {"$set": {"tags": new_tags}}, "upsert": True}}
+                )
+
+            # 벌크 업데이트 실행
+            if bulk_operations:
+                result = self.collection.bulk_write(bulk_operations)
+                print(f"[TagManager] 일괄 태그 추가 완료: {len(target_files)}개 파일 처리")
+                return {
+                    "success": True,
+                    "processed": len(target_files),
+                    "modified": result.modified_count,
+                    "upserted": result.upserted_count
+                }
+
+        except Exception as e:
+            print(f"[TagManager] 일괄 태그 추가 중 오류: {e}")
+            return {"success": False, "error": str(e)}
 
     def disconnect(self):
         """
