@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # MongoDB 서비스 정의
+  mongodb:
+    image: mongo:latest
+    container_name: file-tagger-db
+    # MongoDB 인증을 위한 환경 변수 설정
+    # 중요: 실제 프로덕션 환경에서는 이 값을 직접 하드코딩하지 말고,
+    # .env 파일을 사용하거나 다른 보안 방식을 통해 주입해야 합니다.
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      # 호스트의 27017 포트와 컨테이너의 27017 포트를 연결합니다.
+      # PyQt 앱이 localhost:27017로 접속할 수 있게 됩니다.
+      - "27017:27017"
+    volumes:
+      # 데이터베이스 데이터를 호스트 머신에 영구적으로 저장하기 위한 볼륨 설정
+      # 'mongodb_data'라는 이름의 Docker 볼륨을 생성하여 사용합니다.
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
+  # API 서버 서비스 정의 (미래 확장용)
+  # 현재는 비활성화 상태이며, 필요시 주석을 해제하여 사용합니다.
+  # api-server:
+  #   build:
+  #     context: .
+  #     dockerfile: api/Dockerfile
+  #   container_name: file-tagger-api
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - mongodb
+  #   environment:
+  #     MONGO_HOST: mongodb  # Docker 네트워크 내에서는 서비스 이름으로 통신
+  #     MONGO_PORT: 27017
+  #     MONGO_USER: root
+  #     MONGO_PASS: password
+  #   networks:
+  #     - app-network
+
+# 서비스들이 사용할 네트워크 정의
+networks:
+  app-network:
+    driver: bridge
+
+# 데이터 영속성을 위한 명명된 볼륨 정의
+volumes:
+  mongodb_data:
+    driver: local

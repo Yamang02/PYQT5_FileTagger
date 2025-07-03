@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>File Tagger</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <!-- 메인 레이아웃을 관리하는 Splitter -->
+     <widget class="QSplitter" name="splitter_main">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <!-- 왼쪽 패널: 디렉토리 트리 -->
+      <widget class="QTreeView" name="treeView_dirs">
+       <property name="maximumSize">
+        <size>
+         <width>300</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+      <!-- 중앙/오른쪽 패널을 관리하는 두 번째 Splitter -->
+      <widget class="QSplitter" name="splitter_content">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <!-- 중앙 패널: 파일 목록 -->
+       <widget class="QTableView" name="tableView_files"/>
+       <!-- 오른쪽 패���: 태그 편집 및 정보 -->
+       <widget class="QWidget" name="widget_details" native="true">
+        <property name="maximumSize">
+         <size>
+          <width>350</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label_file_info">
+           <property name="text">
+            <string>File Information</string>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <!-- 선택된 파일의 상세 정보 표시 -->
+          <widget class="QTextBrowser" name="textBrowser_file_details">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>100</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_edit_tags">
+           <property name="text">
+            <string>Edit Tags</string>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <!-- 태그 입력을 위한 LineEdit -->
+          <widget class="QLineEdit" name="lineEdit_tags">
+           <property name="placeholderText">
+            <string>Enter tags, separated by commas</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <!-- 태그 저장을 위한 버튼 -->
+          <widget class="QPushButton" name="btn_save_tags">
+           <property name="text">
+            <string>Save Tags</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_all_tags">
+           <property name="text">
+            <string>All Tags (Filter)</string>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <!-- 전체 태그 목록을 보여주고 필터로 사용 -->
+          <widget class="QListWidget" name="listWidget_all_tags"/>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1200</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

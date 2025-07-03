@@ -1,0 +1,38 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Top-level mandatory rules template enforcing core coding standards and workflow principles
+globs: **/*
+alwaysApply: true
+---
+
+- **Rule Summary**
+  - This rule enforces the essential coding standards, project workflow, and communication guidelines for all code and documentation.
+  - It ensures consistency, security, maintainability, and clarity throughout the project lifecycle.
+
+- **Detailed Requirements**
+  - Follow consistent naming conventions for variables, functions, classes, and files.
+  - Adhere to prescribed coding style: indentation, line breaks, spacing, and punctuation.
+  - Enforce security best practices including safe handling of sensitive data and environment variables.
+  - Maintain adequate test coverage and organize test files properly.
+  - Document code and APIs clearly with required comments and external documentation.
+  - Follow standardized commit message formats and detailed PR descriptions.
+  - Handle errors consistently and avoid exposing sensitive internal information.
+  - Manage dependencies according to approved lists and procedures.
+  - Organize code structure and modules following defined architectural principles.
+  - Optimize performance and resource usage as per guidelines.
+  - **All responses from the AI code agent must be provided in Korean (한글) only.**
+
+- **Code Examples**
+  ```typescript
+  // ✅ DO: Follow naming conventions, security rules, and testing guidelines
+  function calculateSum(a: number, b: number): number {
+      return a + b;
+  }
+
+  // ❌ DON'T: Use insecure logging of sensitive information
+  console.log('DB Password:', process.env.DB_PASSWORD);
+

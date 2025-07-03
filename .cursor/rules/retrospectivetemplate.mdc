@@ -1,0 +1,59 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+
+description: Use incident retrospective template when user asks for problem resolution summary or failure analysis
+globs: \*
+alwaysApply: false
+------------------
+
+* **Trigger Phrases**
+
+  * If user says any of:
+
+    * "회고해줘"
+    * "문제 해결 정리해줘"
+    * "문제 상황 정리해줘"
+    * "이거 왜 안됐지?"
+    * "왜 실패했는지 분석해줘"
+  * Then always format the response using the following structure:
+
+```markdown
+# {{title}}
+
+**날짜:** {{date}}  
+**관련 시스템 / 모듈:**
+
+## 문제 상황  
+무엇을 하려다가 어떤 문제가 발생했는가?
+
+## 증상  
+-
+
+## 원인 분석  
+-
+
+## 해결 방법  
+-
+
+## 재발 방지  
+-
+
+## 회고  
+-
+```
+
+* **Language Requirement**
+
+  * All responses must be written in **Korean**.
+
+* **Best Practices**
+
+  * Keep formatting clean and minimal
+  * Write in complete sentences where needed, but prefer bullet points
+  * Always include "재발 방지" section even if the solution seems obvious
+  * Use this format for both minor issues and major incidents
+
