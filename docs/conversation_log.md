@@ -91,8 +91,33 @@
   - **추가 요청**: `TagUIStateManager`가 `main_window.py`와 각 위젯 사이에서 어떤 방식으로 상태를 전달하고 제어할지에 대한 간략한 아키텍처 스케치나 흐름도 공유 요청.
 - **조치**: `docs/issues.md`에 해당 이슈의 상세 현황, 영향, 구조적 개선 제안 및 기획팀의 의사결정 내용 반영. 이슈 상태를 `[구조 개선 승인]`으로 업데이트. `docs/developer_guide/tagging_feature_spec.md`에 `TagUIStateManager` 도입에 대한 설계 내용 추가.
 
-## 2025-07-04 feat/tag-autocomplete 브랜치 개발팀 회고 진행
+### 15. 개발팀 전용 로그 문서 도입 제안
+- **요청**: 개발팀 전용 로그 문서 도입 제안.
+- **논의 및 결정**: 개발팀 내부의 기술적 논의, 디버깅 과정, 실험 결과 등을 자유롭게 기록하고, 이를 통해 추후 문제 추적 및 신규 개발자 온보딩에 도움을 주겠다는 목적과 기대 효과에 전적으로 동의함. `docs/developer_guide/dev_notes.md` 파일 생성 및 `GEMINI.md`에 해당 문서의 존재와 목적 명시.
 
-- 개발팀이 docs/developer_guide/retrospectives/retrospective_feat_tag-autocomplete.md에 회고록을 작성함.
-- 주요 내용: QuickTagsWidget 비활성화 문제 등 태그 UI 상태관리 이슈를 TagUIStateManager 도입으로 구조적으로 해결. 정책 일관성, 코드 품질, 문서화, 협업 프로세스 등에서 개선점 도출.
-- 회고를 통해 중앙 집중식 상태관리, 정책-코드-문서 동기화, 테스트 강화의 중요성을 재확인함.
+### 16. `feat/tag-autocomplete` 브랜치 `main` 머지 완료
+- **현황**: `feat/tag-autocomplete` 브랜치가 `main` 브랜치에 성공적으로 머지됨.
+- **조치**: `docs/issues.md`의 `QuickTagsWidget` 이슈 상태를 `[Closed]`로 변경하고 머지 완료 내용 추가.
+
+### 17. 다음 기능 개발 논의: 디렉토리별 일괄 태그 추가 기능
+- **요청**: 다음으로 개발할 기능에 대한 논의.
+- **논의 및 결정**: `GEMINI.md`의 요구사항 및 `docs/developer_guide/tagging_feature_spec.md`에 명시된 "디렉토리별 일괄 태그 추가 기능"을 다음 스프린트 목표로 설정하고 진행하기로 결정.
+
+### 18. 디렉토리별 일괄 태그 추가 기능 UI/UX 개선 논의
+- **요청**: 디렉토리별 일괄 태그 추가 기능의 UI/UX에 대해 우클릭 메뉴 방식의 번거로움 지적 및 개선 방안 논의.
+- **논의 및 결정**: 다이얼로그 방식 대신 메인 윈도우 내 통합 패널 방식 채택. 전용 버튼/메뉴바 항목을 통한 접근, 패널 내 파일 미리보기 영역 도입, 태그 입력/선택 영역 포함 등 상세 UI/UX 설계 확정.
+- **조치**: `docs/developer_guide/tagging_feature_spec.md`에 해당 UI/UX 개선 내용 반영.
+
+### 19. 개발 요청 명세 양식 도입
+- **요청**: 개발 요청 명세 양식 정리 및 도입.
+- **논의 및 결정**: 기획팀이 개발팀에게 기능 요청 시 사용할 표준화된 개발 요청 명세 양식 확정. `docs/developer_guide/development_request_spec.md` 파일로 양식 생성 및 `GEMINI.md`에 문서 구조 업데이트.
+
+### 20. 다음 기능 개발 요청: 디렉토리별 일괄 태그 추가 기능
+- **요청**: 다음 기능 개발 요청을 개발팀에 전달.
+- **논의 및 결정**: 새로 정의된 개발 요청 명세 양식에 맞춰 "디렉토리별 일괄 태그 추가 기능"에 대한 개발 요청 문서를 작성하여 전달하기로 결정.
+- **조치**: `docs/developer_guide/DRS-20250704-001_Batch_Tagging_Feature.md` 파일 생성.
+
+### 21. DRS 문서 디렉토리 분리
+- **요청**: DRS 관련 문서를 별도 디렉토리로 분리하여 파일 스캔 부담을 줄이는 방안 논의.
+- **논의 및 결정**: `docs/developer_guide/drs/` 디렉토리를 생성하고 모든 DRS 문서를 이곳에 저장하기로 결정. `GEMINI.md` 및 `docs/developer_guide/coding_conventions.md`에 관련 내용 업데이트.
+- **조치**: `docs/developer_guide/drs/` 디렉토리 생성 및 `DRS-20250704-001_Batch_Tagging_Feature.md` 파일 이동. `GEMINI.md` 및 `docs/developer_guide/coding_conventions.md` 업데이트.
