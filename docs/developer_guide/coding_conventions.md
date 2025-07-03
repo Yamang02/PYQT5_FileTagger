@@ -1,0 +1,58 @@
+# 개발 가이드라인
+
+## 1. 주석 및 문서화 정책
+
+개발팀은 코드의 가독성과 유지보수성을 높이기 위해 다음과 같은 주석 및 문서화 정책을 따릅니다.
+
+-   **Google style docstring**: 모든 주요 함수, 클래스, 메서드에는 Google style docstring을 사용하여 '무엇을 하는지', '어떻게 사용하는지', '어떤 매개변수를 받는지', '무엇을 반환하는지' 등을 명확하게 기술합니다.
+    -   Docstring은 코드의 '왜'와 '어떻게'에 집중하여 작성하며, 기획 문서와 연동하여 사용자 및 기획자도 참고할 수 있도록 작성합니다.
+    -   예시:
+        ```python
+        def example_function(param1: str, param2: int) -> bool:
+            """
+            이 함수는 param1과 param2를 사용하여 특정 작업을 수행합니다.
+
+            Args:
+                param1 (str): 첫 번째 매개변수로, 문자열 형태여야 합니다.
+                param2 (int): 두 번째 매개변수로, 정수 형태여야 합니다.
+
+            Returns:
+                bool: 작업 성공 여부를 반환합니다. True는 성공, False는 실패를 의미합니다.
+            """
+            # 함수 로직
+            pass
+        ```
+
+-   **인라인 주석**: 복잡한 로직, 특정 결정의 배경, 또는 코드의 특정 부분이 왜 그렇게 작성되었는지에 대한 설명을 위해 인라인 주석을 사용합니다.
+    -   인라인 주석은 코드의 '왜'에 집중하며, '무엇'을 하는지는 코드를 통해 명확히 드러나도록 작성합니다.
+    -   예시:
+        ```python
+        # 이 부분은 사용자 인증을 위해 JWT 토큰을 검증하는 로직입니다.
+        if not validate_jwt_token(token):
+            raise UnauthorizedError("유효하지 않은 토큰입니다.")
+        ```
+
+## 2. 파일 분리 (모듈화) 정책
+
+코드의 유지보수성, 확장성 및 협업 효율성을 극대화하기 위해 기능 단위 및 관심사별로 파일을 명확하게 분리합니다.
+
+-   **UI (User Interface)**: 사용자 인터페이스와 관련된 코드는 `ui/` 디렉토리 또는 `widgets/` 디렉토리 내에 위치시킵니다. (예: `main_window.py`, `tag_input_widget.py`)
+-   **비즈니스 로직 (Business Logic)**: 핵심 비즈니스 규칙 및 애플리케이션의 주요 기능을 담당하는 코드는 `core/` 디렉토리 내에 위치시킵니다. (예: `tag_manager.py`)
+-   **데이터 모델 (Data Models)**: 데이터 구조 및 데이터베이스와의 상호작용을 정의하는 코드는 `models/` 디렉토리 내에 위치시킵니다. (예: `tagged_file.py`)
+-   **API (Application Programming Interface)**: 외부 서비스와의 연동 또는 내부 API 정의 코드는 `api/` 디렉토리 내에 위치시킵니다.
+-   **테스트 코드**: 모든 테스트 코드는 원본 코드와 동일한 디렉토리 구조를 가지는 `tests/` 디렉토리 내에 위치시킵니다. (예: `tests/core/test_tag_manager.py`)
+
+이러한 모듈화 정책을 통해 각 파일의 책임이 명확해지고, 코드 변경 시 영향을 받는 범위를 최소화할 수 있습니다.
+
+## AI Agent Role Clarification (project_mandatory)
+
+- **GEMINI**: The AI agent representing the planning team. Responsible for managing official documents (such as `docs/conversation_log.md`), project policies, decision records, and official issue tracking.
+- **Cursor**: The AI agent representing the development team. Responsible for code implementation, debugging, experiments, internal technical discussions, code reviews, and temporary decisions. Manages the development team's internal log (`docs/developer_guide/dev_notes.md`).
+- When a discussion or decision needs to be formalized, Cursor summarizes it in `dev_notes.md` and GEMINI migrates the summary to the official document (`conversation_log.md`).
+
+## 개발팀 내부 기록 및 역할(CURSOR)
+
+- Cursor(개발팀 에이전트)는 개발팀의 일원으로서, 내부 기술 논의, 디버깅, 실험, 코드 리뷰, 임시 결정사항 등을 `docs/developer_guide/dev_notes.md`에 기록·관리한다.
+- 공식화가 필요한 논의나 결정은 요약하여 GEMINI(기획팀) 측 공식 문서(`docs/conversation_log.md`)로 이관한다.
+- 세션이 바뀌어도 dev_notes.md의 기록을 참고하여 일관된 개발 맥락을 유지한다.
+- 개발팀의 실무적 히스토리, 온보딩, 회고 등에 dev_notes.md를 적극 활용한다.
