@@ -42,6 +42,7 @@ class MainWindow(QMainWindow, form_class):
         """
         if self.tag_manager.connect():
             self.update_all_tags_list()
+            self.update_tag_autocomplete()  # 자동 완성 모델 업데이트
         else:
             self.statusbar.showMessage("Database connection failed. Please check settings and restart.", 5000)
 
@@ -91,6 +92,12 @@ class MainWindow(QMainWindow, form_class):
             
             # TagInputWidget을 같은 위치에 추가
             parent_layout.addWidget(self.tag_input_widget)
+            
+            # 초기 상태에서는 비활성화 (파일이 선택되지 않은 상태)
+            self.tag_input_widget.set_enabled(False)
+            
+            # 초기 상태에서 태그 저장 버튼도 비활성화
+            self.btn_save_tags.setEnabled(False)
             
             print("[MainWindow] TagInputWidget 설정 완료")
             
@@ -194,11 +201,17 @@ class MainWindow(QMainWindow, form_class):
     def on_file_selected(self, selected, deselected):
         indexes = self.tableView_files.selectionModel().selectedIndexes()
         if not indexes:
+            # 파일이 선택되지 않은 경우
             self.textBrowser_file_details.clear()
             if hasattr(self, 'tag_input_widget'):
                 self.tag_input_widget.clear_tags()
+                self.tag_input_widget.set_enabled(False)  # TagInputWidget 비활성화
+                
+            # 태그 저장 버튼 비활성화
+            self.btn_save_tags.setEnabled(False)
             return
 
+        # 파일이 선택된 경우
         file_name = self.file_list_model.itemFromIndex(indexes[0]).text()
         full_path = os.path.join(self.current_path, file_name)
 
@@ -209,9 +222,13 @@ class MainWindow(QMainWindow, form_class):
 
             self.textBrowser_file_details.setHtml(tagged_file.get_display_info_html())
             
-            # TagInputWidget에 태그 설정
+            # TagInputWidget 활성화 및 태그 설정
             if hasattr(self, 'tag_input_widget'):
+                self.tag_input_widget.set_enabled(True)  # TagInputWidget 활성화
                 self.tag_input_widget.set_tags(tags)
+                
+            # 태그 저장 버튼 활성화
+            self.btn_save_tags.setEnabled(True)
                 
         except FileNotFoundError as e:
             print(e)
@@ -234,6 +251,8 @@ class MainWindow(QMainWindow, form_class):
         if self.tag_manager.update_tags(full_path, new_tags):
             self.statusbar.showMessage("Tags saved successfully!", 3000)
             self.update_file_list(self.current_path) # 파일 목록의 태그 새로고침
+            self.update_all_tags_list()  # 전체 태그 목록 업데이트
+            self.update_tag_autocomplete()  # 자동 완성 모델 업데이트
         else:
             self.statusbar.showMessage("Failed to save tags.", 3000)
 
@@ -241,6 +260,12 @@ class MainWindow(QMainWindow, form_class):
         all_tags = self.tag_manager.get_all_unique_tags()
         self.listWidget_all_tags.clear()
         self.listWidget_all_tags.addItems(all_tags)
+        
+    def update_tag_autocomplete(self):
+        """태그 자동 완성 모델을 업데이트합니다."""
+        if hasattr(self, 'tag_input_widget'):
+            all_tags = self.tag_manager.get_all_unique_tags()
+            self.tag_input_widget.update_completer_model(all_tags)
 
     def on_tag_filter_selected(self, item):
         selected_tag = item.text()
@@ -263,6 +288,9 @@ class MainWindow(QMainWindow, form_class):
 
     def on_tags_changed(self, tags):
         """TagInputWidget에서 태그가 변경될 때 호출됩니다."""
+        # 자동 완성 모델 업데이트 (새 태그가 추가되었을 수 있으므로)
+        self.update_tag_autocomplete()
+        
         # 자동 저장 기능 (선택사항)
         # self.save_tags_for_selected_file()
         pass

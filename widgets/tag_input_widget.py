@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QLineEdit, QLabel, 
-                             QPushButton, QFrame, QVBoxLayout, QScrollArea)
-from PyQt5.QtCore import pyqtSignal, Qt, QSize
+                             QPushButton, QFrame, QVBoxLayout, QScrollArea,
+                             QCompleter)
+from PyQt5.QtCore import pyqtSignal, Qt, QSize, QStringListModel
 from PyQt5.QtGui import QFont, QPalette, QColor
 
 
@@ -79,7 +80,9 @@ class TagInputWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.tags = []
+        self.completer = None
         self.setup_ui()
+        self.setup_completer()
         
     def setup_ui(self):
         """위젯의 UI를 설정합니다."""
@@ -131,6 +134,45 @@ class TagInputWidget(QWidget):
         
         # 시그널 연결
         self.tag_input.returnPressed.connect(self.add_tag_from_input)
+        
+    def setup_completer(self):
+        """자동 완성 기능을 설정합니다."""
+        self.completer = QCompleter()
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.setCompletionMode(QCompleter.PopupCompletion)
+        self.completer.setWrapAround(False)
+        
+        # 자동 완성 팝업 크기 설정
+        self.completer.popup().setMaximumHeight(150)
+        self.completer.popup().setMaximumWidth(300)
+        
+        # 자동 완성 팝업 스타일 설정
+        self.completer.popup().setStyleSheet("""
+            QListView {
+                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                padding: 2px;
+                selection-background-color: #2196f3;
+                selection-color: white;
+            }
+            QListView::item {
+                padding: 4px 8px;
+                border-radius: 2px;
+            }
+            QListView::item:hover {
+                background-color: #e3f2fd;
+            }
+        """)
+        
+        # 입력 필드에 자동 완성 연결
+        self.tag_input.setCompleter(self.completer)
+        
+        # 자동 완성 선택 시그널 연결
+        self.completer.activated.connect(self.on_completer_activated)
+        
+        # 텍스트 변경 시 자동 완성 트리거
+        self.tag_input.textChanged.connect(self.on_text_changed)
         
     def add_tag_from_input(self):
         """입력 필드에서 새 태그를 추가합니다."""
@@ -201,4 +243,53 @@ class TagInputWidget(QWidget):
         
     def get_tag_input_field(self):
         """태그 입력 필드를 반환합니다 (자동 완성 기능을 위해)."""
-        return self.tag_input 
+        return self.tag_input
+        
+    def update_completer_model(self, all_tags):
+        """자동 완성 모델을 업데이트합니다."""
+        if self.completer:
+            # 현재 입력된 텍스트가 있으면 임시로 저장
+            current_text = self.tag_input.text()
+            cursor_position = self.tag_input.cursorPosition()
+            
+            # 모델 업데이트
+            model = QStringListModel(all_tags)
+            self.completer.setModel(model)
+            
+            # 현재 입력 텍스트와 커서 위치 복원
+            self.tag_input.setText(current_text)
+            self.tag_input.setCursorPosition(cursor_position)
+            
+    def on_completer_activated(self, text):
+        """자동 완성에서 태그가 선택되었을 때 호출됩니다."""
+        if text and text not in self.tags:
+            self.add_tag(text)
+            self.tag_input.clear()
+            
+    def get_completer(self):
+        """자동 완성 객체를 반환합니다."""
+        return self.completer
+        
+    def on_text_changed(self, text):
+        """입력 텍스트가 변경될 때 호출됩니다."""
+        # 2글자 이상 입력되면 자동 완성 팝업 표시
+        if len(text) >= 2:
+            self.completer.complete()
+        else:
+            # 2글자 미만이면 팝업 숨기기
+            self.completer.popup().hide()
+            
+    def set_enabled(self, enabled):
+        """위젯의 활성화/비활성화 상태를 설정합니다."""
+        self.setEnabled(enabled)
+        
+        if not enabled:
+            # 비활성화 시 입력 필드 클리어
+            self.tag_input.clear()
+            # 자동 완성 팝업 숨기기
+            if self.completer:
+                self.completer.popup().hide()
+                
+    def is_enabled(self):
+        """위젯의 활성화 상태를 반환합니다."""
+        return self.isEnabled() 
