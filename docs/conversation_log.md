@@ -60,7 +60,7 @@
 - **논의 및 결정**: 
   - **이슈 해결 방안**: 파일 미선택 시 태그 입력 필드를 비활성화하는 것으로 결정.
   - **이슈 해결 절차**: Gemini가 제안한 7단계 절차(이슈 선택 및 할당 -> 분석 및 해결 -> 설계/명세 문서 업데이트 필요성 검토 -> 문서 업데이트 및 승인 -> 이슈 상태 업데이트 -> 해결 검증 -> 대화 로그 기록) 승인.
-- **조치**: `docs/issues.md`에 해당 이슈 해결 내용 업데이트. `docs/developer_guide/tagging_feature_spec.md`에 UI/UX 설계 반영. `project_mandatory.mdc`에 이슈 해결 절차 추가.
+  - **조치**: `docs/issues.md`에 해당 이슈 해결 내용 업데이트. `docs/developer_guide/tagging_feature_spec.md`에 UI/UX 설계 반영. `project_mandatory.mdc`에 이슈 해결 절차 추가.
 
 ### 11. 코드 품질 검사 절차 및 개발 철학 유지 방안 추가
 - **요청**: 코드 품질 검사 절차 추가 및 개발 철학 유지 방안 논의.
@@ -68,3 +68,16 @@
   - **도구 도입**: `ruff` (린터/포맷터) 및 `mypy` (정적 타입 검사) 도입. `pre-commit` 훅스를 통한 자동화 권장.
   - **개발 철학 유지**: 명확한 문서화(`project_mandatory.mdc`, `tagging_feature_spec.md`) 및 코드 리뷰(셀프 리뷰 포함)를 통해 고수준의 설계 원칙 유지.
 - **조치**: `requirements.txt`에 `ruff`, `mypy`, `pre-commit` 추가. `project_mandatory.mdc`에 코드 품질 및 일관성 섹션 추가 및 관련 규칙 업데이트.
+
+### 12. 개발 정책 및 문서화
+- **요청**: 개발팀의 주석 및 문서화 정책(Google style docstring, 인라인 주석) 및 파일 분리(모듈화) 정책에 대한 PM 전달 메시지 확인.
+- **논의 및 결정**:
+  - **정책 수용**: 개발 정책 수용 및 기획-코드 문서 연동, 비즈니스 로직 설명 범위, 기획 변경 시 문서 업데이트 프로세스에 대한 의견 제시.
+  - **문서 업데이트**: 개발 정책을 명시한 `docs/developer_guide/coding_conventions.md` 파일 신규 생성. `docs/developer_guide/tagging_feature_spec.md`에 개발 정책 반영 섹션 추가.
+
+### 13. QuickTagsWidget UI/UX 정책 및 태그 검색 자동 완성 의사결정
+- **요청**: `docs/issues.md`에 등록된 '파일 미선택 시 자주 사용하는 태그(QuickTagsWidget) 버튼 비활성화 동작 미흡' 이슈 확인 및 상태 관리 논의.
+- **논의 및 결정**:
+  - **이슈 분석**: `QuickTagsWidget`이 파일 미선택 시 활성화되는 문제 확인.
+  - **UI/UX 정책 확정**: 파일 미선택 시 `QuickTagsWidget` 전체를 비활성화하여 사용자의 혼란 방지 및 태그 관리 명확성 확보. `docs/issues.md`에 해당 정책 반영 및 이슈 상태 `[기획 논의 완료]`로 업데이트.
+  - **태그 검색 자동 완성**: 향후 태그 검색 기능 구현 시 자동 완성 필요성 인지. 태그 추가/수정 시의 비활성화 정책과 검색 시의 자동 완성은 별개의 UI/UX 맥락으로 구분하여 설계하기로 결정. `docs/developer_guide/tagging_feature_spec.md`에 '향후 기능 고려사항: 태그 검색 시 자동 완성' 섹션 추가.
