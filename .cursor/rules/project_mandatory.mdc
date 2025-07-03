@@ -11,49 +11,58 @@ This document outlines the mandatory rules and guidelines specific to the FileTa
 
 ## Rules
 
-- **Code Style & Formatting**
-  - All Python code must adhere to PEP 8 guidelines.
-  - Use Black for code formatting. (e.g., `black .`)
-  - Use isort for import sorting. (e.g., `isort .`)
+- **코드 품질 및 일관성 (Code Quality & Consistency)**
+  - **정적 분석 도구**:
+    - **`ruff`**: Python 코드의 포맷팅 및 린팅을 담당합니다. PEP 8 가이드라인 및 잠재적 오류를 검사하여 코드 스타일과 품질을 일관되게 유지합니다.
+    - **`mypy`**: Python 코드의 정적 타입 검사를 수행하여 타입 관련 오류를 미리 찾아내고 코드의 견고성을 높입니다.
+  - **사용법**:
+    - **로컬 검사**: 코드를 커밋하기 전에 다음 명령을 실행하여 코드 품질을 확인합니다.
+      - 포맷팅: `ruff format .`
+      - 린팅: `ruff check .`
+      - 타입 검사: `mypy .`
+    - **Pre-commit Hooks (권장)**: `pre-commit` 프레임워크를 사용하여 Git 커밋 전에 자동으로 위 검사들을 실행하도록 설정합니다. 이는 코드 품질을 강제하는 효과적인 방법입니다.
+  - **개발 철학 유지**: `ruff`와 `mypy`는 코드의 표면적인 일관성(스타일, 기본 패턴, 타입)을 강제하여 "한 명의 개발자"처럼 보이게 하는 데 기여합니다. 하지만 고수준의 개발 철학이나 설계 원칙은 다음을 통해 유지됩니다.
+    - **명확한 문서화**: `docs/developer_guide/tagging_feature_spec.md`와 같은 설계/명세 문서를 통해 프로젝트의 설계 원칙과 구현 방향을 명확히 이해하고 따릅니다.
+    - **코드 리뷰**: 스스로 작성한 코드를 프로젝트의 설계 원칙에 비추어 검토하는 "셀프 코드 리뷰" 습관을 들입니다.
 
-- **Naming Conventions**
-  - Variables and functions: `snake_case`
-  - Classes: `PascalCase`
-  - Modules: `snake_case`
+- **명명 규칙 (Naming Conventions)**
+  - 변수 및 함수: `snake_case`
+  - 클래스: `PascalCase`
+  - 모듈: `snake_case`
 
-- **Documentation**
-  - All public functions and classes must have docstrings following Google style.
-  - Update `GEMINI.md` and `docs/` directory for any significant changes or new features.
+- **문서화 (Documentation)**
+  - 모든 public 함수 및 클래스는 Google style docstrings를 따라야 합니다.
+  - `GEMINI.md` 및 `docs/` 디렉토리는 중요한 변경 사항이나 새로운 기능에 대해 업데이트해야 합니다.
 
-- **Testing**
-  - Write unit tests for new features and bug fixes.
-  - Ensure existing tests pass before committing changes.
+- **테스팅 (Testing)**
+  - 새로운 기능 및 버그 수정에 대한 단위 테스트를 작성합니다.
+  - 변경 사항을 커밋하기 전에 기존 테스트가 통과하는지 확인합니다.
   - **테스트 파일 조직**: 모든 테스트 파일은 `tests/` 디렉토리 아래에 위치해야 합니다.
     - 단위 테스트는 해당 모듈의 구조를 따라 `tests/<모듈명>/` 디렉토리에 배치합니다. (예: `tests/core/test_tag_manager.py`)
     - 테스트 데이터 생성 스크립트와 같은 테스트 유틸리티는 `tests/` 디렉토리 바로 아래에 배치합니다. (예: `tests/test_data_generator.py`)
 
-- **Commit Messages**
-  - Follow Conventional Commits specification (e.g., `feat: add new tag feature`).
+- **커밋 메시지 (Commit Messages)**
+  - Conventional Commits 명세(예: `feat: add new tag feature`)를 따릅니다.
 
-- **Dependency Management**
-  - All project dependencies must be listed in `requirements.txt`.
-  - Use `pip-tools` for managing dependencies (e.g., `pip-compile`, `pip-sync`).
+- **의존성 관리 (Dependency Management)**
+  - 모든 프로젝트 의존성은 `requirements.txt`에 나열되어야 합니다.
+  - `pip-tools`를 사용하여 의존성을 관리합니다. (예: `pip-compile`, `pip-sync`)
 
-- **Security**
-  - Avoid hardcoding sensitive information (e.g., API keys, database credentials).
-  - Use environment variables or a secure configuration management system for sensitive data.
+- **보안 (Security)**
+  - 민감한 정보(예: API 키, 데이터베이스 자격 증명)를 하드코딩하는 것을 피합니다.
+  - 민감한 데이터에는 환경 변수 또는 보안 구성 관리 시스템을 사용합니다.
 
-- **Error Handling**
-  - Implement robust error handling using `try-except` blocks.
-  - Provide meaningful error messages for debugging and user feedback.
+- **에러 핸들링 (Error Handling)**
+  - `try-except` 블록을 사용하여 견고한 에러 핸들링을 구현합니다.
+  - 디버깅 및 사용자 피드백을 위한 의미 있는 에러 메시지를 제공합니다.
 
-- **Performance**
-  - Optimize code for performance, especially in frequently called functions or loops.
-  - Avoid unnecessary database queries or I/O operations.
+- **성능 (Performance)**
+  - 특히 자주 호출되는 함수나 루프에서 성능을 최적화합니다.
+  - 불필요한 데이터베이스 쿼리 또는 I/O 작업을 피합니다.
 
-- **UI/UX Guidelines**
-  - Adhere to the established PyQt5 UI design principles.
-  - Ensure a consistent user experience across all application features.
+- **UI/UX 가이드라인 (UI/UX Guidelines)**
+  - 확립된 PyQt5 UI 디자인 원칙을 준수합니다.
+  - 모든 애플리케이션 기능에서 일관된 사용자 경험을 보장합니다.
 
 - **AI Agent Specific Rules**
   - All responses from the AI code agent must be provided in Korean (한글) only.
