@@ -61,3 +61,10 @@
   - **이슈 해결 방안**: 파일 미선택 시 태그 입력 필드를 비활성화하는 것으로 결정.
   - **이슈 해결 절차**: Gemini가 제안한 7단계 절차(이슈 선택 및 할당 -> 분석 및 해결 -> 설계/명세 문서 업데이트 필요성 검토 -> 문서 업데이트 및 승인 -> 이슈 상태 업데이트 -> 해결 검증 -> 대화 로그 기록) 승인.
 - **조치**: `docs/issues.md`에 해당 이슈 해결 내용 업데이트. `docs/developer_guide/tagging_feature_spec.md`에 UI/UX 설계 반영. `project_mandatory.mdc`에 이슈 해결 절차 추가.
+
+### 11. 코드 품질 검사 절차 및 개발 철학 유지 방안 추가
+- **요청**: 코드 품질 검사 절차 추가 및 개발 철학 유지 방안 논의.
+- **논의 및 결정**: 
+  - **도구 도입**: `ruff` (린터/포맷터) 및 `mypy` (정적 타입 검사) 도입. `pre-commit` 훅스를 통한 자동화 권장.
+  - **개발 철학 유지**: 명확한 문서화(`project_mandatory.mdc`, `tagging_feature_spec.md`) 및 코드 리뷰(셀프 리뷰 포함)를 통해 고수준의 설계 원칙 유지.
+- **조치**: `requirements.txt`에 `ruff`, `mypy`, `pre-commit` 추가. `project_mandatory.mdc`에 코드 품질 및 일관성 섹션 추가 및 관련 규칙 업데이트.
