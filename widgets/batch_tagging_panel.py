@@ -2,10 +2,11 @@ import os
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
     QPushButton, QCheckBox, QComboBox, QTableWidget, QTableWidgetItem,
-    QProgressBar, QGroupBox, QFileDialog, QMessageBox, QHeaderView
+    QProgressBar, QGroupBox, QFileDialog, QMessageBox, QHeaderView,
+    QFrame, QSpacerItem, QSizePolicy
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QPalette, QColor
 
 from widgets.tag_input_widget import TagInputWidget
 
@@ -51,25 +52,69 @@ class BatchTaggingPanel(QWidget):
         
         self.setup_ui()
         self.connect_signals()
+        self.apply_styles()
         
     def setup_ui(self):
         """UI 구성 요소들을 설정합니다."""
         layout = QVBoxLayout()
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(12)
+        
+        # 제목 및 상태 표시
+        title_layout = QHBoxLayout()
+        title_label = QLabel("📁 일괄 태그 추가")
+        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setStyleSheet("color: #2c3e50; padding: 4px;")
+        
+        self.status_label = QLabel("대기 중")
+        self.status_label.setStyleSheet("color: #7f8c8d; font-size: 10px; padding: 4px;")
+        
+        title_layout.addWidget(title_label)
+        title_layout.addStretch()
+        title_layout.addWidget(self.status_label)
+        
+        # 구분선
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        separator.setStyleSheet("background-color: #bdc3c7;")
         
         # 디렉토리 선택 그룹
-        dir_group = QGroupBox("대상 디렉토리")
-        dir_group.setMaximumHeight(80)
+        dir_group = QGroupBox("📂 대상 디렉토리")
+        dir_group.setMaximumHeight(90)
         dir_layout = QHBoxLayout()
         
-        self.dir_label = QLabel("디렉토리:")
+        self.dir_label = QLabel("경로:")
         self.dir_path_edit = QLineEdit()
         self.dir_path_edit.setReadOnly(True)
         self.dir_path_edit.setPlaceholderText("디렉토리를 선택하세요")
+        self.dir_path_edit.setStyleSheet("""
+            QLineEdit {
+                padding: 6px;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                background-color: #f8f9fa;
+            }
+        """)
         
         self.browse_button = QPushButton("찾아보기")
         self.browse_button.setMaximumWidth(80)
+        self.browse_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+            QPushButton:pressed {
+                background-color: #21618c;
+            }
+        """)
         
         dir_layout.addWidget(self.dir_label)
         dir_layout.addWidget(self.dir_path_edit, 1)
@@ -77,72 +122,182 @@ class BatchTaggingPanel(QWidget):
         dir_group.setLayout(dir_layout)
         
         # 파일 미리보기 그룹
-        preview_group = QGroupBox("파일 미리보기")
+        preview_group = QGroupBox("📋 파일 미리보기")
         preview_layout = QVBoxLayout()
+        
+        # 파일 수 표시
+        self.file_count_label = QLabel("0개 파일")
+        self.file_count_label.setStyleSheet("color: #7f8c8d; font-size: 11px; padding: 4px;")
         
         self.file_table = QTableWidget()
         self.file_table.setColumnCount(3)
         self.file_table.setHorizontalHeaderLabels(["파일명", "경로", "현재 태그"])
         self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.file_table.setMaximumHeight(150)
-        self.file_table.setMinimumHeight(100)
+        self.file_table.setMaximumHeight(180)
+        self.file_table.setMinimumHeight(120)
+        self.file_table.setAlternatingRowColors(True)
+        self.file_table.setStyleSheet("""
+            QTableWidget {
+                gridline-color: #ecf0f1;
+                background-color: white;
+                alternate-background-color: #f8f9fa;
+            }
+            QHeaderView::section {
+                background-color: #34495e;
+                color: white;
+                padding: 6px;
+                border: none;
+                font-weight: bold;
+            }
+        """)
         
+        preview_layout.addWidget(self.file_count_label)
         preview_layout.addWidget(self.file_table)
         preview_group.setLayout(preview_layout)
         
         # 옵션 그룹
-        options_group = QGroupBox("적용 옵션")
-        options_group.setMaximumHeight(120)
+        options_group = QGroupBox("⚙️ 적용 옵션")
+        options_group.setMaximumHeight(130)
         options_layout = QVBoxLayout()
         
         # 재귀 옵션
         self.recursive_checkbox = QCheckBox("하위 디렉토리 포함")
+        self.recursive_checkbox.setStyleSheet("""
+            QCheckBox {
+                spacing: 8px;
+                font-size: 11px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+            }
+        """)
         
         # 파일 확장자 필터
         ext_layout = QHBoxLayout()
         ext_layout.addWidget(QLabel("확장자:"))
         self.ext_combo = QComboBox()
         self.ext_combo.addItems(["모든 파일", "이미지 파일", "문서 파일", "사용자 정의"])
-        self.ext_combo.currentTextChanged.connect(self.on_extension_changed)
+        self.ext_combo.setStyleSheet("""
+            QComboBox {
+                padding: 4px;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid #7f8c8d;
+            }
+        """)
         
         self.custom_ext_edit = QLineEdit()
         self.custom_ext_edit.setPlaceholderText(".jpg,.png,.pdf")
         self.custom_ext_edit.setVisible(False)
-        self.custom_ext_edit.setMaximumWidth(120)
+        self.custom_ext_edit.setMaximumWidth(150)
+        self.custom_ext_edit.setStyleSheet("""
+            QLineEdit {
+                padding: 4px;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                background-color: white;
+            }
+        """)
         
         ext_layout.addWidget(self.ext_combo)
         ext_layout.addWidget(self.custom_ext_edit)
+        ext_layout.addStretch()
         options_layout.addLayout(ext_layout)
         options_layout.addWidget(self.recursive_checkbox)
         options_group.setLayout(options_layout)
         
         # 태그 입력 그룹
-        tag_group = QGroupBox("추가할 태그")
-        tag_group.setMaximumHeight(120)
+        tag_group = QGroupBox("🏷️ 추가할 태그")
+        tag_group.setMaximumHeight(130)
         tag_layout = QVBoxLayout()
         
         self.tag_input_widget = TagInputWidget()
-        self.tag_input_widget.setMaximumHeight(80)
+        self.tag_input_widget.setMaximumHeight(90)
         tag_layout.addWidget(self.tag_input_widget)
         tag_group.setLayout(tag_layout)
         
         # 실행 버튼 및 진행률
         action_layout = QHBoxLayout()
         
-        self.apply_button = QPushButton("태그 적용")
+        self.apply_button = QPushButton("🚀 태그 적용")
         self.apply_button.setEnabled(False)
+        self.apply_button.setMinimumHeight(35)
+        self.apply_button.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #229954;
+            }
+            QPushButton:pressed {
+                background-color: #1e8449;
+            }
+            QPushButton:disabled {
+                background-color: #bdc3c7;
+                color: #7f8c8d;
+            }
+        """)
         
-        self.cancel_button = QPushButton("취소")
+        self.cancel_button = QPushButton("❌ 취소")
         self.cancel_button.setVisible(False)
+        self.cancel_button.setMinimumHeight(35)
+        self.cancel_button.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+            }
+            QPushButton:pressed {
+                background-color: #a93226;
+            }
+        """)
         
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
+        self.progress_bar.setMinimumHeight(25)
+        self.progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                text-align: center;
+                background-color: #ecf0f1;
+            }
+            QProgressBar::chunk {
+                background-color: #3498db;
+                border-radius: 3px;
+            }
+        """)
         
         action_layout.addWidget(self.apply_button)
         action_layout.addWidget(self.cancel_button)
         action_layout.addWidget(self.progress_bar, 1)
         
         # 메인 레이아웃에 추가
+        layout.addLayout(title_layout)
+        layout.addWidget(separator)
         layout.addWidget(dir_group)
         layout.addWidget(preview_group)
         layout.addWidget(options_group)
@@ -150,6 +305,24 @@ class BatchTaggingPanel(QWidget):
         layout.addLayout(action_layout)
         
         self.setLayout(layout)
+        
+    def apply_styles(self):
+        """전체 패널에 스타일을 적용합니다."""
+        self.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #bdc3c7;
+                border-radius: 6px;
+                margin-top: 8px;
+                padding-top: 8px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                color: #2c3e50;
+            }
+        """)
         
     def connect_signals(self):
         """시그널 연결"""
@@ -166,10 +339,14 @@ class BatchTaggingPanel(QWidget):
             self.dir_path_edit.setText(directory_path)
             self.update_file_preview()
             self.apply_button.setEnabled(True)
+            self.status_label.setText("디렉토리 선택됨")
+            self.status_label.setStyleSheet("color: #27ae60; font-size: 10px; padding: 4px;")
         else:
             self.dir_path_edit.clear()
             self.file_table.setRowCount(0)
             self.apply_button.setEnabled(False)
+            self.status_label.setText("대기 중")
+            self.status_label.setStyleSheet("color: #7f8c8d; font-size: 10px; padding: 4px;")
             
     def browse_directory(self):
         """디렉토리 선택 다이얼로그를 엽니다."""
@@ -190,10 +367,10 @@ class BatchTaggingPanel(QWidget):
         
         if text == "모든 파일":
             return None
-        elif text == "이미지 파일 (.jpg, .png, .gif)":
-            return [".jpg", ".jpeg", ".png", ".gif", ".bmp"]
-        elif text == "문서 파일 (.pdf, .doc, .txt)":
-            return [".pdf", ".doc", ".docx", ".txt", ".rtf"]
+        elif text == "이미지 파일":
+            return [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"]
+        elif text == "문서 파일":
+            return [".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt", ".pages"]
         elif text == "사용자 정의":
             custom_text = self.custom_ext_edit.text().strip()
             if custom_text:
@@ -225,6 +402,8 @@ class BatchTaggingPanel(QWidget):
                         self.target_files.append(item_path)
         except Exception as e:
             print(f"파일 미리보기 업데이트 오류: {e}")
+            self.status_label.setText(f"오류: {str(e)}")
+            self.status_label.setStyleSheet("color: #e74c3c; font-size: 10px; padding: 4px;")
             return
             
         # 테이블 업데이트
@@ -245,7 +424,16 @@ class BatchTaggingPanel(QWidget):
             self.file_table.setItem(i, 2, QTableWidgetItem(tags_text))
             
         # 상태 업데이트
-        self.apply_button.setEnabled(len(self.target_files) > 0)
+        file_count = len(self.target_files)
+        self.file_count_label.setText(f"{file_count}개 파일")
+        self.apply_button.setEnabled(file_count > 0)
+        
+        if file_count > 0:
+            self.status_label.setText(f"{file_count}개 파일 준비됨")
+            self.status_label.setStyleSheet("color: #27ae60; font-size: 10px; padding: 4px;")
+        else:
+            self.status_label.setText("적용할 파일 없음")
+            self.status_label.setStyleSheet("color: #f39c12; font-size: 10px; padding: 4px;")
         
     def _should_include_file(self, file_path, file_extensions):
         """파일이 확장자 필터에 맞는지 확인합니다."""
@@ -270,6 +458,9 @@ class BatchTaggingPanel(QWidget):
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, len(self.target_files))
         self.progress_bar.setValue(0)
+        
+        self.status_label.setText("작업 진행 중...")
+        self.status_label.setStyleSheet("color: #3498db; font-size: 10px; padding: 4px;")
         
         # 워커 스레드 시작
         self.worker_thread = BatchTaggingWorker(
@@ -296,16 +487,62 @@ class BatchTaggingPanel(QWidget):
         
         if result.get("success"):
             processed = result.get("processed", 0)
-            QMessageBox.information(
-                self, 
-                "완료", 
-                f"일괄 태그 추가가 완료되었습니다.\n처리된 파일: {processed}개"
-            )
+            successful = result.get("successful", processed)
+            failed = result.get("failed", 0)
+            modified = result.get("modified", 0)
+            upserted = result.get("upserted", 0)
+            errors = result.get("errors", [])
+            
+            # 상태 업데이트
+            if failed == 0:
+                self.status_label.setText(f"✅ 완료: {successful}개 파일 처리됨")
+                self.status_label.setStyleSheet("color: #27ae60; font-size: 10px; padding: 4px;")
+            else:
+                self.status_label.setText(f"⚠️ 부분 완료: {successful}개 성공, {failed}개 실패")
+                self.status_label.setStyleSheet("color: #f39c12; font-size: 10px; padding: 4px;")
+            
+            # 상세 결과 메시지 생성
+            result_message = f"일괄 태그 추가가 완료되었습니다.\n\n"
+            result_message += f"📊 처리 결과:\n"
+            result_message += f"• 총 처리 파일: {processed}개\n"
+            result_message += f"• 성공: {successful}개\n"
+            result_message += f"• 실패: {failed}개\n"
+            result_message += f"• 수정된 파일: {modified}개\n"
+            result_message += f"• 새로 생성된 파일: {upserted}개\n"
+            
+            if errors:
+                result_message += f"\n❌ 실패한 파일들:\n"
+                for error_info in errors[:5]:  # 최대 5개만 표시
+                    filename = os.path.basename(error_info.get("file", "알 수 없음"))
+                    error_msg = error_info.get("error", "알 수 없는 오류")
+                    result_message += f"• {filename}: {error_msg}\n"
+                
+                if len(errors) > 5:
+                    result_message += f"• ... 및 {len(errors) - 5}개 더\n"
+            
+            # 성공/실패에 따른 아이콘 선택
+            if failed == 0:
+                QMessageBox.information(self, "✅ 완료", result_message)
+            else:
+                QMessageBox.warning(self, "⚠️ 부분 완료", result_message)
+            
             # 파일 미리보기 새로고침
             self.update_file_preview()
         else:
             error_msg = result.get("error", "알 수 없는 오류가 발생했습니다.")
-            QMessageBox.critical(self, "오류", f"일괄 태그 추가 중 오류가 발생했습니다:\n{error_msg}")
+            self.status_label.setText("❌ 오류 발생")
+            self.status_label.setStyleSheet("color: #e74c3c; font-size: 10px; padding: 4px;")
+            
+            # 오류 상세 정보 표시
+            error_details = f"일괄 태그 추가 중 오류가 발생했습니다.\n\n"
+            error_details += f"🔍 오류 내용:\n{error_msg}\n\n"
+            error_details += f"💡 해결 방법:\n"
+            error_details += f"• 디렉토리 경로가 올바른지 확인하세요\n"
+            error_details += f"• 데이터베이스 연결 상태를 확인하세요\n"
+            error_details += f"• 태그 형식이 올바른지 확인하세요\n"
+            error_details += f"• 파일 접근 권한을 확인하세요"
+            
+            QMessageBox.critical(self, "❌ 오류", error_details)
             
     def reset_ui_state(self):
         """UI 상태를 원래대로 되돌립니다."""

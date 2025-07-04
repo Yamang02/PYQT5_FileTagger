@@ -1,8 +1,18 @@
 import urllib.parse
 import os
+import logging
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, OperationFailure
 import config  # config.py 파일을 import
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+class TagManagerError(Exception):
+    """TagManager 관련 커스텀 예외 클래스"""
+    pass
 
 
 class TagManager:
@@ -18,7 +28,9 @@ class TagManager:
         self.client = None
         self.db = None
         self.collection = None
-        print("[TagManager] 인스턴스 생성됨 (연결 전)")
+        self._connection_retry_count = 0
+        self._max_retry_attempts = 3
+        logger.info("[TagManager] 인스턴스 생성됨 (연결 전)")
 
     def connect(self):
         """
@@ -26,11 +38,11 @@ class TagManager:
         이 메서드는 UI 스레드에서 직접 호출하면 안 됩니다.
         """
         if self.client:
-            print("[TagManager] 이미 연결되어 있습니다.")
+            logger.info("[TagManager] 이미 연결되어 있습니다.")
             return True
 
         try:
-            print("[TagManager] MongoDB 연결 시도...")
+            logger.info("[TagManager] MongoDB 연결 시도...")
             # MongoDB 연결 URI 생성 (인증 정보 포함)
             # 사용자 이름과 비밀번호를 URL 인코딩하여 특수문자 문제를 방지합니다.
             username = urllib.parse.quote_plus("root")
@@ -43,26 +55,73 @@ class TagManager:
 
             self.db = self.client[config.MONGO_DB_NAME]
             self.collection = self.db[config.MONGO_COLLECTION_NAME]
-            print("[TagManager] MongoDB에 성공적으로 연결되었습니다.")
+            
+            # 연결 성공 시 재시도 카운터 리셋
+            self._connection_retry_count = 0
+            
+            logger.info("[TagManager] MongoDB에 성공적으로 연결되었습니다.")
             return True
+            
         except ConnectionFailure as e:
-            print(f"[TagManager] MongoDB 연결 오류: {e}")
-            self.client = None
-            self.db = None
-            self.collection = None
+            logger.error(f"[TagManager] MongoDB 연결 실패: {e}")
+            self._handle_connection_error(e)
             return False
+        except ServerSelectionTimeoutError as e:
+            logger.error(f"[TagManager] MongoDB 서버 선택 타임아웃: {e}")
+            self._handle_connection_error(e)
+            return False
+        except Exception as e:
+            logger.error(f"[TagManager] 예상치 못한 연결 오류: {e}")
+            self._handle_connection_error(e)
+            return False
+
+    def _handle_connection_error(self, error):
+        """연결 오류 처리 및 재시도 로직"""
+        self.client = None
+        self.db = None
+        self.collection = None
+        
+        self._connection_retry_count += 1
+        
+        if self._connection_retry_count < self._max_retry_attempts:
+            logger.warning(f"[TagManager] 연결 재시도 {self._connection_retry_count}/{self._max_retry_attempts}")
+        else:
+            logger.error(f"[TagManager] 최대 재시도 횟수 초과. 연결 실패")
+
+    def _ensure_connection(self):
+        """연결 상태를 확인하고 필요시 재연결을 시도합니다."""
+        if self.collection is None:
+            logger.warning("[TagManager] DB 연결이 없습니다. 재연결을 시도합니다.")
+            if not self.connect():
+                raise TagManagerError("데이터베이스 연결을 설정할 수 없습니다.")
+        return True
 
     def get_tags_for_file(self, file_path):
         """
         주어진 파일 경로에 대한 태그 리스트를 데이터베이스에서 검색합니다.
         파일이 존재하지 않으면 빈 리스트를 반환합니다.
         """
-        if self.collection is None:
-            print("[TagManager] DB 연결이 없어 태그를 가져올 수 없습니다.")
-            return []
+        try:
+            self._ensure_connection()
+            
+            if not file_path or not isinstance(file_path, str):
+                logger.warning(f"[TagManager] 잘못된 파일 경로: {file_path}")
+                return []
 
-        document = self.collection.find_one({"_id": file_path})
-        return document.get("tags", []) if document else []
+            document = self.collection.find_one({"_id": file_path})
+            tags = document.get("tags", []) if document else []
+            
+            logger.debug(f"[TagManager] 파일 '{file_path}'의 태그 조회: {tags}")
+            return tags
+            
+        except TagManagerError:
+            raise
+        except OperationFailure as e:
+            logger.error(f"[TagManager] 데이터베이스 조회 오류: {e}")
+            raise TagManagerError(f"태그 조회 중 데이터베이스 오류: {e}")
+        except Exception as e:
+            logger.error(f"[TagManager] 태그 조회 중 예상치 못한 오류: {e}")
+            raise TagManagerError(f"태그 조회 중 오류: {e}")
 
     def update_tags(self, file_path, tags):
         """
@@ -72,48 +131,107 @@ class TagManager:
         Args:
             file_path (str): 파일 경로
             tags (list[str]): 태그 리스트
+
+        Returns:
+            bool: 업데이트 성공 여부
         """
-        if self.collection is None:
-            print("[TagManager] DB 연결이 없어 태그를 업데이트할 수 없습니다.")
-            return False
-
-        # tags가 문자열이면 리스트로 변환 (하위 호환성)
-        if isinstance(tags, str):
-            tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
-        elif not isinstance(tags, list):
-            print(f"[TagManager] 잘못된 태그 형식: {type(tags)}")
-            return False
-
         try:
-            self.collection.update_one(
+            self._ensure_connection()
+            
+            if not file_path or not isinstance(file_path, str):
+                logger.error(f"[TagManager] 잘못된 파일 경로: {file_path}")
+                return False
+
+            # tags가 문자열이면 리스트로 변환 (하위 호환성)
+            if isinstance(tags, str):
+                tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
+            elif not isinstance(tags, list):
+                logger.error(f"[TagManager] 잘못된 태그 형식: {type(tags)}")
+                return False
+
+            # 태그 유효성 검사
+            if not self._validate_tags(tags):
+                logger.error(f"[TagManager] 유효하지 않은 태그: {tags}")
+                return False
+
+            result = self.collection.update_one(
                 {"_id": file_path}, {"$set": {"tags": tags}}, upsert=True
             )
-            print(f"태그 업데이트 성공: {file_path} -> {tags}")
+            
+            logger.info(f"[TagManager] 태그 업데이트 성공: {file_path} -> {tags}")
             return True
+            
+        except TagManagerError:
+            raise
+        except OperationFailure as e:
+            logger.error(f"[TagManager] 데이터베이스 업데이트 오류: {e}")
+            raise TagManagerError(f"태그 업데이트 중 데이터베이스 오류: {e}")
         except Exception as e:
-            print(f"태그 업데이트 오류: {e}")
+            logger.error(f"[TagManager] 태그 업데이트 중 예상치 못한 오류: {e}")
+            raise TagManagerError(f"태그 업데이트 중 오류: {e}")
+
+    def _validate_tags(self, tags):
+        """태그 리스트의 유효성을 검사합니다."""
+        if not isinstance(tags, list):
             return False
+        
+        for tag in tags:
+            if not isinstance(tag, str) or not tag.strip():
+                return False
+            # 태그 길이 제한 (예: 50자)
+            if len(tag.strip()) > 50:
+                return False
+            # 특수문자 제한 (필요시)
+            if any(char in tag for char in ['<', '>', '&', '"', "'"]):
+                return False
+                
+        return True
 
     def get_all_unique_tags(self):
         """
         데이터베이스에 있는 모든 고유한 태그 목록을 알파벳 순으로 정렬하여 반환합니다.
         """
-        if self.collection is None:
-            print("[TagManager] DB 연결이 없어 태그를 가져올 수 없습니다.")
-            return []
-
-        return sorted(self.collection.distinct("tags"))
+        try:
+            self._ensure_connection()
+            
+            tags = sorted(self.collection.distinct("tags"))
+            logger.debug(f"[TagManager] 전체 고유 태그 조회: {len(tags)}개")
+            return tags
+            
+        except TagManagerError:
+            raise
+        except OperationFailure as e:
+            logger.error(f"[TagManager] 고유 태그 조회 중 데이터베이스 오류: {e}")
+            raise TagManagerError(f"고유 태그 조회 중 데이터베이스 오류: {e}")
+        except Exception as e:
+            logger.error(f"[TagManager] 고유 태그 조회 중 예상치 못한 오류: {e}")
+            raise TagManagerError(f"고유 태그 조회 중 오류: {e}")
 
     def get_files_by_tag(self, tag):
         """
         특정 태그를 포함하는 모든 파일의 경로 목록을 검색합니다.
         """
-        if self.collection is None:
-            print("[TagManager] DB 연결이 없어 파일을 가져올 수 없습니다.")
-            return []
+        try:
+            self._ensure_connection()
+            
+            if not tag or not isinstance(tag, str):
+                logger.warning(f"[TagManager] 잘못된 태그: {tag}")
+                return []
 
-        documents = self.collection.find({"tags": tag})
-        return [doc["_id"] for doc in documents]
+            documents = self.collection.find({"tags": tag})
+            file_paths = [doc["_id"] for doc in documents]
+            
+            logger.debug(f"[TagManager] 태그 '{tag}'로 파일 검색: {len(file_paths)}개")
+            return file_paths
+            
+        except TagManagerError:
+            raise
+        except OperationFailure as e:
+            logger.error(f"[TagManager] 태그별 파일 검색 중 데이터베이스 오류: {e}")
+            raise TagManagerError(f"태그별 파일 검색 중 데이터베이스 오류: {e}")
+        except Exception as e:
+            logger.error(f"[TagManager] 태그별 파일 검색 중 예상치 못한 오류: {e}")
+            raise TagManagerError(f"태그별 파일 검색 중 오류: {e}")
 
     def add_tags_to_directory(self, directory_path, tags, recursive=False, file_extensions=None):
         """
@@ -128,74 +246,120 @@ class TagManager:
         Returns:
             dict: 처리 결과 정보 (성공한 파일 수, 실패한 파일 수, 오류 메시지 등)
         """
-        if self.collection is None:
-            print("[TagManager] DB 연결이 없어 일괄 태그 추가를 수행할 수 없습니다.")
-            return {"success": False, "error": "Database connection not available"}
-
-        if not os.path.exists(directory_path):
-            return {"success": False, "error": f"Directory not found: {directory_path}"}
-
-        import os
-        from pathlib import Path
-
-        target_files = []
-        
-        # 파일 확장자 필터링 함수
-        def should_include_file(file_path):
-            if file_extensions is None:
-                return True
-            return any(file_path.lower().endswith(ext.lower()) for ext in file_extensions)
-
         try:
-            # 디렉토리 내 파일 수집
-            if recursive:
-                for root, dirs, files in os.walk(directory_path):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        if should_include_file(file_path):
-                            target_files.append(file_path)
-            else:
-                for item in os.listdir(directory_path):
-                    item_path = os.path.join(directory_path, item)
-                    if os.path.isfile(item_path) and should_include_file(item_path):
-                        target_files.append(item_path)
+            self._ensure_connection()
+            
+            if not directory_path or not isinstance(directory_path, str):
+                return {"success": False, "error": "잘못된 디렉토리 경로"}
 
-            if not target_files:
-                return {"success": True, "message": "No files found matching criteria", "processed": 0}
+            if not os.path.exists(directory_path):
+                return {"success": False, "error": f"디렉토리를 찾을 수 없습니다: {directory_path}"}
 
-            # 벌크 업데이트를 위한 작업 준비
-            bulk_operations = []
-            for file_path in target_files:
-                # 기존 태그 가져오기
-                existing_doc = self.collection.find_one({"_id": file_path})
-                existing_tags = existing_doc.get("tags", []) if existing_doc else []
-                
-                # 중복 제거하면서 새 태그 추가
-                new_tags = list(set(existing_tags + tags))
-                
-                bulk_operations.append(
-                    {"updateOne": {"filter": {"_id": file_path}, "update": {"$set": {"tags": new_tags}}, "upsert": True}}
-                )
+            if not self._validate_tags(tags):
+                return {"success": False, "error": "유효하지 않은 태그가 포함되어 있습니다"}
 
-            # 벌크 업데이트 실행
-            if bulk_operations:
-                result = self.collection.bulk_write(bulk_operations)
-                print(f"[TagManager] 일괄 태그 추가 완료: {len(target_files)}개 파일 처리")
-                return {
-                    "success": True,
-                    "processed": len(target_files),
-                    "modified": result.modified_count,
-                    "upserted": result.upserted_count
-                }
+            import os
+            from pathlib import Path
 
-        except Exception as e:
-            print(f"[TagManager] 일괄 태그 추가 중 오류: {e}")
+            target_files = []
+            error_files = []
+            
+            # 파일 확장자 필터링 함수
+            def should_include_file(file_path):
+                if file_extensions is None:
+                    return True
+                return any(file_path.lower().endswith(ext.lower()) for ext in file_extensions)
+
+            try:
+                # 디렉토리 내 파일 수집
+                if recursive:
+                    for root, dirs, files in os.walk(directory_path):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            if should_include_file(file_path):
+                                target_files.append(file_path)
+                else:
+                    for item in os.listdir(directory_path):
+                        item_path = os.path.join(directory_path, item)
+                        if os.path.isfile(item_path) and should_include_file(item_path):
+                            target_files.append(item_path)
+
+                if not target_files:
+                    return {"success": True, "message": "조건에 맞는 파일이 없습니다", "processed": 0}
+
+                logger.info(f"[TagManager] 일괄 태그 추가 시작: {len(target_files)}개 파일, 태그: {tags}")
+
+                # 벌크 업데이트를 위한 작업 준비
+                bulk_operations = []
+                for file_path in target_files:
+                    try:
+                        # 기존 태그 가져오기
+                        existing_doc = self.collection.find_one({"_id": file_path})
+                        existing_tags = existing_doc.get("tags", []) if existing_doc else []
+                        
+                        # 중복 제거하면서 새 태그 추가
+                        new_tags = list(set(existing_tags + tags))
+                        
+                        bulk_operations.append(
+                            {"updateOne": {"filter": {"_id": file_path}, "update": {"$set": {"tags": new_tags}}, "upsert": True}}
+                        )
+                    except Exception as e:
+                        logger.error(f"[TagManager] 파일 '{file_path}' 처리 중 오류: {e}")
+                        error_files.append({"file": file_path, "error": str(e)})
+
+                # 벌크 업데이트 실행
+                if bulk_operations:
+                    result = self.collection.bulk_write(bulk_operations, ordered=False)
+                    
+                    success_count = len(target_files) - len(error_files)
+                    logger.info(f"[TagManager] 일괄 태그 추가 완료: {success_count}개 성공, {len(error_files)}개 실패")
+                    
+                    return {
+                        "success": True,
+                        "processed": len(target_files),
+                        "successful": success_count,
+                        "failed": len(error_files),
+                        "modified": result.modified_count,
+                        "upserted": result.upserted_count,
+                        "errors": error_files
+                    }
+
+            except Exception as e:
+                logger.error(f"[TagManager] 파일 수집 중 오류: {e}")
+                return {"success": False, "error": f"파일 수집 중 오류: {e}"}
+
+        except TagManagerError as e:
+            logger.error(f"[TagManager] 일괄 태그 추가 중 TagManager 오류: {e}")
             return {"success": False, "error": str(e)}
+        except OperationFailure as e:
+            logger.error(f"[TagManager] 일괄 태그 추가 중 데이터베이스 오류: {e}")
+            return {"success": False, "error": f"데이터베이스 오류: {e}"}
+        except Exception as e:
+            logger.error(f"[TagManager] 일괄 태그 추가 중 예상치 못한 오류: {e}")
+            return {"success": False, "error": f"예상치 못한 오류: {e}"}
+
+    def get_connection_status(self):
+        """현재 데이터베이스 연결 상태를 반환합니다."""
+        try:
+            if self.client:
+                # 연결 상태 확인
+                self.client.admin.command("ping")
+                return {"connected": True, "status": "정상"}
+            else:
+                return {"connected": False, "status": "연결되지 않음"}
+        except Exception as e:
+            return {"connected": False, "status": f"오류: {str(e)}"}
 
     def disconnect(self):
         """
         데이터베이스 연결을 종료합니다.
         """
-        if self.client:
-            self.client.close()
-            print("MongoDB 연결이 종료되었습니다.")
+        try:
+            if self.client:
+                self.client.close()
+                self.client = None
+                self.db = None
+                self.collection = None
+                logger.info("[TagManager] 데이터베이스 연결이 종료되었습니다.")
+        except Exception as e:
+            logger.error(f"[TagManager] 연결 종료 중 오류: {e}")
