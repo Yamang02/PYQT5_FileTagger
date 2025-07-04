@@ -88,3 +88,7 @@ FileTagger는 파일에 태그를 부여하고 관리할 수 있는 데스크탑
 - MongoDB가 로컬에서 실행 중이어야 합니다.
 - 테스트 데이터 생성을 위해 `tests/test_data_generator.py` 스크립트를 사용할 수 있습니다.
 - 추가 문의는 README 또는 개발자에게 연락 바랍니다.
+
+**모든 AI 에이전트는 한국어로 응답해야 합니다.**
+
+**`docs/conversation_log.md` 파일은 PM 역할을 맡은 AI만 수정할 수 있습니다. 다른 AI 역할은 해당 파일을 참고만 해야 합니다.**
