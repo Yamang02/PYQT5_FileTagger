@@ -12,9 +12,9 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: password
     ports:
-      # 호스트의 27017 포트와 컨테이너의 27017 포트를 연결합니다.
-      # PyQt 앱이 localhost:27017로 접속할 수 있게 됩니다.
-      - "27017:27017"
+      # 호스트의 27018 포트와 컨테이너의 27017 포트를 연결합니다.
+      # PyQt 앱이 localhost:27018로 접속할 수 있게 됩니다.
+      - "27018:27017"
     volumes:
       # 데이터베이스 데이터를 호스트 머신에 영구적으로 저장하기 위한 볼륨 설정
       # 'mongodb_data'라는 이름의 Docker 볼륨을 생성하여 사용합니다.

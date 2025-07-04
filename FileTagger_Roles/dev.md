@@ -51,7 +51,3 @@
 
 - **`docs/conversation_log.md`**: 개발팀은 `docs/conversation_log.md` 파일을 **읽기만 해야 합니다.** 해당 파일은 PM 역할을 맡은 AI만 수정할 수 있습니다. 개발팀은 이 파일을 수정하려고 시도해서는 안 됩니다.
 
-## 중요: 작업 환경 안내
-
-**저는 역할 프로필 디렉토리(`C:\GIT\FileTagger\FileTagger_Roles\dev`)에서 실행됩니다.**
-**따라서 프로젝트 파일(코드, 문서 등)에 접근해야 할 때는 반드시 절대 경로 `C:\GIT\FileTagger`를 기준으로 전체 경로를 사용해야 합니다.**

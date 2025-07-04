@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QScrollArea,
     QCompleter,
+    QListWidget,
+    QMessageBox,
 )
 from PyQt5.QtCore import pyqtSignal, Qt, QStringListModel
 from PyQt5.QtGui import QFont
@@ -89,10 +91,54 @@ class TagInputWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.tags = []
-        self.completer = None
-        self.setup_ui()
-        self.setup_completer()
+        self.layout = QVBoxLayout(self)
+        self.input = QLineEdit(self)
+        self.input.setPlaceholderText("태그를 입력하고 Enter를 누르세요")
+        self.list_widget = QListWidget(self)
+        self.layout.addWidget(self.input)
+        self.layout.addWidget(self.list_widget)
+        self.setLayout(self.layout)
+        self._tags = []
+
+        self.input.returnPressed.connect(self._on_return_pressed)
+        self.list_widget.itemDoubleClicked.connect(self._on_item_double_clicked)
+
+        # completer 및 모델 초기화
+        self.completer_model = QStringListModel()
+        self.completer = QCompleter(self.completer_model, self)
+        self.completer.setCaseSensitivity(False)
+        self.input.setCompleter(self.completer)
+
+    def _on_return_pressed(self):
+        tag = self.input.text().strip()
+        if not tag:
+            QMessageBox.warning(self, "입력 오류", "빈 태그는 추가할 수 없습니다.")
+            return
+        if tag in self._tags:
+            QMessageBox.warning(self, "중복 태그", "이미 추가된 태그입니다.")
+            return
+        self._tags.append(tag)
+        self.input.clear()
+        self._refresh_list()
+        self.tags_changed.emit(self._tags)
+
+    def _on_item_double_clicked(self, item):
+        tag = item.text()
+        self._tags.remove(tag)
+        self._refresh_list()
+        self.tags_changed.emit(self._tags)
+
+    def _refresh_list(self):
+        self.list_widget.clear()
+        self.list_widget.addItems(self._tags)
+
+    def set_tags(self, tags):
+        self._tags = list(tags)
+        self._refresh_list()
+
+    def set_enabled(self, enabled: bool):
+        self.input.setEnabled(enabled)
+        self.list_widget.setEnabled(enabled)
 
     def setup_ui(self):
         """위젯의 UI를 설정합니다."""
@@ -188,26 +234,21 @@ class TagInputWidget(QWidget):
         """입력 필드에서 새 태그를 추가합니다."""
         tag_text = self.tag_input.text().strip()
         if tag_text:
-            if tag_text not in self.tags:
-                self.add_tag(tag_text)
+            if tag_text not in self._tags:
+                self._tags.append(tag_text)
+                self._refresh_list()
+                self.tags_changed.emit(self._tags)
                 self.tag_input.clear()
             else:
                 # 중복 태그인 경우 입력 필드만 클리어
                 self.tag_input.clear()
 
-    def add_tag(self, tag_text):
-        """새로운 태그를 추가합니다."""
-        if tag_text not in self.tags:
-            self.tags.append(tag_text)
-            self.create_tag_chip(tag_text)
-            self.tags_changed.emit(self.tags.copy())
-
     def remove_tag(self, tag_text):
         """특정 태그를 제거합니다."""
-        if tag_text in self.tags:
-            self.tags.remove(tag_text)
-            self.remove_tag_chip(tag_text)
-            self.tags_changed.emit(self.tags.copy())
+        if tag_text in self._tags:
+            self._tags.remove(tag_text)
+            self._refresh_list()
+            self.tags_changed.emit(self._tags)
 
     def create_tag_chip(self, tag_text):
         """태그 칩을 생성하고 UI에 추가합니다."""
@@ -225,55 +266,24 @@ class TagInputWidget(QWidget):
                 widget.deleteLater()
                 break
 
-    def set_tags(self, tags):
-        """태그 목록을 설정합니다."""
-        # 기존 태그 칩들 제거
-        self.clear_tags()
-
-        # 새 태그들 추가
-        self.tags = tags.copy()
-        for tag in self.tags:
-            self.create_tag_chip(tag)
-
-        self.tags_changed.emit(self.tags.copy())
-
-    def clear_tags(self):
-        """모든 태그를 제거합니다."""
-        # 기존 태그 칩들 제거
-        for i in range(self.chip_layout.count() - 1, -1, -1):  # 뒤에서부터 제거
-            widget = self.chip_layout.itemAt(i).widget()
-            if isinstance(widget, TagChip):
-                widget.deleteLater()
-
-        self.tags.clear()
-
     def get_tags(self):
         """현재 태그 목록을 반환합니다."""
-        return self.tags.copy()
+        return self._tags.copy()
 
     def get_tag_input_field(self):
         """태그 입력 필드를 반환합니다 (자동 완성 기능을 위해)."""
         return self.tag_input
 
-    def update_completer_model(self, all_tags):
-        """자동 완성 모델을 업데이트합니다."""
-        if self.completer:
-            # 현재 입력된 텍스트가 있으면 임시로 저장
-            current_text = self.tag_input.text()
-            cursor_position = self.tag_input.cursorPosition()
-
-            # 모델 업데이트
-            model = QStringListModel(all_tags)
-            self.completer.setModel(model)
-
-            # 현재 입력 텍스트와 커서 위치 복원
-            self.tag_input.setText(current_text)
-            self.tag_input.setCursorPosition(cursor_position)
+    def update_completer_model(self, tags):
+        if hasattr(self, 'completer') and self.completer:
+            self.completer_model.setStringList(tags)
 
     def on_completer_activated(self, text):
         """자동 완성에서 태그가 선택되었을 때 호출됩니다."""
-        if text and text not in self.tags:
-            self.add_tag(text)
+        if text and text not in self._tags:
+            self._tags.append(text)
+            self._refresh_list()
+            self.tags_changed.emit(self._tags)
             self.tag_input.clear()
 
     def get_completer(self):
@@ -289,17 +299,11 @@ class TagInputWidget(QWidget):
             # 2글자 미만이면 팝업 숨기기
             self.completer.popup().hide()
 
-    def set_enabled(self, enabled):
-        """위젯의 활성화/비활성화 상태를 설정합니다."""
-        self.setEnabled(enabled)
-
-        if not enabled:
-            # 비활성화 시 입력 필드 클리어
-            self.tag_input.clear()
-            # 자동 완성 팝업 숨기기
-            if self.completer:
-                self.completer.popup().hide()
-
     def is_enabled(self):
         """위젯의 활성화 상태를 반환합니다."""
         return self.isEnabled()
+
+    def clear_tags(self):
+        self._tags = []
+        self._refresh_list()
+        self.tags_changed.emit([])

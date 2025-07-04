@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import (
     QAction,
     QFileDialog,
     QHeaderView,
+    QWidget,
+    QVBoxLayout,
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import QDir, QTimer
@@ -30,6 +32,10 @@ class MainWindow(QMainWindow, form_class):
 
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("FileTagger")
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
+        self.layout = QVBoxLayout(self.central_widget)
 
         self.setupUi(self)
 

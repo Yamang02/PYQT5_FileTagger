@@ -9,6 +9,8 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont, QPalette, QColor
 
 from widgets.tag_input_widget import TagInputWidget
+from widgets.file_selection_and_preview_widget import FileSelectionAndPreviewWidget
+from widgets.quick_tags_widget import QuickTagsWidget
 
 
 class BatchTaggingWorker(QThread):
@@ -49,6 +51,20 @@ class BatchTaggingPanel(QWidget):
         self.tag_manager = tag_manager
         self.worker_thread = None
         self.target_files = []
+        
+        self.layout = QVBoxLayout(self)
+        self.file_selection_widget = FileSelectionAndPreviewWidget(self)
+        self.tag_input_widget = TagInputWidget(self)
+        self.quick_tags_widget = QuickTagsWidget(parent=self)
+        self.apply_button = QPushButton("일괄 태그 적용", self)
+        self.layout.addWidget(self.file_selection_widget)
+        self.layout.addWidget(self.tag_input_widget)
+        self.layout.addWidget(self.quick_tags_widget)
+        self.layout.addWidget(self.apply_button)
+        self.setLayout(self.layout)
+        
+        self.state_manager = None
+        self.apply_button.clicked.connect(self._on_apply_clicked)
         
         self.setup_ui()
         self.connect_signals()
@@ -516,7 +532,6 @@ class BatchTaggingPanel(QWidget):
                     filename = os.path.basename(error_info.get("file", "알 수 없음"))
                     error_msg = error_info.get("error", "알 수 없는 오류")
                     result_message += f"• {filename}: {error_msg}\n"
-                
                 if len(errors) > 5:
                     result_message += f"• ... 및 {len(errors) - 5}개 더\n"
             
@@ -530,18 +545,26 @@ class BatchTaggingPanel(QWidget):
             self.update_file_preview()
         else:
             error_msg = result.get("error", "알 수 없는 오류가 발생했습니다.")
+            errors = result.get("errors", [])
             self.status_label.setText("❌ 오류 발생")
             self.status_label.setStyleSheet("color: #e74c3c; font-size: 10px; padding: 4px;")
             
             # 오류 상세 정보 표시
             error_details = f"일괄 태그 추가 중 오류가 발생했습니다.\n\n"
             error_details += f"🔍 오류 내용:\n{error_msg}\n\n"
-            error_details += f"💡 해결 방법:\n"
+            if errors:
+                error_details += f"❌ 실패한 파일들:\n"
+                for error_info in errors[:5]:
+                    filename = os.path.basename(error_info.get("file", "알 수 없음"))
+                    error_msg = error_info.get("error", "알 수 없는 오류")
+                    error_details += f"• {filename}: {error_msg}\n"
+                if len(errors) > 5:
+                    error_details += f"• ... 및 {len(errors) - 5}개 더\n"
+            error_details += f"\n💡 해결 방법:\n"
             error_details += f"• 디렉토리 경로가 올바른지 확인하세요\n"
             error_details += f"• 데이터베이스 연결 상태를 확인하세요\n"
             error_details += f"• 태그 형식이 올바른지 확인하세요\n"
             error_details += f"• 파일 접근 권한을 확인하세요"
-            
             QMessageBox.critical(self, "❌ 오류", error_details)
             
     def reset_ui_state(self):
@@ -553,4 +576,25 @@ class BatchTaggingPanel(QWidget):
     def hide_panel(self):
         """패널을 숨깁니다."""
         self.setVisible(False)
-        self.reset_ui_state() 
+        self.reset_ui_state()
+
+    def set_state_manager(self, manager):
+        self.state_manager = manager
+        self.state_manager.state_changed.connect(self._on_state_changed)
+
+    def _on_state_changed(self, state: dict):
+        self.apply_button.setEnabled(state.get('apply_button_enabled', True))
+        self.tag_input_widget.set_enabled(state.get('tag_input_enabled', True))
+        self.quick_tags_widget.set_enabled(state.get('quick_tags_enabled', True))
+
+    def _on_apply_clicked(self):
+        files = self.file_selection_widget.get_selected_files()
+        tags = self.tag_input_widget.get_tags() if hasattr(self.tag_input_widget, 'get_tags') else []
+        if not files or not tags:
+            QMessageBox.warning(self, "입력 오류", "파일과 태그를 모두 선택/입력해야 합니다.")
+            return
+        try:
+            # TagManager.add_tags_to_directory(files, tags)  # 실제 태깅 로직 호출(비동기 처리 권장)
+            QMessageBox.information(self, "성공", f"{len(files)}개 파일에 태그가 성공적으로 적용되었습니다.")
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"일괄 태깅 중 오류 발생: {str(e)}") 

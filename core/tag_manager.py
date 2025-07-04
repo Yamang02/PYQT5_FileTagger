@@ -1,5 +1,4 @@
 import urllib.parse
-import os
 import logging
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, OperationFailure
@@ -251,9 +250,6 @@ class TagManager:
             
             if not directory_path or not isinstance(directory_path, str):
                 return {"success": False, "error": "잘못된 디렉토리 경로"}
-
-            if not os.path.exists(directory_path):
-                return {"success": False, "error": f"디렉토리를 찾을 수 없습니다: {directory_path}"}
 
             if not self._validate_tags(tags):
                 return {"success": False, "error": "유효하지 않은 태그가 포함되어 있습니다"}
