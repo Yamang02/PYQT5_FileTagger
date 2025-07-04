@@ -258,8 +258,7 @@ class TagManager:
             if not self._validate_tags(tags):
                 return {"success": False, "error": "유효하지 않은 태그가 포함되어 있습니다"}
 
-            import os
-            from pathlib import Path
+            
 
             target_files = []
             error_files = []

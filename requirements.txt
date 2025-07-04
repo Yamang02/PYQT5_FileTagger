@@ -9,4 +9,11 @@ pathlib2>=2.3.0
 # pytest>=6.0.0
 ruff
 mypy
-pre-commit 
+pre-commit
+
+# --- 테스트 프레임워크 및 도구 ---
+pytest         # 테스트 실행 프레임워크
+pytest-qt      # PyQt 애플리케이션 테스트 지원
+
+pytest-timeout # 테스트 시간 초과 방지
+pytest-mock    # Mocking 라이브러리 
