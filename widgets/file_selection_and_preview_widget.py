@@ -1,12 +1,7 @@
-from PyQt5.QtWidgets import (
-    QWidget, QHBoxLayout, QTableView, 
-    QMessageBox, QHeaderView, QVBoxLayout, QLabel
-)
-from PyQt5.QtCore import (
-    pyqtSignal, QModelIndex, QTimer, QDir, QAbstractTableModel, 
-    Qt, QVariant
-)
+from PyQt5.QtWidgets import QWidget, QTableView, QMessageBox, QHeaderView, QLabel
+from PyQt5.QtCore import (pyqtSignal, QModelIndex, QTimer, QDir, QAbstractTableModel, Qt, QVariant)
 from PyQt5.QtGui import QFont
+from PyQt5 import uic
 import os
 
 
@@ -117,43 +112,11 @@ class FileSelectionAndPreviewWidget(QWidget):
 
     def setup_ui(self):
         """UI 구성 요소 설정"""
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(8, 8, 8, 8)
-        main_layout.setSpacing(8)
+        uic.loadUi('ui/file_selection_and_preview_widget.ui', self)
         
-        # 제목
-        title_label = QLabel("📋 파일 목록 및 미리보기")
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
-        title_label.setStyleSheet("color: #34495e; padding: 4px;")
-        
-        # 파일 테이블 뷰
-        self.table_view = QTableView()
-        self.table_view.setAlternatingRowColors(True)
-        self.table_view.setSelectionBehavior(QTableView.SelectRows)
-        self.table_view.setSelectionMode(QTableView.SingleSelection)
-        self.table_view.setStyleSheet("""
-            QTableView {
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                background-color: white;
-                gridline-color: #ecf0f1;
-                alternate-background-color: #f8f9fa;
-            }
-            QHeaderView::section {
-                background-color: #34495e;
-                color: white;
-                padding: 6px;
-                border: none;
-                font-weight: bold;
-            }
-            QTableView::item:selected {
-                background-color: #3498db;
-                color: white;
-            }
-        """)
-        
-        main_layout.addWidget(title_label)
-        main_layout.addWidget(self.table_view)
+        # .ui 파일에서 로드된 위젯 참조
+        self.table_view = self.findChild(QTableView, 'table_view')
+        self.title_label = self.findChild(QLabel, 'title_label')
 
     def setup_models(self):
         """모델 설정"""

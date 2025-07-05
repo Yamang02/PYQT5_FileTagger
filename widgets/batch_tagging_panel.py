@@ -1,11 +1,7 @@
 import os
-from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-    QPushButton, QProgressBar, QGroupBox, QFileDialog, QMessageBox,
-    QFrame
-)
+from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox, QProgressBar, QPushButton, QLineEdit, QLabel
 from PyQt5.QtCore import QThread, pyqtSignal, QTimer
-from PyQt5.QtGui import QFont
+from PyQt5 import uic
 
 
 class BatchTaggingWorker(QThread):

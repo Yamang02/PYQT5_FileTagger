@@ -1,15 +1,6 @@
-from PyQt5.QtWidgets import (
-    QWidget,
-    QHBoxLayout,
-    QPushButton,
-    QVBoxLayout,
-    QLabel,
-    QScrollArea,
-    QFrame,
-    QMessageBox,
-)
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QMessageBox
 from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtGui import QFont
+from PyQt5 import uic
 
 
 class QuickTagsWidget(QWidget):
@@ -23,12 +14,12 @@ class QuickTagsWidget(QWidget):
 
     def __init__(self, quick_tags=None, parent=None):
         super().__init__(parent)
-        self.layout = QHBoxLayout()
+        uic.loadUi('ui/quick_tags_widget.ui', self)
+        self.layout = self.findChild(QHBoxLayout, 'horizontalLayout') # .ui 파일에서 로드된 레이아웃 참조
         self._quick_tags = quick_tags or ["중요", "검토", "완료", "보류"]
         self._selected_tags = []
         self._buttons = {}
         self.is_enabled = True  # 위젯 활성화 상태 추적
-        self.setLayout(self.layout)
         self._init_buttons()
 
     def set_quick_tags(self, tags):

@@ -4,8 +4,8 @@
  <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
-    <x>0</x>
-    <y>0</y>
+    <x>100</x>
+    <y>100</y>
     <width>1200</width>
     <height>800</height>
    </rect>
@@ -16,12 +16,16 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <!-- 메인 레이아웃을 관리하는 Splitter -->
      <widget class="QSplitter" name="splitter_main">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <!-- 왼쪽 패널: 디렉토리 트리 -->
+      <property name="sizes">
+       <array>
+        <int>200</int>
+        <int>600</int>
+       </array>
+      </property>
       <widget class="QTreeView" name="treeView_dirs">
        <property name="maximumSize">
         <size>
@@ -30,14 +34,17 @@
         </size>
        </property>
       </widget>
-      <!-- 중앙/오른쪽 패널을 관리하는 두 번째 Splitter -->
       <widget class="QSplitter" name="splitter_content">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <!-- 중앙 패널: 파일 목록 -->
+       <property name="sizes">
+        <array>
+         <int>400</int>
+         <int>200</int>
+        </array>
+       </property>
        <widget class="QTableView" name="tableView_files"/>
-       <!-- 오른쪽 패���: 태그 편집 및 정보 -->
        <widget class="QWidget" name="widget_details" native="true">
         <property name="maximumSize">
          <size>
@@ -47,65 +54,34 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
-          <widget class="QLabel" name="label_file_info">
-           <property name="text">
-            <string>File Information</string>
+          <widget class="QTabWidget" name="tabWidget_tagging">
+           <property name="currentIndex">
+            <number>0</number>
            </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-             <weight>75</weight>
-             <bold>true</bold>
-            </font>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <!-- 선택된 파일의 상세 정보 표시 -->
-          <widget class="QTextBrowser" name="textBrowser_file_details">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>100</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_edit_tags">
-           <property name="text">
-            <string>Edit Tags</string>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-             <weight>75</weight>
-             <bold>true</bold>
-            </font>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <!-- 태그 입력을 위한 LineEdit -->
-          <widget class="QLineEdit" name="lineEdit_tags">
-           <property name="placeholderText">
-            <string>Enter tags, separated by commas</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <!-- 태그 저장을 위한 버튼 -->
-          <widget class="QPushButton" name="btn_save_tags">
-           <property name="text">
-            <string>Save Tags</string>
-           </property>
+           <widget class="QWidget" name="tab_individual_tagging">
+            <attribute name="title">
+             <string>개별 태깅</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_individual_tagging">
+             <item>
+              <widget class="UnifiedTaggingPanel" name="unifiedTaggingPanel_individual" native="true"/>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QWidget" name="tab_batch_tagging">
+            <attribute name="title">
+             <string>일괄 태깅</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_batch_tagging">
+             <item>
+              <widget class="UnifiedTaggingPanel" name="unifiedTaggingPanel_batch" native="true"/>
+             </item>
+            </layout>
+           </widget>
           </widget>
          </item>
          <item>
           <widget class="QLabel" name="label_all_tags">
-           <property name="text">
-            <string>All Tags (Filter)</string>
-           </property>
            <property name="font">
             <font>
              <pointsize>12</pointsize>
@@ -113,10 +89,12 @@
              <bold>true</bold>
             </font>
            </property>
+           <property name="text">
+            <string>All Tags (Filter)</string>
+           </property>
           </widget>
          </item>
          <item>
-          <!-- 전체 태그 목록을 보여주고 필터로 사용 -->
           <widget class="QListWidget" name="listWidget_all_tags"/>
          </item>
          <item>
@@ -144,7 +122,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1200</width>
+     <width>1317</width>
      <height>21</height>
     </rect>
    </property>
@@ -162,6 +140,14 @@
    </attribute>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>UnifiedTaggingPanel</class>
+   <extends>QWidget</extends>
+   <header>widgets.unified_tagging_panel</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

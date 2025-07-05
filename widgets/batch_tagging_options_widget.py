@@ -1,10 +1,8 @@
 import os
-from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-    QPushButton, QCheckBox, QComboBox, QGroupBox
-)
+from PyQt5.QtWidgets import QWidget, QCheckBox, QComboBox, QLineEdit
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
+from PyQt5 import uic
 
 
 class BatchTaggingOptionsWidget(QWidget):
@@ -18,86 +16,23 @@ class BatchTaggingOptionsWidget(QWidget):
         self.state_manager = state_manager
         self.setup_ui()
         self.connect_signals()
-        self.apply_styles()
+        # self.apply_styles() # 스타일은 .ui 파일에 포함하거나 별도 CSS 파일로 관리
 
     def setup_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
-
-        options_group = QGroupBox("⚙️ 일괄 태깅 옵션")
-        options_layout = QVBoxLayout()
-
-        # 재귀 옵션
-        self.recursive_checkbox = QCheckBox("하위 디렉토리 포함")
-        options_layout.addWidget(self.recursive_checkbox)
-
-        # 파일 확장자 필터
-        ext_layout = QHBoxLayout()
-        ext_layout.addWidget(QLabel("확장자:"))
-        self.ext_combo = QComboBox()
-        self.ext_combo.addItems(["모든 파일", "이미지 파일", "문서 파일", "사용자 정의"])
-        self.custom_ext_edit = QLineEdit()
-        self.custom_ext_edit.setPlaceholderText(".jpg,.png,.pdf")
+        uic.loadUi('ui/batch_tagging_options_widget.ui', self)
+        
+        # .ui 파일에서 로드된 위젯 참조
+        self.recursive_checkbox = self.findChild(QCheckBox, 'recursive_checkbox')
+        self.ext_combo = self.findChild(QComboBox, 'ext_combo')
+        self.custom_ext_edit = self.findChild(QLineEdit, 'custom_ext_edit')
+        
+        # 초기 상태 설정
         self.custom_ext_edit.setVisible(False)
-        self.custom_ext_edit.setMaximumWidth(150)
-
-        ext_layout.addWidget(self.ext_combo)
-        ext_layout.addWidget(self.custom_ext_edit)
-        ext_layout.addStretch()
-        options_layout.addLayout(ext_layout)
-
-        options_group.setLayout(options_layout)
-        layout.addWidget(options_group)
-        layout.addStretch()
 
     def apply_styles(self):
-        self.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #bdc3c7;
-                border-radius: 6px;
-                margin-top: 8px;
-                padding-top: 8px;
-                background-color: #fafafa;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 8px 0 8px;
-                color: #2c3e50;
-                background-color: #fafafa;
-            }
-            QCheckBox {
-                spacing: 8px;
-                font-size: 11px;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-            }
-            QComboBox {
-                padding: 4px;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                background-color: white;
-            }
-            QComboBox::drop-down {
-                border: none;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 5px solid #7f8c8d;
-            }
-            QLineEdit {
-                padding: 4px;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                background-color: white;
-            }
-        """)
+        # 이 메서드는 이제 사용되지 않거나, .ui 파일의 스타일을 보완하는 용도로만 사용됩니다.
+        # 현재는 .ui 파일에 스타일이 정의되어 있으므로 비워둡니다.
+        pass
 
     def connect_signals(self):
         self.recursive_checkbox.stateChanged.connect(self._on_options_changed)

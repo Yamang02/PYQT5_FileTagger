@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         
         self.setWindowTitle("FileTagger")
-        self.setGeometry(100, 100, 1200, 800) # 기본 윈도우 크기 설정
+        
 
         # 핵심 컴포넌트 초기화
         self.tag_manager = TagManager()

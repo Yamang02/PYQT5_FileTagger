@@ -32,6 +32,7 @@
   - 작성하는 코드에 대해 Google style docstring을 포함한 적절한 주석을 작성합니다.
   - `docs/developer_guide/dev_notes.md`에 기술적 논의, 디버깅 과정, 실험 결과 등을 자유롭게 기록합니다.
   - 기획 변경 시 관련 문서(`tagging_feature_spec.md` 등) 업데이트에 협력합니다.
+  - `docs/developer_guide/ui_widgets_signals_reference.md`: UI, 위젯, 시그널 관련 코드 변경 시 이 문서를 반드시 업데이트합니다.
 
 ## 작업 워크플로우 (Workflow)
 

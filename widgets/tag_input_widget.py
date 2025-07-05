@@ -1,18 +1,7 @@
-from PyQt5.QtWidgets import (
-    QWidget,
-    QHBoxLayout,
-    QLineEdit,
-    QLabel,
-    QPushButton,
-    QFrame,
-    QVBoxLayout,
-    QScrollArea,
-    QCompleter,
-    QListWidget,
-    QMessageBox,
-)
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QPushButton, QFrame, QVBoxLayout, QScrollArea, QCompleter, QListWidget, QMessageBox
 from PyQt5.QtCore import pyqtSignal, Qt, QStringListModel
 from PyQt5.QtGui import QFont
+from PyQt5 import uic
 
 
 class TagChip(QFrame):
@@ -28,38 +17,10 @@ class TagChip(QFrame):
 
     def setup_ui(self):
         """태그 칩의 UI를 설정합니다."""
-        # 레이아웃 설정
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 4, 8, 4)
-        layout.setSpacing(4)
-
-        # 태그 텍스트 라벨
-        self.tag_label = QLabel(self.tag_text)
-        self.tag_label.setFont(QFont("Arial", 9))
-
-        # 삭제 버튼
-        self.delete_button = QPushButton("×")
-        self.delete_button.setFixedSize(16, 16)
-        self.delete_button.setFont(QFont("Arial", 10, QFont.Bold))
-        self.delete_button.setStyleSheet("""
-            QPushButton {
-                background-color: #ff6b6b;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #ff5252;
-            }
-            QPushButton:pressed {
-                background-color: #d32f2f;
-            }
-        """)
-
-        # 위젯들을 레이아웃에 추가
-        layout.addWidget(self.tag_label)
-        layout.addWidget(self.delete_button)
+        uic.loadUi('ui/tag_chip.ui', self)
+        self.tag_label = self.findChild(QLabel, 'tag_label')
+        self.delete_button = self.findChild(QPushButton, 'delete_button')
+        self.tag_label.setText(self.tag_text)
 
         # 프레임 스타일 설정
         self.setFrameStyle(QFrame.NoFrame)
@@ -91,26 +52,24 @@ class TagInputWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.layout = QVBoxLayout(self)
-        self.input = QLineEdit(self)
-        self.input.setPlaceholderText("태그를 입력하고 Enter를 누르세요")
-        self.list_widget = QListWidget(self)
-        self.layout.addWidget(self.input)
-        self.layout.addWidget(self.list_widget)
-        self.setLayout(self.layout)
+        uic.loadUi('ui/tag_input_widget.ui', self)
+        
+        # .ui 파일에서 로드된 위젯 참조
+        self.scroll_area = self.findChild(QScrollArea, 'scroll_area')
+        self.chip_container = self.findChild(QWidget, 'chip_container')
+        self.chip_layout = self.findChild(QHBoxLayout, 'chip_layout')
+        self.tag_input = self.findChild(QLineEdit, 'tag_input')
+        
         self._tags = []
 
-        self.input.returnPressed.connect(self._on_return_pressed)
-        self.list_widget.itemDoubleClicked.connect(self._on_item_double_clicked)
+        self.tag_input.returnPressed.connect(self.add_tag_from_input)
 
         # completer 및 모델 초기화
         self.completer_model = QStringListModel()
-        self.completer = QCompleter(self.completer_model, self)
-        self.completer.setCaseSensitivity(False)
-        self.input.setCompleter(self.completer)
+        self.setup_completer() # setup_completer 호출
 
     def _on_return_pressed(self):
-        tag = self.input.text().strip()
+        tag = self.tag_input.text().strip()
         if not tag:
             QMessageBox.warning(self, "입력 오류", "빈 태그는 추가할 수 없습니다.")
             return
@@ -118,192 +77,38 @@ class TagInputWidget(QWidget):
             QMessageBox.warning(self, "중복 태그", "이미 추가된 태그입니다.")
             return
         self._tags.append(tag)
-        self.input.clear()
+        self.tag_input.clear()
         self._refresh_list()
         self.tags_changed.emit(self._tags)
 
     def _on_item_double_clicked(self, item):
-        tag = item.text()
-        self._tags.remove(tag)
-        self._refresh_list()
-        self.tags_changed.emit(self._tags)
+        # 이 메서드는 더 이상 사용되지 않습니다. 태그 칩의 삭제 버튼을 사용합니다.
+        pass
 
     def _refresh_list(self):
-        self.list_widget.clear()
-        self.list_widget.addItems(self._tags)
+        # 기존 칩 제거
+        for i in reversed(range(self.chip_layout.count() - 1)): # 마지막 위젯(tag_input) 제외
+            widget = self.chip_layout.itemAt(i).widget()
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
+
+        # 새 칩 추가
+        for tag in self._tags:
+            self.create_tag_chip(tag)
 
     def set_tags(self, tags):
         self._tags = list(tags)
         self._refresh_list()
 
     def set_enabled(self, enabled: bool):
-        self.input.setEnabled(enabled)
-        self.list_widget.setEnabled(enabled)
-
-    def setup_ui(self):
-        """위젯의 UI를 설정합니다."""
-        # 메인 레이아웃
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(4)
-
-        # 태그 칩들을 담을 스크롤 영역
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.scroll_area.setMaximumHeight(80)
-
-        # 태그 칩 컨테이너 위젯
-        self.chip_container = QWidget()
-        self.chip_layout = QHBoxLayout(self.chip_container)
-        self.chip_layout.setContentsMargins(4, 4, 4, 4)
-        self.chip_layout.setSpacing(4)
-        self.chip_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        self.chip_layout.setSizeConstraint(QHBoxLayout.SetMinAndMaxSize)
-
-        # 새 태그 입력 필드
-        self.tag_input = QLineEdit()
-        self.tag_input.setPlaceholderText("새 태그 입력...")
-        self.tag_input.setMaximumWidth(150)
-        self.tag_input.setStyleSheet("""
-            QLineEdit {
-                border: 1px solid #ccc;
-                border-radius: 12px;
-                padding: 4px 8px;
-                background-color: white;
-            }
-            QLineEdit:focus {
-                border: 1px solid #2196f3;
-            }
-        """)
-
-        # 입력 필드를 레이아웃에 추가
-        self.chip_layout.addWidget(self.tag_input)
-        self.chip_layout.addStretch()  # 오른쪽 공간 채우기
-
-        # 스크롤 영역에 컨테이너 설정
-        self.scroll_area.setWidget(self.chip_container)
-
-        # 메인 레이아웃에 스크롤 영역 추가
-        main_layout.addWidget(self.scroll_area)
-
-        # 시그널 연결
-        self.tag_input.returnPressed.connect(self.add_tag_from_input)
-
-    def setup_completer(self):
-        """자동 완성 기능을 설정합니다."""
-        self.completer = QCompleter()
-        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
-        self.completer.setCompletionMode(QCompleter.PopupCompletion)
-        self.completer.setWrapAround(False)
-
-        # 자동 완성 팝업 크기 설정
-        self.completer.popup().setMaximumHeight(150)
-        self.completer.popup().setMaximumWidth(300)
-
-        # 자동 완성 팝업 스타일 설정
-        self.completer.popup().setStyleSheet("""
-            QListView {
-                background-color: white;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                padding: 2px;
-                selection-background-color: #2196f3;
-                selection-color: white;
-            }
-            QListView::item {
-                padding: 4px 8px;
-                border-radius: 2px;
-            }
-            QListView::item:hover {
-                background-color: #e3f2fd;
-            }
-        """)
-
-        # 입력 필드에 자동 완성 연결
-        self.tag_input.setCompleter(self.completer)
-
-        # 자동 완성 선택 시그널 연결
-        self.completer.activated.connect(self.on_completer_activated)
-
-        # 텍스트 변경 시 자동 완성 트리거
-        self.tag_input.textChanged.connect(self.on_text_changed)
-
-    def add_tag_from_input(self):
-        """입력 필드에서 새 태그를 추가합니다."""
-        tag_text = self.tag_input.text().strip()
-        if tag_text:
-            if tag_text not in self._tags:
-                self._tags.append(tag_text)
-                self._refresh_list()
-                self.tags_changed.emit(self._tags)
-                self.tag_input.clear()
-            else:
-                # 중복 태그인 경우 입력 필드만 클리어
-                self.tag_input.clear()
-
-    def remove_tag(self, tag_text):
-        """특정 태그를 제거합니다."""
-        if tag_text in self._tags:
-            self._tags.remove(tag_text)
-            self._refresh_list()
-            self.tags_changed.emit(self._tags)
-
-    def create_tag_chip(self, tag_text):
-        """태그 칩을 생성하고 UI에 추가합니다."""
-        chip = TagChip(tag_text)
-        chip.delete_button.clicked.connect(lambda: self.remove_tag(tag_text))
-
-        # 입력 필드 앞에 칩 추가
-        self.chip_layout.insertWidget(self.chip_layout.count() - 1, chip)
-
-    def remove_tag_chip(self, tag_text):
-        """특정 태그 칩을 UI에서 제거합니다."""
+        self.tag_input.setEnabled(enabled)
+        # 태그 칩들도 활성/비활성화
         for i in range(self.chip_layout.count()):
             widget = self.chip_layout.itemAt(i).widget()
-            if isinstance(widget, TagChip) and widget.tag_text == tag_text:
-                widget.deleteLater()
-                break
+            if widget is not None and isinstance(widget, TagChip):
+                widget.setEnabled(enabled)
 
-    def get_tags(self):
-        """현재 태그 목록을 반환합니다."""
-        return self._tags.copy()
-
-    def get_tag_input_field(self):
-        """태그 입력 필드를 반환합니다 (자동 완성 기능을 위해)."""
-        return self.tag_input
-
-    def update_completer_model(self, tags):
-        if hasattr(self, 'completer') and self.completer:
-            self.completer_model.setStringList(tags)
-
-    def on_completer_activated(self, text):
-        """자동 완성에서 태그가 선택되었을 때 호출됩니다."""
-        if text and text not in self._tags:
-            self._tags.append(text)
-            self._refresh_list()
-            self.tags_changed.emit(self._tags)
-            self.tag_input.clear()
-
-    def get_completer(self):
-        """자동 완성 객체를 반환합니다."""
-        return self.completer
-
-    def on_text_changed(self, text):
-        """입력 텍스트가 변경될 때 호출됩니다."""
-        # 2글자 이상 입력되면 자동 완성 팝업 표시
-        if len(text) >= 2:
-            self.completer.complete()
-        else:
-            # 2글자 미만이면 팝업 숨기기
-            self.completer.popup().hide()
-
-    def is_enabled(self):
-        """위젯의 활성화 상태를 반환합니다."""
-        return self.isEnabled()
-
-    def clear_tags(self):
-        self._tags = []
-        self._refresh_list()
-        self.tags_changed.emit([])
+    def setup_ui(self):
+        # 이 메서드는 이제 uic.loadUi로 대체됩니다.
+        pass

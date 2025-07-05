@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>QuickTagsWidget</class>
+ <widget class="QWidget" name="QuickTagsWidget">
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <property name="contentsMargins">
+    <number>0</number>
+   </property>
+   <property name="spacing">
+    <number>6</number>
+   </property>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

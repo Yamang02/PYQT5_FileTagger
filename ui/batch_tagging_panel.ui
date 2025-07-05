@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BatchTaggingPanel</class>
+ <widget class="QWidget" name="BatchTaggingPanel">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="contentsMargins">
+    <number>12</number>
+   </property>
+   <property name="spacing">
+    <number>12</number>
+   </property>
+   <item>
+    <layout class="QHBoxLayout" name="title_layout">
+     <item>
+      <widget class="QLabel" name="title_label">
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string>color: #2c3e50; padding: 4px;</string>
+       </property>
+       <property name="text">
+        <string>📁 일괄 태그 추가</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="status_label">
+       <property name="styleSheet">
+        <string>color: #7f8c8d; font-size: 10px; padding: 4px;</string>
+       </property>
+       <property name="text">
+        <string>대기 중</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="Line" name="separator">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="dir_group">
+     <property name="maximumHeight">
+      <number>90</number>
+     </property>
+     <property name="title">
+      <string>📂 대상 디렉토리</string>
+     </property>
+     <layout class="QHBoxLayout" name="dir_layout">
+      <item>
+       <widget class="QLabel" name="dir_label">
+        <property name="text">
+         <string>경로:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="dir_path_edit">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="placeholderText">
+         <string>디렉토리를 선택하세요</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="browse_button">
+        <property name="maximumWidth">
+         <number>80</number>
+        </property>
+        <property name="text">
+         <string>찾아보기</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="progress_group">
+     <property name="maximumHeight">
+      <number>80</number>
+     </property>
+     <property name="title">
+      <string>📊 진행 상황</string>
+     </property>
+     <layout class="QVBoxLayout" name="progress_layout">
+      <item>
+       <widget class="QProgressBar" name="progress_bar">
+        <property name="value">
+         <number>24</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="button_layout">
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="cancel_button">
+       <property name="text">
+        <string>❌ 취소</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="apply_button">
+       <property name="text">
+        <string>🚀 일괄 태그 적용</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
