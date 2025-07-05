@@ -46,7 +46,7 @@ class TagManager:
             # 사용자 이름과 비밀번호를 URL 인코딩하여 특수문자 문제를 방지합니다.
             username = urllib.parse.quote_plus("root")
             password = urllib.parse.quote_plus("password")
-            uri = f"mongodb://{username}:{password}@{config.MONGO_HOST}:{config.MONGO_PORT}/"
+            uri = f"mongodb://{username}:{password}@{config.MONGO_HOST}:{config.MONGO_PORT}/?authSource=admin"
 
             self.client = MongoClient(uri, serverSelectionTimeoutMS=5000)
             # 서버에 연결을 시도하여 연결 상태를 즉시 확인합니다.
@@ -206,6 +206,24 @@ class TagManager:
             logger.error(f"[TagManager] 고유 태그 조회 중 예상치 못한 오류: {e}")
             raise TagManagerError(f"고유 태그 조회 중 오류: {e}")
 
+    def get_all_tags(self):
+        """
+        get_all_unique_tags의 별칭 메서드 (하위 호환성)
+        """
+        return self.get_all_unique_tags()
+
+    def save_tags(self, file_path, tags):
+        """
+        update_tags의 별칭 메서드 (하위 호환성)
+        """
+        return self.update_tags(file_path, tags)
+
+    def set_tags_for_file(self, file_path, tags):
+        """
+        update_tags의 별칭 메서드 (하위 호환성)
+        """
+        return self.update_tags(file_path, tags)
+
     def get_files_by_tag(self, tag):
         """
         특정 태그를 포함하는 모든 파일의 경로 목록을 검색합니다.
@@ -358,3 +376,11 @@ class TagManager:
                 logger.info("[TagManager] 데이터베이스 연결이 종료되었습니다.")
         except Exception as e:
             logger.error(f"[TagManager] 연결 종료 중 오류: {e}")
+
+    def set_selected_directory(self, directory_path):
+        """
+        디렉토리 선택 메서드 (하위 호환성)
+        현재는 로깅만 수행하고 실제 동작은 없음
+        """
+        logger.info(f"[TagManager] 선택된 디렉토리: {directory_path}")
+        return True

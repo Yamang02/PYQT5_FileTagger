@@ -34,11 +34,18 @@ class QuickTagsWidget(QWidget):
     def set_quick_tags(self, tags):
         self._quick_tags = list(tags)
         # 기존 버튼/레이아웃 제거
-        for btn in self._buttons.values():
-            self.layout.removeWidget(btn)
-            btn.deleteLater()
-        self._buttons.clear()
-        self._init_buttons()
+        try:
+            for btn in self._buttons.values():
+                self.layout.removeWidget(btn)
+                btn.deleteLater()
+            self._buttons.clear()
+            self._init_buttons()
+        except RuntimeError as e:
+            # 위젯이 삭제된 경우 무시
+            if "wrapped C/C++ object" in str(e):
+                return
+            else:
+                raise
 
     def _init_buttons(self):
         for tag in self._quick_tags:

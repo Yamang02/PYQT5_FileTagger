@@ -2,6 +2,89 @@
 
 ## 2025년 7월 5일 토요일
 
+### 10. `main_window.py` 분리 및 동적 UI 생성 전략 강화 (PL 의견)
+- **질문**: 프로젝트 코드가 복잡해져 AI 에이전트가 코드를 제대로 수정하지 못하고 있으니, 제시된 애플리케이션 로딩 순서에 따라 `main_window` 파일을 완전히 분리하여 별도의 파일들로 만드는 것에 대한 의견 요청.
+- **논의 및 결정**:
+  - 사용자님의 제안은 현재 프로젝트가 직면한 복잡성 문제를 해결하고, 장기적인 유지보수성과 확장성을 확보하기 위한 **매우 훌륭하고 시기적절한 결정**이라고 판단. PL로서 강력히 동의하며, 적극적으로 추진해야 할 방향임을 강조.
+  - **현재 문제의 근본 원인 진단 (재확인)**:
+    - **단일 책임 원칙 위반**: `main_window.py`가 UI 설정, 시그널 연결, 데이터 로딩, 상태 관리자 연동, 레거시 코드 처리 등 너무 많은 책임을 지고 있음.
+    - **생명주기 관리의 어려움**: 복잡한 단일 파일 내에서 여러 위젯의 생성, 소멸, 시그널 연결 및 해제를 관리하는 것이 어려워 `wrapped C/C++ object has been deleted` 오류 발생.
+    - **AI 에이전트의 한계**: 과도하게 복잡하고 책임이 뒤섞인 코드에서는 AI 에이전트가 정확한 변경 지점을 파악하고 수정하는 데 어려움을 겪음.
+  - **`main_window.py` 분리 제안에 대한 평가**:
+    - **장점**: 모듈성 및 관심사 분리 강화, 코드 가독성 및 이해도 향상, 유지보수성 및 디버깅 용이성 증대, 테스트 용이성 향상, AI 에이전트의 효율성 증대, 재사용성 증대.
+    - **고려 사항**: 상당한 초기 리팩토링 비용, 각 파일/모듈의 명확한 책임 정의, 철저한 테스트 필수.
+  - **제안하는 `main_window.py` 분리 구조 (예시)**:
+    - `main.py`: 애플리케이션 진입점.
+    - `main_window.py`: `QMainWindow`의 핵심 역할만 담당 (기본 설정, 메뉴바, 최상위 통합 UI 컴포넌트 인스턴스화, 핵심 모델 관리, 종료 작업).
+    - `ui_initializer.py` (또는 `ui_setup.py`): UI 컴포넌트 생성 및 배치 로직 담당.
+    - `signal_connector.py` (또는 `event_handler.py`): 모든 시그널-슬롯 연결 관리.
+    - `data_loader.py` (또는 `app_initializer.py`): 애플리케이션 시작 시 필요한 데이터 로딩 및 초기 상태 설정 담당.
+    - 기존 위젯 파일들 (`unified_tagging_panel.py` 등)은 각자의 역할 유지.
+  - **추진 전략 및 PL의 역할**: DRS 업데이트, 단계별 구현, 철저한 테스트, 코드 리뷰 및 지식 공유 강조.
+- **조치**: 이 논의 내용을 `docs/conversation_log.md`에 기록.
+
+### 9. `QTabWidget` 삭제 오류 (`wrapped C/C++ object of type QTabWidget has been deleted`) 및 파일 디렉토리 표시 문제 해결 요청 (Critical)
+- **질문**: 애플리케이션 실행 시 파일 디렉토리조차 표시되지 않고, 모드 전환 중 `_PyEval_EvalFrameDefault` 오류와 함께 비정상 종료되는 문제 발생.
+- **논의 및 결정**:
+  - 로그 분석 결과, 오류가 모드 전환(`switch_tagging_mode`) 중에 발생하고 있음을 확인.
+  - 이는 `UnifiedTaggingPanel`이 탭을 전환하거나, `TagUIStateManager`가 상태를 업데이트하면서 위젯의 활성화/비활성화 또는 가시성을 변경하는 과정에서 문제가 발생했을 가능성이 높다고 판단.
+  - 특히 `FileSelectionAndPreviewWidget`이 초기화되고 디렉토리를 설정하려는 시도 이후에 바로 오류가 발생하고 있으므로, 통합 패널 내에서 `FileSelectionAndPreviewWidget`이 제대로 초기화되거나 상태가 동기화되지 않는 문제가 있을 수 있음.
+  - **진단 계획**: `widgets/unified_tagging_panel.py`와 `core/tag_ui_state_manager.py` 파일에 추가적인 디버깅 `print` 문을 삽입하여 모드 전환 및 상태 업데이트의 상세 흐름을 추적하도록 요청.
+- **조치**: 개발팀에 `UnifiedTaggingPanel` 및 `TagUIStateManager`의 모드 전환/상태 업데이트 관련 메서드에 디버깅 `print` 문을 추가하고 로그를 공유하도록 지시.
+
+### 8. UI 파일 사용 및 동적 UI 생성 이유 논의
+- **질문**: UI 파일을 별도로 사용하지 않고 동적으로 UI를 생성하는 이유에 대한 질문.
+- **논의 및 결정**:
+  - **동적 UI 생성의 주요 이유**:
+    1.  **프로그래밍 방식의 유연성 및 제어**: 모든 UI 요소를 Python 코드 내에서 직접 생성하고 배치함으로써, UI의 동작과 외관을 세밀하게 제어할 수 있음. 복잡한 로직이나 동적인 변경이 필요한 UI 요소에 유리.
+    2.  **커스텀 위젯과의 통합 용이성**: `TagInputWidget`, `QuickTagsWidget`, `FileSelectionAndPreviewWidget` 등 자체 정의한 커스텀 위젯들을 `.ui` 파일에 포함시키는 것보다 Python 코드 내에서 직접 인스턴스화하고 레이아웃에 추가하는 것이 훨씬 간결함.
+    3.  **버전 관리 및 코드 리뷰의 용이성**: UI가 코드 형태로 존재하므로, Git과 같은 버전 관리 시스템에서 변경 사항을 추적하고 코드 리뷰를 수행하기가 더 용이함.
+    4.  **런타임 시 UI 변경의 용이성**: 애플리케이션의 특정 상태나 사용자 입력에 따라 UI를 동적으로 변경하거나, 새로운 위젯을 추가/제거해야 할 때 코드 내에서 직접 처리하는 것이 더 효율적임.
+    5.  **의존성 및 빌드 프로세스 단순화**: Qt Designer와 같은 외부 도구에 대한 의존성을 줄이고, `.ui` 파일을 Python 코드로 변환하는 빌드 단계를 생략할 수 있음.
+  - **결론**: 동적 UI 생성은 이 프로젝트의 복잡한 UI 로직과 커스텀 위젯의 통합, 그리고 개발팀의 제어 선호도를 고려할 때 더 많은 유연성과 효율성을 제공한다고 판단.
+- **조치**: 이 논의 내용을 `docs/conversation_log.md`에 기록.
+
+### 7. 모드 전환 중 치명적 오류 진단 요청
+- **질문**: 애플리케이션 실행 시 파일 디렉토리조차 표시되지 않고, 모드 전환 중 `_PyEval_EvalFrameDefault` 오류와 함께 비정상 종료되는 문제 발생.
+- **논의 및 결정**:
+  - 로그 분석 결과, 오류가 모드 전환(`switch_tagging_mode`) 중에 발생하고 있음을 확인.
+  - 이는 `UnifiedTaggingPanel`이 탭을 전환하거나, `TagUIStateManager`가 상태를 업데이트하면서 위젯의 활성화/비활성화 또는 가시성을 변경하는 과정에서 문제가 발생했을 가능성이 높다고 판단.
+  - 특히 `FileSelectionAndPreviewWidget`이 초기화되고 디렉토리를 설정하려는 시도 이후에 바로 오류가 발생하고 있으므로, 통합 패널 내에서 `FileSelectionAndPreviewWidget`이 제대로 초기화되거나 상태가 동기화되지 않는 문제가 있을 수 있음.
+  - **진단 계획**: `widgets/unified_tagging_panel.py`와 `core/tag_ui_state_manager.py` 파일에 추가적인 디버깅 `print` 문을 삽입하여 모드 전환 및 상태 업데이트의 상세 흐름을 추적하도록 요청.
+- **조치**: 개발팀에 `UnifiedTaggingPanel` 및 `TagUIStateManager`의 모드 전환/상태 업데이트 관련 메서드에 디버깅 `print` 문을 추가하고 로그를 공유하도록 지시.
+
+### 6. 파일 디렉토리 표시 문제 진단 요청 (재강조)
+- **질문**: 애플리케이션 실행 시 파일 디렉토리조차 표시되지 않아 모든 동작을 확인할 수 없으며, 개발 방향이 이상해지는 것 같다는 사용자님의 우려.
+- **논의 및 결정**:
+  - `main_window.py`, `unified_tagging_panel.py`, `file_selection_and_preview_widget.py`, `tag_ui_state_manager.py` 및 `dev_notes.md`를 재검토한 결과, `FileSelectionAndPreviewWidget`의 초기화 또는 디렉토리 설정 과정에 문제가 있을 가능성이 높다고 판단.
+  - 또한, `BatchTaggingPanel`이 DRS에서 합의된 `FileSelectionAndPreviewWidget`을 사용하지 않고 자체적인 파일 선택 로직을 가지고 있는 **중요한 아키텍처 불일치**도 확인.
+  - **진단 계획**: 개발팀에 `widgets/file_selection_and_preview_widget.py` 및 `widgets/file_table_model.py` 파일에 디버깅 `print` 문을 추가하여 파일 디렉토리 로딩 과정의 흐름을 추적하도록 요청.
+  - **재강조**: 이 로그를 통해 애플리케이션 실행 시 파일 디렉토리 로딩 과정에서 정확히 어느 부분에서 문제가 발생하는지 파악할 수 있으므로, 로그 공유가 필수적임을 강조.
+- **조치**: 개발팀에 `widgets/file_selection_and_preview_widget.py` 및 `widgets/file_table_model.py` 파일에 디버깅 `print` 문을 추가하고 로그를 공유하도록 지시.
+
+### 5. 파일 디렉토리 표시 문제 진단 요청
+- **질문**: 애플리케이션 실행 시 파일 디렉토리조차 표시되지 않아 모든 동작을 확인할 수 없으며, 개발 방향이 이상해지는 것 같다는 사용자님의 우려.
+- **논의 및 결정**:
+  - `main_window.py`, `unified_tagging_panel.py`, `file_selection_and_preview_widget.py`, `tag_ui_state_manager.py` 및 `dev_notes.md`를 재검토한 결과, `FileSelectionAndPreviewWidget`의 초기화 또는 디렉토리 설정 과정에 문제가 있을 가능성이 높다고 판단.
+  - 또한, `BatchTaggingPanel`이 DRS에서 합의된 `FileSelectionAndPreviewWidget`을 사용하지 않고 자체적인 파일 선택 로직을 가지고 있는 **중요한 아키텍처 불일치**도 확인.
+  - **진단 계획**: 개발팀에 `widgets/file_selection_and_preview_widget.py` 및 `widgets/file_table_model.py` 파일에 디버깅 `print` 문을 추가하여 파일 디렉토리 로딩 과정의 흐름을 추적하도록 요청.
+- **조치**: 개발팀에 `widgets/file_selection_and_preview_widget.py` 및 `widgets/file_table_model.py` 파일에 디버깅 `print` 문을 추가하고 로그를 공유하도록 지시.
+
+### 4. 개발팀 1차 개발 결과 평가 (DRS-20250705-002 관련)
+- **질문**: 개발팀이 1차 개발을 완료했으나 요구사항이 제대로 반영되지 않은 것 같다는 사용자님의 우려에 따라, `dev_notes`와 구현 내용을 확인하고 평가 요청.
+- **논의 및 결정**:
+  - `dev_notes.md`를 통해 개발팀의 단계별 진행 상황 및 일부 버그 해결 노력을 확인.
+  - `main_window.py` 및 `widgets/unified_tagging_panel.py`, `widgets/file_selection_and_preview_widget.py` 파일들을 분석하여 실제 구현 상태를 평가.
+  - **평가 결과 요약**:
+    - 개발팀이 구축한 뼈대는 DRS의 방향성을 따르려 했지만, **핵심적인 통합 및 기능 구현이 미흡함.**
+    - **주요 미흡 사항**:
+      1.  **`main_window.py`에 `UnifiedTaggingPanel` 미적용 (치명적)**: `main_window.py`는 여전히 기존 `BatchTaggingPanel`을 직접 사용하고 있으며, DRS에서 명시한 탭 기반 `UnifiedTaggingPanel`을 통합하지 않았음. 이는 통합 UI의 핵심 진입점이 변경되지 않았음을 의미함.
+      2.  **`UnifiedTaggingPanel`의 `BatchTaggingPanel` 통합 누락 (치명적)**: `UnifiedTaggingPanel` 내에서 "일괄 태깅" 탭이 실제 `BatchTaggingPanel`의 로직을 포함하지 않고, 단순히 개별 태깅 UI 요소를 복제하고 있음. `BatchTaggingPanel`의 임포트가 주석 처리된 것이 이를 명확히 보여줌. 이는 일괄 태깅 기능이 통합된 UI 내에서 제대로 동작하지 않음을 의미함.
+      3.  **`FileSelectionAndPreviewWidget`의 태그 표시 기능 누락 (중요)**: DRS에서 명시한 "현재 적용된 태그"를 테이블 뷰에 표시하는 기능이 구현되지 않았음. `QFileSystemModel`의 한계로 인해 `TagManager`와 연동하여 태그 정보를 가져와 표시할 수 있도록 커스텀 모델을 사용하거나 `QFileSystemModel`을 확장해야 함.
+      4.  **`FileSelectionAndPreviewWidget`의 `TagUIStateManager` 완전한 연동 미흡 (중요)**: `set_state_manager` 메서드는 존재하지만, `TODO: 상태 매니저의 state_changed 시그널과 연동하여 UI 업데이트` 주석이 남아있어 `TagUIStateManager`의 상태 변화에 따라 `FileSelectionAndPreviewWidget`의 UI가 동적으로 업데이트되는 로직은 아직 구현되지 않았음.
+  - **결론**: DRS의 주요 목표인 탭 기반 UI의 실제 적용, 일괄 태깅 로직의 통합, 그리고 파일 테이블에 태그 표시 기능은 아직 미완성이므로, 이 부분들에 대한 추가 개발이 시급함.
+- **조치**: 이 평가 내용을 `docs/conversation_log.md`에 기록.
+
 ### 3. 개발팀 구축 구조 평가 (DRS-20250705-002 관련)
 - **질문**: 개발팀이 DRS를 승인하고 해당 내용을 바탕으로 뼈대를 구축했으니, 세부 구현 전 PL로서 `dev_notes`와 DRS를 확인하고 가려는 구조를 평가해달라는 요청.
 - **논의 및 결정**:
