@@ -9,7 +9,7 @@ import traceback
 from widgets.tag_input_widget import TagInputWidget
 from widgets.quick_tags_widget import QuickTagsWidget
 from widgets.batch_tagging_panel import BatchTaggingPanel
-from widgets.file_selection_and_preview_widget import FileSelectionAndPreviewWidget
+
 
 
 class UnifiedTaggingPanel(QWidget):
@@ -106,33 +106,25 @@ class UnifiedTaggingPanel(QWidget):
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(12)
         
-        # 스플리터로 파일 선택과 태그 입력 영역을 분할
-        splitter = QSplitter(Qt.Horizontal)
-        
-        # 파일 선택 및 미리보기 위젯
-        self.file_selection_widget = FileSelectionAndPreviewWidget(self.state_manager, self.tag_manager, self)
-        self.file_selection_widget.file_selected.connect(self.on_file_selected)
-        splitter.addWidget(self.file_selection_widget)
-        
         # 태그 입력 영역
         tag_panel = QWidget()
         tag_layout = QVBoxLayout(tag_panel)
-        tag_layout.setContentsMargins(8, 8, 8, 8)
-        tag_layout.setSpacing(8)
-        
+        tag_layout.setContentsMargins(12, 12, 12, 12) # 전체 탭의 여백과 동일하게 설정
+        tag_layout.setSpacing(12)
+
         # 태그 입력 제목
         tag_title = QLabel("🏷️ 태그 관리")
         tag_title.setFont(QFont("Arial", 12, QFont.Bold))
         tag_title.setStyleSheet("color: #34495e; padding: 4px;")
-        
+
         # 태그 입력 위젯
         self.individual_tag_input = TagInputWidget(self)
         self.individual_tag_input.tags_changed.connect(self.on_individual_tags_changed)
-        
+
         # 빠른 태그 위젯
         self.individual_quick_tags = QuickTagsWidget(parent=self)
         self.individual_quick_tags.tags_changed.connect(self.on_individual_quick_tags_changed)
-        
+
         # 태그 저장 버튼
         self.save_tags_button = QPushButton("💾 태그 저장")
         self.save_tags_button.setEnabled(False)
@@ -158,18 +150,15 @@ class UnifiedTaggingPanel(QWidget):
             }
         """)
         self.save_tags_button.clicked.connect(self.save_individual_tags)
-        
+
         # 태그 패널 레이아웃 구성
         tag_layout.addWidget(tag_title)
         tag_layout.addWidget(self.individual_tag_input)
         tag_layout.addWidget(self.individual_quick_tags)
         tag_layout.addWidget(self.save_tags_button)
         tag_layout.addStretch()
-        
-        splitter.addWidget(tag_panel)
-        splitter.setSizes([2, 1])  # 파일 선택:태그 입력 = 2:1 비율
-        
-        layout.addWidget(splitter)
+
+        layout.addWidget(tag_panel)
         
         return tab_widget
         
@@ -217,37 +206,7 @@ class UnifiedTaggingPanel(QWidget):
             self.state_manager.set_mode('batch')
         self.mode_changed.emit(self.current_mode)
         
-    def on_file_selected(self, file_path, tags):
-        """파일이 선택될 때 호출됩니다."""
-        if self._updating_from_state:
-            return  # 순환 호출 방지
-            
-        self.current_selected_file = file_path
-        
-        if file_path:
-            # 선택된 파일의 기존 태그 로드
-            existing_tags = self.tag_manager.get_tags_for_file(file_path)
-            
-            # 태그 입력 위젯에 기존 태그 설정
-            self.individual_tag_input.set_tags(existing_tags)
-            self.individual_quick_tags.set_selected_tags(existing_tags)
-            
-            # 위젯 활성화
-            self.individual_tag_input.set_enabled(True)
-            self.individual_quick_tags.set_enabled(True)
-            self.save_tags_button.setEnabled(True)
-            
-            # 상태 관리자에 알림
-            self.state_manager.set_selected_files([file_path])
-            
-        else:
-            # 파일 선택 해제 시 위젯 비활성화
-            self.individual_tag_input.set_enabled(False)
-            self.individual_quick_tags.set_enabled(False)
-            self.save_tags_button.setEnabled(False)
-            
-            # 상태 관리자에 알림
-            self.state_manager.set_selected_files([])
+    
         
     def on_individual_tags_changed(self, tags):
         """개별 태깅에서 태그가 변경될 때 호출됩니다."""
@@ -270,8 +229,7 @@ class UnifiedTaggingPanel(QWidget):
             # 태그 저장
             self.tag_manager.set_tags_for_file(self.current_selected_file, tags)
             
-            # 파일 선택 위젯의 태그 표시 업데이트
-            self.file_selection_widget.refresh_file_tags(self.current_selected_file)
+            
             
             # 시그널 발송
             self.tags_applied.emit(self.current_selected_file, tags)
@@ -309,8 +267,7 @@ class UnifiedTaggingPanel(QWidget):
         self.state_manager = state_manager
         
         # 하위 위젯들에도 상태 관리자 설정
-        if hasattr(self.file_selection_widget, 'set_state_manager'):
-            self.file_selection_widget.set_state_manager(state_manager)
+        
             
         if hasattr(self.batch_tagging_panel, 'set_state_manager'):
             self.batch_tagging_panel.set_state_manager(state_manager)

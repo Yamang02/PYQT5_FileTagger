@@ -1,12 +1,11 @@
 import os
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-    QPushButton, QCheckBox, QComboBox, QTableWidget, QTableWidgetItem,
-    QProgressBar, QGroupBox, QFileDialog, QMessageBox, QHeaderView,
-    QFrame, QSpacerItem, QSizePolicy
+    QPushButton, QProgressBar, QGroupBox, QFileDialog, QMessageBox,
+    QFrame
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
-from PyQt5.QtGui import QFont, QPalette, QColor
+from PyQt5.QtCore import QThread, pyqtSignal, QTimer
+from PyQt5.QtGui import QFont
 
 
 class BatchTaggingWorker(QThread):
@@ -52,14 +51,12 @@ class BatchTaggingPanel(QWidget):
         super().__init__(parent)
         self.tag_manager = tag_manager
         self.worker_thread = None
-        self.target_files = []
-        self.current_directory = ""
+        self.current_directory = "" # 현재 디렉토리 경로를 저장 (UI 표시용)
         self.state_manager = None
         
         self.setup_ui()
         self.connect_signals()
         self.apply_styles()
-        self.dir_path_edit.setText("") # 초기화 시 경로 필드를 비움
         
     def setup_ui(self):
         """UI 구성 요소들을 설정합니다."""
@@ -127,101 +124,6 @@ class BatchTaggingPanel(QWidget):
         dir_layout.addWidget(self.dir_path_edit, 1)
         dir_layout.addWidget(self.browse_button)
         dir_group.setLayout(dir_layout)
-        
-        # 파일 미리보기 그룹
-        preview_group = QGroupBox("📋 파일 미리보기")
-        preview_layout = QVBoxLayout()
-        
-        # 파일 수 표시
-        self.file_count_label = QLabel("0개 파일")
-        self.file_count_label.setStyleSheet("color: #7f8c8d; font-size: 11px; padding: 4px;")
-        
-        self.file_table = QTableWidget()
-        self.file_table.setColumnCount(3)
-        self.file_table.setHorizontalHeaderLabels(["파일명", "경로", "현재 태그"])
-        self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.file_table.setMaximumHeight(180)
-        self.file_table.setMinimumHeight(120)
-        self.file_table.setAlternatingRowColors(True)
-        self.file_table.setStyleSheet("""
-            QTableWidget {
-                gridline-color: #ecf0f1;
-                background-color: white;
-                alternate-background-color: #f8f9fa;
-            }
-            QHeaderView::section {
-                background-color: #34495e;
-                color: white;
-                padding: 6px;
-                border: none;
-                font-weight: bold;
-            }
-        """)
-        
-        preview_layout.addWidget(self.file_count_label)
-        preview_layout.addWidget(self.file_table)
-        preview_group.setLayout(preview_layout)
-        
-        # 옵션 그룹
-        options_group = QGroupBox("⚙️ 적용 옵션")
-        options_group.setMaximumHeight(130)
-        options_layout = QVBoxLayout()
-        
-        # 재귀 옵션
-        self.recursive_checkbox = QCheckBox("하위 디렉토리 포함")
-        self.recursive_checkbox.setStyleSheet("""
-            QCheckBox {
-                spacing: 8px;
-                font-size: 11px;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-            }
-        """)
-        
-        # 파일 확장자 필터
-        ext_layout = QHBoxLayout()
-        ext_layout.addWidget(QLabel("확장자:"))
-        self.ext_combo = QComboBox()
-        self.ext_combo.addItems(["모든 파일", "이미지 파일", "문서 파일", "사용자 정의"])
-        self.ext_combo.setStyleSheet("""
-            QComboBox {
-                padding: 4px;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                background-color: white;
-            }
-            QComboBox::drop-down {
-                border: none;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 5px solid #7f8c8d;
-            }
-        """)
-        
-        self.custom_ext_edit = QLineEdit()
-        self.custom_ext_edit.setPlaceholderText(".jpg,.png,.pdf")
-        self.custom_ext_edit.setVisible(False)
-        self.custom_ext_edit.setMaximumWidth(150)
-        self.custom_ext_edit.setStyleSheet("""
-            QLineEdit {
-                padding: 4px;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                background-color: white;
-            }
-        """)
-        
-        ext_layout.addWidget(self.ext_combo)
-        ext_layout.addWidget(self.custom_ext_edit)
-        ext_layout.addStretch()
-        options_layout.addLayout(ext_layout)
-        options_layout.addWidget(self.recursive_checkbox)
-        options_group.setLayout(options_layout)
         
         # 작업 진행 상황 표시
         progress_group = QGroupBox("📊 진행 상황")
@@ -301,8 +203,6 @@ class BatchTaggingPanel(QWidget):
         layout.addLayout(title_layout)
         layout.addWidget(separator)
         layout.addWidget(dir_group)
-        layout.addWidget(preview_group)
-        layout.addWidget(options_group)
         layout.addWidget(progress_group)
         layout.addLayout(button_layout)
         layout.addStretch()
@@ -331,188 +231,61 @@ class BatchTaggingPanel(QWidget):
         """시그널과 슬롯을 연결합니다."""
         self.browse_button.clicked.connect(self.browse_directory)
         
-
-    def set_directory(self, directory_path):
-        """디렉토리를 설정하고 파일 미리보기를 업데이트합니다."""
-        print(f"[BatchTaggingPanel] set_directory 호출: {directory_path}") # 디버그 출력
-        if os.path.exists(directory_path) and os.path.isdir(directory_path):
-            self.current_directory = directory_path
-            self.dir_path_edit.setText(directory_path)
-            self.update_file_preview()
-            self.directory_changed.emit(directory_path)
-            
-            # 상태 관리자에 알림
-            if self.state_manager:
-                self.state_manager.set_selected_directory(directory_path)
-        else:
-            QMessageBox.warning(self, "경로 오류", "유효하지 않은 디렉토리 경로입니다.")
-
     def browse_directory(self):
         """디렉토리 선택 대화상자를 엽니다."""
         directory = QFileDialog.getExistingDirectory(self, "일괄 태그 적용할 디렉토리 선택")
         if directory:
-            self.set_directory(directory)
-
-    def on_extension_changed(self, text):
-        """확장자 선택이 변경될 때 호출됩니다."""
-        self.custom_ext_edit.setVisible(text == "사용자 정의")
-        self.update_file_preview()
-
-    def get_file_extensions(self):
-        """현재 선택된 파일 확장자 목록을 반환합니다."""
-        current_text = self.ext_combo.currentText()
-        
-        if current_text == "모든 파일":
-            return []
-        elif current_text == "이미지 파일":
-            return [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg"]
-        elif current_text == "문서 파일":
-            return [".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt", ".xls", ".xlsx", ".ppt", ".pptx"]
-        elif current_text == "사용자 정의":
-            custom_text = self.custom_ext_edit.text().strip()
-            if custom_text:
-                # 쉼표로 구분된 확장자 파싱
-                extensions = [ext.strip() for ext in custom_text.split(",")]
-                # 점(.)이 없는 확장자에 점 추가
-                extensions = [ext if ext.startswith(".") else f".{ext}" for ext in extensions if ext]
-                return extensions
-            return []
-        
-        return []
-
-    def update_file_preview(self):
-        """파일 미리보기를 업데이트합니다."""
-        print(f"[BatchTaggingPanel] update_file_preview 호출. 현재 디렉토리: {self.current_directory}") # 디버그 출력
-        if not self.current_directory:
-            self.file_table.setRowCount(0)
-            self.file_count_label.setText("0개 파일")
-            self.apply_button.setEnabled(False)
-            print("[BatchTaggingPanel] 현재 디렉토리 없음. 미리보기 업데이트 중단.") # 디버그 출력
-            return
-            
-        try:
-            file_extensions = self.get_file_extensions()
-            recursive = self.recursive_checkbox.isChecked()
-            
-            # 파일 목록 수집
-            files = []
-            if recursive:
-                for root, dirs, file_names in os.walk(self.current_directory):
-                    for file_name in file_names:
-                        file_path = os.path.join(root, file_name)
-                        if self._should_include_file(file_path, file_extensions):
-                            files.append(file_path)
-            else:
-                for file_name in os.listdir(self.current_directory):
-                    file_path = os.path.join(self.current_directory, file_name)
-                    if os.path.isfile(file_path) and self._should_include_file(file_path, file_extensions):
-                        files.append(file_path)
-            
-            # 파일명으로 정렬
-            files.sort(key=lambda x: os.path.basename(x).lower())
-            
-            # 테이블 업데이트
-            self.file_table.setRowCount(len(files))
-            for i, file_path in enumerate(files):
-                # 파일명
-                file_name_item = QTableWidgetItem(os.path.basename(file_path))
-                file_name_item.setFlags(file_name_item.flags() & ~Qt.ItemIsEditable)
-                
-                # 상대 경로
-                try:
-                    relative_path = os.path.relpath(file_path, self.current_directory)
-                except ValueError:
-                    relative_path = file_path
-                path_item = QTableWidgetItem(relative_path)
-                path_item.setFlags(path_item.flags() & ~Qt.ItemIsEditable)
-                
-                # 현재 태그
-                try:
-                    tags = self.tag_manager.get_tags_for_file(file_path)
-                    tags_text = ", ".join(tags) if tags else ""
-                except Exception:
-                    tags_text = ""
-                tags_item = QTableWidgetItem(tags_text)
-                tags_item.setFlags(tags_item.flags() & ~Qt.ItemIsEditable)
-                
-                self.file_table.setItem(i, 0, file_name_item)
-                self.file_table.setItem(i, 1, path_item)
-                self.file_table.setItem(i, 2, tags_item)
-            
-            # 대상 파일 목록 업데이트
-            self.target_files = files
-            
-            # 파일 수 표시 및 버튼 활성화
-            self.file_count_label.setText(f"{len(files)}개 파일")
-            self.apply_button.setEnabled(len(files) > 0)
-            
-            # 상태 관리자에 알림
+            self.current_directory = directory # UI에 표시할 경로 업데이트
+            self.dir_path_edit.setText(directory)
+            self.directory_changed.emit(directory) # 상태 관리자에 디렉토리 변경 알림
+            # 상태 관리자로부터 파일 목록을 받아와 apply_button 활성화 여부 결정
             if self.state_manager:
-                self.state_manager.set_batch_target_files(files)
-                self.state_manager.set_batch_options(recursive, file_extensions)
-                
-        except Exception as e:
-            QMessageBox.critical(self, "파일 미리보기 오류", f"파일 목록을 가져오는 중 오류가 발생했습니다:\n{str(e)}")
-            self.file_table.setRowCount(0)
-            self.file_count_label.setText("0개 파일")
-            self.apply_button.setEnabled(False)
-            print(f"[BatchTaggingPanel] 파일 미리보기 업데이트 중 오류: {e}") # 디버그 출력
-
-    def _should_include_file(self, file_path, file_extensions):
-        """파일이 포함되어야 하는지 확인합니다."""
-        if not file_extensions:  # 모든 파일
-            return True
-        
-        file_ext = os.path.splitext(file_path)[1].lower()
-        return file_ext in [ext.lower() for ext in file_extensions]
+                target_files = self.state_manager.get('batch_target_files', [])
+                self.apply_button.setEnabled(len(target_files) > 0)
 
     def start_batch_tagging(self):
         """일괄 태그 추가 작업을 시작합니다."""
-        # 태그 입력 위젯에서 태그 가져오기 (통합 패널에서 제공)
-        tags = []
-        if hasattr(self.parent(), 'individual_tag_input'):
-            tags = self.parent().individual_tag_input.get_tags()
-        print(f"[BatchTaggingPanel] start_batch_tagging 호출. 가져온 태그: {tags}") # 디버그 출력
+        tags = self.state_manager.get('current_tags_for_batch', [])
+        directory_path = self.state_manager.get('selected_directory', '')
+        recursive = self.state_manager.get('batch_options', {}).get('recursive', False)
+        file_extensions = self.state_manager.get('batch_options', {}).get('file_extensions', [])
+        target_files = self.state_manager.get('batch_target_files', [])
             
         if not tags:
             QMessageBox.warning(self, "태그 입력 필요", "적용할 태그를 입력해주세요.")
-            print("[BatchTaggingPanel] 태그 없음. 작업 중단.") # 디버그 출력
             return
             
-        if not self.target_files:
+        if not target_files:
             QMessageBox.warning(self, "파일 선택 필요", "태그를 적용할 파일이 없습니다.")
-            print("[BatchTaggingPanel] 대상 파일 없음. 작업 중단.") # 디버그 출력
             return
             
         # 확인 대화상자
         reply = QMessageBox.question(
             self, 
             "일괄 태그 적용 확인", 
-            f"{len(self.target_files)}개 파일에 다음 태그를 적용하시겠습니까?\n\n태그: {', '.join(tags)}",
+            f"{len(target_files)}개 파일에 다음 태그를 적용하시겠습니까?\n\n태그: {', '.join(tags)}",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
         
         if reply != QMessageBox.Yes:
-            print("[BatchTaggingPanel] 사용자 취소. 작업 중단.") # 디버그 출력
             return
             
         # UI 상태 변경
         self.apply_button.setVisible(False)
         self.cancel_button.setVisible(True)
         self.progress_bar.setVisible(True)
-        self.progress_bar.setRange(0, len(self.target_files))
+        self.progress_bar.setRange(0, len(target_files))
         self.progress_bar.setValue(0)
         self.status_label.setText("작업 진행 중...")
-        print("[BatchTaggingPanel] 워커 스레드 시작 준비.") # 디버그 출력
         
         # 워커 스레드 시작
         self.worker_thread = BatchTaggingWorker(
             self.tag_manager,
-            self.current_directory,
+            directory_path,
             tags,
-            self.recursive_checkbox.isChecked(),
-            self.get_file_extensions()
+            recursive,
+            file_extensions
         )
         
         self.worker_thread.progress_updated.connect(self.progress_bar.setValue)
@@ -524,7 +297,6 @@ class BatchTaggingPanel(QWidget):
 
     def cancel_batch_tagging(self):
         """일괄 태그 추가 작업을 취소합니다."""
-        print("[BatchTaggingPanel] cancel_batch_tagging 호출.") # 디버그 출력
         if self.worker_thread and self.worker_thread.isRunning():
             self.worker_thread.terminate()
             self.worker_thread.wait()
@@ -535,16 +307,12 @@ class BatchTaggingPanel(QWidget):
 
     def on_batch_tagging_finished(self, result):
         """일괄 태그 추가 작업이 완료될 때 호출됩니다."""
-        print(f"[BatchTaggingPanel] on_batch_tagging_finished 호출. 결과: {result}") # 디버그 출력
         self.reset_ui_state()
         
         if result.get("success", False):
             # 성공
             processed_count = result.get("processed_count", 0)
             self.status_label.setText(f"완료: {processed_count}개 파일 처리됨")
-            
-            # 파일 미리보기 새로고침 (태그 정보 업데이트)
-            self.update_file_preview()
             
             # 성공 메시지
             QMessageBox.information(
@@ -572,11 +340,11 @@ class BatchTaggingPanel(QWidget):
 
     def reset_ui_state(self):
         """UI 상태를 초기화합니다."""
-        print("[BatchTaggingPanel] reset_ui_state 호출.") # 디버그 출력
+        target_files = self.state_manager.get('batch_target_files', [])
         self.apply_button.setVisible(True)
         self.cancel_button.setVisible(False)
         self.progress_bar.setVisible(False)
-        self.apply_button.setEnabled(len(self.target_files) > 0)
+        self.apply_button.setEnabled(len(target_files) > 0)
 
     def hide_panel(self):
         """패널을 숨깁니다."""
@@ -590,17 +358,11 @@ class BatchTaggingPanel(QWidget):
 
     def _on_state_changed(self, state: dict):
         """상태 관리자 상태 변경 시 호출됩니다."""
-        print(f"[BatchTaggingPanel] _on_state_changed 호출. 상태: {state.get('mode')}, 디렉토리: {state.get('selected_directory')}") # 디버그 출력
         # 일괄 태깅 모드일 때만 반응
         if state.get('mode') == 'batch':
             directory = state.get('selected_directory', '')
+            batch_target_files = state.get('batch_target_files', [])
             if directory and directory != self.current_directory:
-                self.set_directory(directory)
-
-    def get_target_files(self):
-        """현재 대상 파일 목록을 반환합니다."""
-        return self.target_files.copy()
-        
-    def get_current_directory(self):
-        """현재 디렉토리를 반환합니다."""
-        return self.current_directory
+                self.current_directory = directory
+                self.dir_path_edit.setText(directory)
+            self.apply_button.setEnabled(len(batch_target_files) > 0)
