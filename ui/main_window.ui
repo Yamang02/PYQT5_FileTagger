@@ -4,103 +4,31 @@
  <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
-    <x>100</x>
-    <y>100</y>
+    <x>0</x>
+    <y>0</y>
     <width>1200</width>
     <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>File Tagger</string>
+   <string>FileTagger</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QSplitter" name="splitter_main">
+     <widget class="QSplitter" name="mainSplitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QWidget" name="directoryTreeWidget" native="true"/>
+      <widget class="QSplitter" name="splitter">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Vertical</enum>
        </property>
-      <widget class="QTreeView" name="treeView_dirs">
-       <property name="maximumSize">
-        <size>
-         <width>300</width>
-         <height>16777215</height>
-        </size>
-       </property>
+       <widget class="QWidget" name="fileDetailWidget" native="true"/>
+       <widget class="QWidget" name="fileListWidget" native="true"/>
       </widget>
-      <widget class="QSplitter" name="splitter_content">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <widget class="QTableView" name="tableView_files"/>
-       <widget class="QWidget" name="widget_details" native="true">
-        <property name="maximumSize">
-         <size>
-          <width>350</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <item>
-          <widget class="QTabWidget" name="tabWidget_tagging">
-           <property name="currentIndex">
-            <number>0</number>
-           </property>
-           <widget class="QWidget" name="tab_individual_tagging">
-            <attribute name="title">
-             <string>개별 태깅</string>
-            </attribute>
-            <layout class="QVBoxLayout" name="verticalLayout_individual_tagging">
-             <item>
-              <widget class="UnifiedTaggingPanel" name="unifiedTaggingPanel_individual" native="true"/>
-             </item>
-            </layout>
-           </widget>
-           <widget class="QWidget" name="tab_batch_tagging">
-            <attribute name="title">
-             <string>일괄 태깅</string>
-            </attribute>
-            <layout class="QVBoxLayout" name="verticalLayout_batch_tagging">
-             <item>
-              <widget class="UnifiedTaggingPanel" name="unifiedTaggingPanel_batch" native="true"/>
-             </item>
-            </layout>
-           </widget>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_all_tags">
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-             <weight>75</weight>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>All Tags (Filter)</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QListWidget" name="listWidget_all_tags"/>
-         </item>
-         <item>
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
-       </widget>
-      </widget>
+      <widget class="QWidget" name="tagControlWidget" native="true"/>
      </widget>
     </item>
    </layout>
@@ -110,67 +38,37 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1317</width>
+     <width>1200</width>
      <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>파일</string>
+     <string>파일(&amp;F)</string>
     </property>
-    <addaction name="action_open_directory"/>
-    <addaction name="separator"/>
-    <addaction name="action_individual_mode"/>
-    <addaction name="action_batch_mode"/>
+    <addaction name="actionExit"/>
    </widget>
-   <widget class="QMenu" name="menuFilter">
+   <widget class="QMenu" name="menuTools">
     <property name="title">
-     <string>필터</string>
+     <string>도구(&amp;T)</string>
     </property>
-    <addaction name="action_clear_filter"/>
+    <addaction name="actionBatchTagging"/>
    </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuTools"/>
   </widget>
+  <action name="actionExit">
+   <property name="text">
+    <string>종료(&amp;X)</string>
+   </property>
+  </action>
+  <action name="actionBatchTagging">
+   <property name="text">
+    <string>일괄 태깅(&amp;B)</string>
+   </property>
+  </action>
   <widget class="QStatusBar" name="statusbar"/>
-  <widget class="QToolBar" name="toolBar">
-   <property name="windowTitle">
-    <string>toolBar</string>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-  </widget>
-  <action name="action_open_directory">
-   <property name="text">
-    <string>디렉토리 열기</string>
-   </property>
-  </action>
-  <action name="action_individual_mode">
-   <property name="text">
-    <string>개별 태깅 모드</string>
-   </property>
-  </action>
-  <action name="action_batch_mode">
-   <property name="text">
-    <string>일괄 태깅 모드</string>
-   </property>
-  </action>
-  <action name="action_clear_filter">
-   <property name="text">
-    <string>필터 초기화</string>
-   </property>
-  </action>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>UnifiedTaggingPanel</class>
-   <extends>QWidget</extends>
-   <header>widgets.unified_tagging_panel</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
