@@ -238,3 +238,24 @@
 - 기존 버그 재현 및 해결 검증 테스트 강화
 - 신규 컴포넌트 단위/통합 테스트 작성
 - 다음 단계: 성능 최적화(대용량 디렉토리, UI 응답성 등)
+
+## 2025년 7월 6일
+
+### UI 레이아웃 재구성 및 개선
+- **목표**: 사용자 경험 개선을 위한 메인 윈도우 UI 레이아웃 재구성 및 세부 조정.
+- **변경 사항**:
+    - **4열에서 3열 구조로 전환**: 기존 4열 구조에서 2열(파일 상세/목록)을 수직 분할하여 3열 구조로 변경.
+    - **메인 윈도우 QSplitter 적용**: 최상위 레이아웃에 `QSplitter`를 도입하여 사용자가 각 열의 너비를 동적으로 조절할 수 있도록 함. 초기 너비는 1열:150px, 3열:150px, 2열:나머지 공간으로 설정.
+    - **파일 상세 정보 영역 개선**: 2열 상단의 `FileDetailWidget`을 재설계.
+        - `ui/file_detail_content_widget.ui`를 새로 생성하여 썸네일, 파일 메타데이터, 태그 칩 영역을 포함.
+        - 썸네일 영역(`QLabel`)에 200x200px의 고정 크기를 부여하여 일관된 UI 유지.
+        - 파일 메타데이터(`QTextBrowser`)와 태그 칩 영역(`QScrollArea` 내 `QHBoxLayout`)을 2:1 비율로 배치.
+    - **`FileTableModel` 통합**: `widgets/file_list_widget.py`를 `QTableView` 기반으로 변경하고, `FileTableModel`을 사용하여 파일 목록에 태그 정보를 직접 표시하도록 개선.
+    - **오류 수정**:
+        - `widgets/tag_control_widget.py`에서 `QStringListModel`의 잘못된 import 경로 (`PyQt5.QtWidgets` -> `PyQt5.QtCore`) 수정.
+        - `widgets/file_detail_widget.py`에 `clear_preview()` 메서드 추가 및 `main_window.py`에서 호출하여 디렉토리 변경 시 파일 상세 정보 초기화.
+- **기대 효과**:
+    - 사용자에게 더 직관적이고 효율적인 작업 환경 제공.
+    - 유연한 레이아웃 조절로 다양한 사용 환경에 대응.
+    - 파일 정보와 태그 정보의 시각적 일관성 및 가독성 향상.
+- **다음 단계**: 일괄 태깅 다이얼로그 구현 또는 `QuickTagsWidget` 통합 등 기능 구현.

@@ -28,6 +28,7 @@ class FileDetailWidget(QWidget):
         # --- 썸네일 업데이트 ---
         pixmap = QPixmap(file_path)
         if not pixmap.isNull():
+            # QLabel의 현재 크기를 사용하여 스케일링
             scaled_pixmap = pixmap.scaled(self.thumbnail_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.thumbnail_label.setPixmap(scaled_pixmap)
             self.thumbnail_label.setText("")
@@ -65,6 +66,7 @@ class FileDetailWidget(QWidget):
             self.tag_chip_layout.insertWidget(self.tag_chip_layout.count() - 1, chip)
 
     def _clear_tag_chips(self):
+        # 기존 칩 모두 제거 (스페이서 제외)
         while self.tag_chip_layout.count() > 1:
             item = self.tag_chip_layout.takeAt(0)
             if item.widget():

@@ -46,6 +46,7 @@
     <property name="title">
      <string>파일(&amp;F)</string>
     </property>
+    <addaction name="actionSetWorkspace"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -65,6 +66,11 @@
   <action name="actionBatchTagging">
    <property name="text">
     <string>일괄 태깅(&amp;B)</string>
+   </property>
+  </action>
+  <action name="actionSetWorkspace">
+   <property name="text">
+    <string>작업 공간 설정(&amp;W)...</string>
    </property>
   </action>
   <widget class="QStatusBar" name="statusbar"/>

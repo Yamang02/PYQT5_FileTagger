@@ -7,80 +7,202 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>300</height>
+    <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="main_verticalLayout">
    <item>
-    <widget class="QLabel" name="selected_file_label">
-     <property name="text">
-      <string>선택된 파일 없음</string>
+    <widget class="QTabWidget" name="tagging_tab_widget">
+     <property name="currentIndex">
+      <number>0</number>
      </property>
-     <property name="wordWrap">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QScrollArea" name="scroll_area">
-     <property name="widgetResizable">
-      <bool>true</bool>
-     </property>
-     <widget class="QWidget" name="chip_container">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>380</width>
-        <height>180</height>
-       </rect>
-      </property>
-      <layout class="QHBoxLayout" name="chip_layout">
-       <property name="leftMargin">
-        <number>2</number>
-       </property>
-       <property name="topMargin">
-        <number>2</number>
-       </property>
-       <property name="rightMargin">
-        <number>2</number>
-       </property>
-       <property name="bottomMargin">
-        <number>2</number>
-       </property>
+     <widget class="QWidget" name="individual_tagging_tab">
+      <attribute name="title">
+       <string>개별 태깅</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="individual_verticalLayout">
        <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+        <widget class="QLabel" name="individual_target_label">
+         <property name="text">
+          <string>선택된 파일 없음</string>
          </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
+         <property name="wordWrap">
+          <bool>true</bool>
          </property>
-        </spacer>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="individual_quick_tags_placeholder" native="true"/>
+       </item>
+       <item>
+        <widget class="QScrollArea" name="individual_tag_chip_scroll_area">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="individual_chip_container">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>356</width>
+            <height>100</height>
+           </rect>
+          </property>
+          <layout class="QHBoxLayout" name="individual_chip_layout">
+           <property name="leftMargin">
+            <number>2</number>
+           </property>
+           <property name="topMargin">
+            <number>2</number>
+           </property>
+           <property name="rightMargin">
+            <number>2</number>
+           </property>
+           <property name="bottomMargin">
+            <number>2</number>
+           </property>
+           <item>
+            <spacer name="individual_horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="individual_tag_input">
+         <property name="placeholderText">
+          <string>추가할 태그를 입력하세요...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="individual_save_button">
+         <property name="text">
+          <string>태그 저장</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="batch_tagging_tab">
+      <attribute name="title">
+       <string>일괄 태깅</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="batch_verticalLayout">
+       <item>
+        <widget class="QLabel" name="batch_target_label">
+         <property name="text">
+          <string>선택된 디렉토리 없음</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="batch_quick_tags_placeholder" native="true"/>
+       </item>
+       <item>
+        <widget class="QScrollArea" name="batch_tag_chip_scroll_area">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="batch_chip_container">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>356</width>
+            <height>100</height>
+           </rect>
+          </property>
+          <layout class="QHBoxLayout" name="batch_chip_layout">
+           <property name="leftMargin">
+            <number>2</number>
+           </property>
+           <property name="topMargin">
+            <number>2</number>
+           </property>
+           <property name="rightMargin">
+            <number>2</number>
+           </property>
+           <property name="bottomMargin">
+            <number>2</number>
+           </property>
+           <item>
+            <spacer name="batch_horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="batch_tag_input">
+         <property name="placeholderText">
+          <string>추가할 태그를 입력하세요...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="batch_options_placeholder" native="true"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="batch_apply_button">
+         <property name="text">
+          <string>일괄 태그 적용</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
     </widget>
    </item>
    <item>
-    <widget class="QLineEdit" name="tag_input">
-     <property name="placeholderText">
-      <string>추가할 태그를 입력하세요...</string>
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="save_button">
+    <widget class="QLabel" name="all_tags_label">
      <property name="text">
-      <string>태그 저장</string>
+      <string>모든 태그</string>
      </property>
     </widget>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="all_tags_search_input">
+     <property name="placeholderText">
+      <string>태그 검색...</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QListView" name="all_tags_list_view"/>
    </item>
   </layout>
  </widget>
