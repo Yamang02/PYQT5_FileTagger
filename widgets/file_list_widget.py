@@ -174,6 +174,9 @@ class FileListWidget(QWidget):
         layout.addWidget(self.list_view)
         self.setLayout(layout)
 
+        # 디버깅용 시그널 연결
+        self.list_view.selectionModel().selectionChanged.connect(lambda selected, deselected: print(f"DEBUG: selectionChanged signal emitted. Selected: {len(selected.indexes())}, Deselected: {len(deselected.indexes())}"))
+
     def set_path(self, path):
         """지정된 경로의 파일 목록을 표시합니다."""
         self.model.set_directory(path)
