@@ -62,7 +62,7 @@ class TagInputWidget(QWidget):
         
         self._tags = []
 
-        self.tag_input.returnPressed.connect(self.add_tag_from_input)
+        self.tag_input.returnPressed.connect(self._on_return_pressed)
 
         # completer 및 모델 초기화
         self.completer_model = QStringListModel()
@@ -108,6 +108,123 @@ class TagInputWidget(QWidget):
             widget = self.chip_layout.itemAt(i).widget()
             if widget is not None and isinstance(widget, TagChip):
                 widget.setEnabled(enabled)
+
+    def setup_completer(self):
+        """자동 완성 기능을 설정합니다."""
+        self.completer = QCompleter(self.completer_model, self)
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.setCompletionMode(QCompleter.PopupCompletion)
+        self.completer.setWrapAround(False)
+
+        # 자동 완성 팝업 크기 설정
+        self.completer.popup().setMaximumHeight(150)
+        self.completer.popup().setMaximumWidth(300)
+
+        # 자동 완성 팝업 스타일 설정
+        self.completer.popup().setStyleSheet("""
+            QListView {
+                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                padding: 2px;
+                selection-background-color: #2196f3;
+                selection-color: white;
+            }
+            QListView::item {
+                padding: 4px 8px;
+                border-radius: 2px;
+            }
+            QListView::item:hover {
+                background-color: #e3f2fd;
+            }
+        """)
+
+        # 입력 필드에 자동 완성 연결
+        self.tag_input.setCompleter(self.completer)
+
+        # 자동 완성 선택 시그널 연결
+        self.completer.activated.connect(self.on_completer_activated)
+
+        # 텍스트 변경 시 자동 완성 트리거
+        self.tag_input.textChanged.connect(self.on_text_changed)
+
+    def add_tag_from_input(self):
+        """입력 필드에서 새 태그를 추가합니다."""
+        tag_text = self.tag_input.text().strip()
+        if tag_text:
+            if tag_text not in self._tags:
+                self._tags.append(tag_text)
+                self._refresh_list()
+                self.tags_changed.emit(self._tags)
+                self.tag_input.clear()
+            else:
+                # 중복 태그인 경우 입력 필드만 클리어
+                self.tag_input.clear()
+
+    def remove_tag(self, tag_text):
+        """특정 태그를 제거합니다."""
+        if tag_text in self._tags:
+            self._tags.remove(tag_text)
+            self._refresh_list()
+            self.tags_changed.emit(self._tags)
+
+    def create_tag_chip(self, tag_text):
+        """태그 칩을 생성하고 UI에 추가합니다."""
+        chip = TagChip(tag_text)
+        chip.delete_button.clicked.connect(lambda: self.remove_tag(tag_text))
+
+        # 입력 필드 앞에 칩 추가
+        self.chip_layout.insertWidget(self.chip_layout.count() - 1, chip)
+
+    def remove_tag_chip(self, tag_text):
+        """특정 태그 칩을 UI에서 제거합니다."""
+        for i in range(self.chip_layout.count()):
+            widget = self.chip_layout.itemAt(i).widget()
+            if isinstance(widget, TagChip) and widget.tag_text == tag_text:
+                widget.deleteLater()
+                break
+
+    def get_tags(self):
+        """현재 태그 목록을 반환합니다."""
+        return self._tags.copy()
+
+    def get_tag_input_field(self):
+        """태그 입력 필드를 반환합니다 (자동 완성 기능을 위해)."""
+        return self.tag_input
+
+    def update_completer_model(self, tags):
+        if hasattr(self, 'completer') and self.completer:
+            self.completer_model.setStringList(tags)
+
+    def on_completer_activated(self, text):
+        """자동 완성에서 태그가 선택되었을 때 호출됩니다."""
+        if text and text not in self._tags:
+            self._tags.append(text)
+            self._refresh_list()
+            self.tags_changed.emit(self._tags)
+            self.tag_input.clear()
+
+    def get_completer(self):
+        """자동 완성 객체를 반환합니다."""
+        return self.completer
+
+    def on_text_changed(self, text):
+        """입력 텍스트가 변경될 때 호출됩니다."""
+        # 2글자 이상 입력되면 자동 완성 팝업 표시
+        if len(text) >= 2:
+            self.completer.complete()
+        else:
+            # 2글자 미만이면 팝업 숨기기
+            self.completer.popup().hide()
+
+    def is_enabled(self):
+        """위젯의 활성화 상태를 반환합니다."""
+        return self.isEnabled()
+
+    def clear_tags(self):
+        self._tags = []
+        self._refresh_list()
+        self.tags_changed.emit([])
 
     def setup_ui(self):
         # 이 메서드는 이제 uic.loadUi로 대체됩니다.

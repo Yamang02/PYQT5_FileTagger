@@ -3,9 +3,6 @@
  <class>UnifiedTaggingPanel</class>
  <widget class="QWidget" name="UnifiedTaggingPanel">
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="contentsMargins">
-    <number>10</number>
-   </property>
    <item>
     <widget class="QLabel" name="target_label">
      <property name="text">

@@ -17,15 +17,9 @@
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
      <widget class="QSplitter" name="splitter_main">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="sizes">
-       <array>
-        <int>200</int>
-        <int>600</int>
-       </array>
-      </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
       <widget class="QTreeView" name="treeView_dirs">
        <property name="maximumSize">
         <size>
@@ -37,12 +31,6 @@
       <widget class="QSplitter" name="splitter_content">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizes">
-        <array>
-         <int>400</int>
-         <int>200</int>
-        </array>
        </property>
        <widget class="QTableView" name="tableView_files"/>
        <widget class="QWidget" name="widget_details" native="true">
@@ -126,6 +114,21 @@
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>파일</string>
+    </property>
+    <addaction name="action_open_directory"/>
+    <addaction name="separator"/>
+    <addaction name="action_individual_mode"/>
+    <addaction name="action_batch_mode"/>
+   </widget>
+   <widget class="QMenu" name="menuFilter">
+    <property name="title">
+     <string>필터</string>
+    </property>
+    <addaction name="action_clear_filter"/>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -139,6 +142,26 @@
     <bool>false</bool>
    </attribute>
   </widget>
+  <action name="action_open_directory">
+   <property name="text">
+    <string>디렉토리 열기</string>
+   </property>
+  </action>
+  <action name="action_individual_mode">
+   <property name="text">
+    <string>개별 태깅 모드</string>
+   </property>
+  </action>
+  <action name="action_batch_mode">
+   <property name="text">
+    <string>일괄 태깅 모드</string>
+   </property>
+  </action>
+  <action name="action_clear_filter">
+   <property name="text">
+    <string>필터 초기화</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

@@ -3,9 +3,6 @@
  <class>FileSelectionAndPreviewWidget</class>
  <widget class="QWidget" name="FileSelectionAndPreviewWidget">
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="contentsMargins">
-    <number>8</number>
-   </property>
    <property name="spacing">
     <number>8</number>
    </property>

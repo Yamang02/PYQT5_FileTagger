@@ -9,7 +9,7 @@ class UnifiedTaggingPanel(QWidget):
     mode_changed = pyqtSignal(str)
     tags_applied = pyqtSignal(str, list)
 
-    def __init__(self, state_manager, tag_manager, parent=None):
+    def __init__(self, state_manager=None, tag_manager=None, parent=None):
         super().__init__(parent)
         self.state_manager = state_manager
         self.tag_manager = tag_manager

@@ -1,7 +1,7 @@
 # signal_connector.py
 import os
 from PyQt5.QtCore import QModelIndex, Qt
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QAction
 
 from core.tag_ui_state_manager import TagUIStateManager
 from core.tag_manager import TagManager
@@ -17,10 +17,10 @@ class SignalConnector:
     def connect_all_signals(self):
         """모든 시그널과 슬롯을 연결합니다."""
         # 메뉴 액션 시그널
-        self.main_window.open_dir_action.triggered.connect(self.open_directory_dialog)
-        self.main_window.individual_mode_action.triggered.connect(lambda: self.switch_tagging_mode('individual'))
-        self.main_window.batch_mode_action.triggered.connect(lambda: self.switch_tagging_mode('batch'))
-        self.main_window.clear_filter_action.triggered.connect(self.clear_filter)
+        self.main_window.findChild(QAction, 'action_open_directory').triggered.connect(self.open_directory_dialog)
+        self.main_window.findChild(QAction, 'action_individual_mode').triggered.connect(lambda: self.switch_tagging_mode('individual'))
+        self.main_window.findChild(QAction, 'action_batch_mode').triggered.connect(lambda: self.switch_tagging_mode('batch'))
+        self.main_window.findChild(QAction, 'action_clear_filter').triggered.connect(self.clear_filter)
 
         # 디렉토리 트리뷰 선택 시그널
         self.main_window.treeView_dirs.clicked.connect(self.on_directory_tree_clicked)
@@ -52,7 +52,7 @@ class SignalConnector:
             self.main_window.unifiedTaggingPanel_individual.update_target(path, is_dir=True)
             self.main_window.unifiedTaggingPanel_batch.update_target(path, is_dir=True)
             
-            self.main_window.textBrowser_file_details.clear()
+
             self.main_window.statusBar().showMessage(f"디렉토리 변경: {path}", 3000)
 
     def on_file_selection_changed(self, selected, deselected):
@@ -62,7 +62,7 @@ class SignalConnector:
             self.state_manager.set_selected_files([])
             self.main_window.unifiedTaggingPanel_individual.update_target(None, is_dir=False)
             self.main_window.unifiedTaggingPanel_batch.update_target(None, is_dir=False)
-            self.main_window.textBrowser_file_details.clear()
+
             return
 
         # 첫 번째 선택된 파일만 처리 (단일 선택 모드 가정)
@@ -84,7 +84,6 @@ class SignalConnector:
     def update_file_details(self, file_path):
         """선택된 파일의 상세 정보를 업데이트합니다."""
         if not file_path or not os.path.exists(file_path):
-            self.main_window.textBrowser_file_details.clear()
             return
 
         try:
@@ -92,9 +91,10 @@ class SignalConnector:
             file_info += f"<b>경로:</b> {file_path}<br>"
             file_size = os.path.getsize(file_path)
             file_info += f"<b>크기:</b> {file_size / 1024:.2f} KB<br>"
-            self.main_window.textBrowser_file_details.setHtml(file_info)
+            # self.main_window.textBrowser_file_details.setHtml(file_info) # 제거
         except Exception as e:
-            self.main_window.textBrowser_file_details.setText(f"파일 정보 로드 오류: {e}")
+            # self.main_window.textBrowser_file_details.setText(f"파일 정보 로드 오류: {e}") # 제거
+            pass
 
     def on_tab_changed(self, index):
         """태깅 탭이 변경될 때 호출됩니다."""
@@ -131,8 +131,8 @@ class SignalConnector:
     def on_tagging_mode_changed(self, mode):
         """태깅 모드가 변경될 때 호출됩니다."""
         # 메뉴 상태 업데이트
-        self.main_window.individual_mode_action.setChecked(mode == 'individual')
-        self.main_window.batch_mode_action.setChecked(mode == 'batch')
+        self.main_window.findChild(QAction, 'action_individual_mode').setChecked(mode == 'individual')
+        self.main_window.findChild(QAction, 'action_batch_mode').setChecked(mode == 'batch')
         
         # 상태바 메시지
         mode_text = "개별 태깅" if mode == 'individual' else "일괄 태깅"
@@ -173,6 +173,6 @@ class SignalConnector:
     def clear_filter(self):
         """필터를 초기화합니다."""
         # self.is_filtered = False # MainWindow에서 관리하던 변수이므로 제거
-        self.main_window.clear_filter_action.setEnabled(False)
+        self.main_window.findChild(QAction, 'action_clear_filter').setEnabled(False)
         self.state_manager.set_filter_mode(False)
         self.main_window.statusBar().showMessage("필터가 초기화되었습니다", 2000)

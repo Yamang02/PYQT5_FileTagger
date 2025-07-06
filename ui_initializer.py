@@ -40,6 +40,13 @@ class UIInitializer:
         # .ui 파일에서 로드된 위젯에 속성 설정
         self.main_window.unifiedTaggingPanel_individual.tag_manager = self.tag_manager
         self.main_window.unifiedTaggingPanel_individual.state_manager = self.state_manager
+
+        self.main_window.unifiedTaggingPanel_batch.tag_manager = self.tag_manager
+        self.main_window.unifiedTaggingPanel_batch.state_manager = self.state_manager
+
+        # 스플리터 초기 크기 비율 설정 (예: 2:3:2)
+        self.main_window.splitter_main.setSizes([200, 600])
+        self.main_window.splitter_content.setSizes([400, 200])
         
 
         

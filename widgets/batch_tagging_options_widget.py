@@ -11,12 +11,11 @@ class BatchTaggingOptionsWidget(QWidget):
     """
     options_changed = pyqtSignal(bool, list) # recursive, file_extensions
 
-    def __init__(self, state_manager, parent=None):
+    def __init__(self, state_manager=None, parent=None):
         super().__init__(parent)
         self.state_manager = state_manager
         self.setup_ui()
         self.connect_signals()
-        # self.apply_styles() # 스타일은 .ui 파일에 포함하거나 별도 CSS 파일로 관리
 
     def setup_ui(self):
         uic.loadUi('ui/batch_tagging_options_widget.ui', self)
@@ -47,7 +46,8 @@ class BatchTaggingOptionsWidget(QWidget):
         recursive = self.recursive_checkbox.isChecked()
         file_extensions = self._get_file_extensions()
         self.options_changed.emit(recursive, file_extensions)
-        self.state_manager.set_batch_options(recursive=recursive, file_extensions=file_extensions)
+        if self.state_manager:
+            self.state_manager.set_batch_options(recursive=recursive, file_extensions=file_extensions)
 
     def _get_file_extensions(self):
         current_text = self.ext_combo.currentText()
@@ -69,6 +69,7 @@ class BatchTaggingOptionsWidget(QWidget):
     def set_state_manager(self, manager):
         self.state_manager = manager
         # 초기 상태 설정
-        batch_options = self.state_manager.get_batch_options()
-        self.recursive_checkbox.setChecked(batch_options.get('recursive', False))
-        # TODO: ext_combo와 custom_ext_edit의 초기 상태 설정 로직 추가 필요
+        if self.state_manager:
+            batch_options = self.state_manager.get_batch_options()
+            self.recursive_checkbox.setChecked(batch_options.get('recursive', False))
+            # TODO: ext_combo와 custom_ext_edit의 초기 상태 설정 로직 추가 필요

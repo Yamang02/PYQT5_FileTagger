@@ -3,9 +3,6 @@
  <class>TagChip</class>
  <widget class="QFrame" name="TagChip">
   <layout class="QHBoxLayout" name="horizontalLayout">
-   <property name="contentsMargins">
-    <number>8</number>
-   </property>
    <property name="spacing">
     <number>4</number>
    </property>

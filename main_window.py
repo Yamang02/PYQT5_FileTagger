@@ -37,15 +37,15 @@ class MainWindow(QMainWindow):
         from ui_initializer import UIInitializer
         self.ui_initializer = UIInitializer(self, self.tag_manager, self.state_manager)
         self.ui_initializer.setup_ui()
-        self.batch_tagging_options_widget = self.ui_initializer.batch_tagging_options_widget # UIInitializer에서 생성된 위젯 참조
-        self.unified_tagging_panel = self.ui_initializer.main_window.unified_tagging_panel # UIInitializer에서 생성된 위젯 참조
-        self.file_selection_and_preview_widget = self.ui_initializer.main_window.file_selection_and_preview_widget # UIInitializer에서 생성된 위젯 참조
-        self.tree_view_dirs = self.ui_initializer.main_window.tree_view_dirs # UIInitializer에서 생성된 위젯 참조
+        
+        
+        
+        
         self.dir_model = self.ui_initializer.main_window.dir_model # UIInitializer에서 생성된 위젯 참조
-        self.open_dir_action = self.ui_initializer.main_window.open_dir_action # UIInitializer에서 생성된 위젯 참조
-        self.individual_mode_action = self.ui_initializer.main_window.individual_mode_action # UIInitializer에서 생성된 위젯 참조
-        self.batch_mode_action = self.ui_initializer.main_window.batch_mode_action # UIInitializer에서 생성된 위젯 참조
-        self.clear_filter_action = self.ui_initializer.main_window.clear_filter_action # UIInitializer에서 생성된 위젯 참조
+        
+        
+        
+        
 
         # 데이터 로더 초기화 및 데이터 로드
         from data_loader import DataLoader

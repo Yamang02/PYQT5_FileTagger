@@ -101,7 +101,7 @@ class FileSelectionAndPreviewWidget(QWidget):
     file_selected = pyqtSignal(str, list)  # 파일 경로, 태그 목록
     directory_selected = pyqtSignal(str)
 
-    def __init__(self, state_manager, tag_manager, parent=None):
+    def __init__(self, state_manager=None, tag_manager=None, parent=None):
         super().__init__(parent)
         self.state_manager = state_manager
         self.tag_manager = tag_manager
