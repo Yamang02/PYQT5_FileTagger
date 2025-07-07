@@ -164,6 +164,7 @@ class FileListWidget(QWidget):
         
         # 다중 선택 허용
         self.list_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.list_view.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         # 테이블 헤더 설정
         header = self.list_view.horizontalHeader()

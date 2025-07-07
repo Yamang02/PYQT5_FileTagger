@@ -111,7 +111,16 @@ class MainWindow(QMainWindow):
         print(f"on_file_selection_changed 호출됨")
         """파일 리스트에서 선택이 변경될 때 호출됩니다. 단일/다중 선택을 처리합니다."""
         selected_indexes = self.file_list.list_view.selectionModel().selectedIndexes()
-        selected_file_paths = self.file_list.get_selected_file_paths()
+
+        selected_file_paths = []
+        processed_rows = set() # To handle multiple selected columns in the same row
+
+        for index in selected_indexes:
+            if index.row() not in processed_rows:
+                file_path = self.file_list.model.get_file_path(index)
+                if file_path:
+                    selected_file_paths.append(file_path)
+                processed_rows.add(index.row())
 
         if len(selected_file_paths) == 1:
             print(f"단일 파일 선택")

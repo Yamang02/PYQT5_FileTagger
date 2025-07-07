@@ -27,29 +27,38 @@ class FileDetailWidget(QWidget):
 
         # --- 썸네일 업데이트 ---
         pixmap = QPixmap(file_path)
-        if not pixmap.isNull():
-            # QLabel의 현재 크기를 사용하여 스케일링
-            scaled_pixmap = pixmap.scaled(self.thumbnail_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.thumbnail_label.setPixmap(scaled_pixmap)
-            self.thumbnail_label.setText("")
-        else:
-            self.thumbnail_label.setText("미리보기 불가")
+        if not file_path or not os.path.isfile(file_path):
+            return
 
-        # --- 메타데이터 업데이트 ---
-        file_info = f"<b>파일 이름:</b> {os.path.basename(file_path)}<br>"
-        file_info += f"<b>경로:</b> {file_path}<br>"
         try:
-            file_size = os.path.getsize(file_path)
-            file_info += f"<b>크기:</b> {file_size / (1024*1024):.2f} MB<br>"
-            mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
-            file_info += f"<b>수정일:</b> {mod_time.strftime('%Y-%m-%d %H:%M:%S')}<br>"
-        except Exception as e:
-            file_info += f"<b>정보 로드 오류:</b> {e}<br>"
-        self.metadata_browser.setHtml(file_info)
+            # --- 썸네일 업데이트 ---
+            pixmap = QPixmap(file_path)
+            if not pixmap.isNull():
+                # QLabel의 현재 크기를 사용하여 스케일링
+                scaled_pixmap = pixmap.scaled(self.thumbnail_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.thumbnail_label.setPixmap(scaled_pixmap)
+                self.thumbnail_label.setText("")
+            else:
+                self.thumbnail_label.setText("미리보기 불가")
 
-        # --- 태그 칩 업데이트 ---
-        tags = self.tag_manager.get_tags_for_file(file_path)
-        self._refresh_tag_chips(tags)
+            # --- 메타데이터 업데이트 ---
+            file_info = f"<b>파일 이름:</b> {os.path.basename(file_path)}<br>"
+            file_info += f"<b>경로:</b> {file_path}<br>"
+            try:
+                file_size = os.path.getsize(file_path)
+                file_info += f"<b>크기:</b> {file_size / (1024*1024):.2f} MB<br>"
+                mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+                file_info += f"<b>수정일:</b> {mod_time.strftime('%Y-%m-%d %H:%M:%S')}<br>"
+            except Exception as e:
+                file_info += f"<b>정보 로드 오류:</b> {e}<br>"
+            self.metadata_browser.setHtml(file_info)
+
+            # --- 태그 칩 업데이트 ---
+            tags = self.tag_manager.get_tags_for_file(file_path)
+            self._refresh_tag_chips(tags)
+        except Exception as e:
+            self.clear_preview()
+            self.thumbnail_label.setText(f"오류: {e}")
 
     def clear_preview(self):
         self.thumbnail_label.setText("파일을 선택하세요.")
@@ -59,15 +68,25 @@ class FileDetailWidget(QWidget):
 
     def _refresh_tag_chips(self, tags):
         self._clear_tag_chips()
+        row = 0
+        col = 0
+        max_cols = 3  # 한 행에 표시할 최대 태그 칩 수
+
         for tag in tags:
             chip = TagChip(tag)
-            # 파일 상세 정보에서는 태그 삭제 버튼이 필요 없으므로 숨김
             chip.delete_button.setVisible(False)
-            self.tag_chip_layout.insertWidget(self.tag_chip_layout.count() - 1, chip)
+            self.tag_chip_layout.addWidget(chip, row, col)
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
 
     def _clear_tag_chips(self):
         # 기존 칩 모두 제거 (스페이서 제외)
-        while self.tag_chip_layout.count() > 1:
+        while self.tag_chip_layout.count() > 0:
             item = self.tag_chip_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
+            elif item.spacerItem():
+                # 스페이서도 제거
+                self.tag_chip_layout.removeItem(item)
