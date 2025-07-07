@@ -25,6 +25,7 @@ class BatchTaggingOptionsWidget(QWidget):
         self.custom_ext_edit = self.findChild(QLineEdit, 'custom_ext_edit')
         
         # 초기 상태 설정
+        self.recursive_checkbox.setChecked(True) # 기본값 True로 설정
         self.custom_ext_edit.setVisible(False)
 
     def apply_styles(self):

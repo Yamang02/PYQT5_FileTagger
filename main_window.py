@@ -4,6 +4,9 @@ from PyQt5.uic import loadUi
 from PyQt5.QtCore import QDir, QModelIndex
 import os
 import config
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 위젯 임포트
 from widgets.directory_tree_widget import DirectoryTreeWidget
@@ -26,6 +29,8 @@ class MainWindow(QMainWindow):
         # 초기 작업 공간 경로 설정
         initial_workspace = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
         self.directory_tree = DirectoryTreeWidget(initial_workspace)
+        logger.info(f"[MainWindow] DirectoryTreeWidget recursive_checkbox: {self.directory_tree.recursive_checkbox.isChecked()}")
+        logger.info(f"[MainWindow] DirectoryTreeWidget extensions_input: {self.directory_tree.extensions_input.text()}")
         self.file_list = FileListWidget(self.tag_manager)
         self.file_detail = FileDetailWidget(self.tag_manager)
         self.tag_control = TagControlWidget(self.tag_manager)
@@ -58,15 +63,16 @@ class MainWindow(QMainWindow):
         """위젯 및 메뉴 액션의 시그널-슬롯을 연결합니다."""
         # 메뉴 액션
         self.actionExit.triggered.connect(self.close)
-        self.actionBatchTagging.triggered.connect(self.open_batch_tagging_dialog)
         self.actionSetWorkspace.triggered.connect(self.set_workspace)
 
         # 위젯 간 연결
         self.directory_tree.tree_view.clicked.connect(self.on_directory_selected)
+        self.directory_tree.filter_options_changed.connect(self.on_directory_selected) # 필터 옵션 변경 시에도 디렉토리 재선택 효과
         # selectionChanged 시그널을 사용하여 다중 선택 처리
         self.file_list.list_view.selectionModel().selectionChanged.connect(self.on_file_selection_changed)
         self.directory_tree.tag_filter_changed.connect(self.file_list.set_tag_filter)
         self.directory_tree.global_file_search_requested.connect(self.on_global_file_search_requested)
+        self.tag_control.tags_updated.connect(self.on_tags_updated)
 
     def set_workspace(self):
         """사용자에게 작업 공간 디렉토리를 설정하도록 요청합니다."""
@@ -99,13 +105,34 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "오류", f"작업 공간 설정 중 오류가 발생했습니다: {e}")
                 self.statusbar.showMessage("작업 공간 설정 실패", 3000)
 
-    def on_directory_selected(self, index):
-        """디렉토리 트리에서 항목 선택 시 파일 목록 및 태그 뷰를 업데이트합니다."""
-        path = self.directory_tree.model.filePath(self.directory_tree.proxy_model.mapToSource(index))
-        self.file_list.set_path(path) # 디렉토리 선택 시 파일 목록을 해당 디렉토리 내용으로 설정
-        self.file_detail.clear_preview()
-        self.tag_control.update_for_target(path, True) # 디렉토리 선택 시
-        self.statusbar.showMessage(f"'{path}' 디렉토리를 보고 있습니다.")
+    def on_directory_selected(self, *args):
+        logger.info(f"[MainWindow] on_directory_selected 호출됨. args: {args}")
+        path = None
+        recursive = self.directory_tree.recursive_checkbox.isChecked()
+        extensions_text = self.directory_tree.extensions_input.text().strip()
+        file_extensions = [ext.strip() for ext in extensions_text.split(',') if ext.strip()]
+
+        if isinstance(args[0], QModelIndex):
+            index = args[0]
+            path = self.directory_tree.model.filePath(self.directory_tree.proxy_model.mapToSource(index))
+        else:
+            # 필터 옵션 변경 시에는 현재 선택된 디렉토리 경로를 사용
+            path = self.file_list.model.current_directory
+            if not path:
+                # 초기 로드 시 current_directory가 비어있을 수 있으므로, workspace_path 사용
+                path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
+
+        logger.info(f"[MainWindow] on_directory_selected: 최종 path={path}, recursive={recursive}, file_extensions={file_extensions}")
+
+        if path:
+            logger.info(f"[MainWindow] Calling file_list.set_path with path={path}, recursive={recursive}, file_extensions={file_extensions}")
+            self.file_list.set_path(path, recursive, file_extensions) # 디렉토리 선택 시 파일 목록을 해당 디렉토리 내용으로 설정
+            self.file_detail.clear_preview()
+            logger.info(f"[MainWindow] Calling tag_control.update_for_target with path={path}, is_dir=True")
+            self.tag_control.update_for_target(path, True) # 디렉토리 선택 시
+            self.statusbar.showMessage(f"'{path}' 디렉토리를 보고 있습니다.")
+        else:
+            self.statusbar.showMessage("디렉토리를 선택해주세요.")
 
     def on_file_selection_changed(self, selected: QModelIndex, deselected: QModelIndex):
         print(f"on_file_selection_changed 호출됨")
@@ -167,12 +194,25 @@ class MainWindow(QMainWindow):
         self.tag_control.clear_view()
         self.statusbar.showMessage(f"'{search_text}' 검색 완료: {len(search_results)}개 파일 발견.")
 
-    def open_batch_tagging_dialog(self):
-        """일괄 태깅 다이얼로그를 엽니다. (구현 예정)"""
-        self.statusbar.showMessage("일괄 태깅 기능이 실행되었습니다.")
-        print("일괄 태깅 기능 실행")
+    def on_tags_updated(self):
+        """TagControlWidget에서 태그가 업데이트된 후 호출되는 슬롯."""
+        self.statusbar.showMessage("태그가 업데이트되었습니다.", 3000)
+        
+        # 현재 선택된 파일 경로들을 다시 가져옴
+        selected_file_paths = self.file_list.get_selected_file_paths()
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    sys.exit(app.exec_())
+        # 파일 목록 위젯의 태그 정보 새로고침
+        # 현재는 모델을 리셋하는 방식으로 간단히 구현
+        current_path = self.file_list.model.current_directory
+        if current_path:
+            self.file_list.set_path(current_path)
+
+        # 파일 상세 위젯의 정보 새로고침
+        if len(selected_file_paths) == 1:
+            self.file_detail.update_preview(selected_file_paths[0])
+        else:
+            self.file_detail.clear_preview()
+
+        # TagControlWidget의 전체 태그 목록 및 자동완성 업데이트
+        self.tag_control.update_all_tags_list()
+        self.tag_control.update_completer_model()

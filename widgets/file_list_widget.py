@@ -19,22 +19,18 @@ class FileTableModel(QAbstractTableModel):
         self._tag_filter = "" # 현재 적용된 태그 필터
         self._is_search_mode = False # 검색 모드 여부
         
-    def set_directory(self, directory_path):
+    def set_directory(self, directory_path, recursive=False, file_extensions=None):
         self.beginResetModel()
         self.current_directory = directory_path
         self.all_files = []
         self.filtered_files = []
         self.search_results = []
         self._tag_filter = "" # 디렉토리 변경 시 태그 필터 초기화
-        self.is_search_mode = False # 디렉토리 선택 시 검색 모드 해제
+        self._is_search_mode = False # 디렉토리 선택 시 검색 모드 해제
         
-        if os.path.exists(directory_path) and os.path.isdir(directory_path):
-            for item in os.listdir(directory_path):
-                item_path = os.path.join(directory_path, item)
-                if os.path.isfile(item_path):
-                    self.all_files.append(item_path)
-                    
-            self.all_files.sort(key=lambda x: os.path.basename(x).lower())
+        # TagManager의 헬퍼 메서드를 사용하여 파일 목록을 가져옵니다.
+        self.all_files = self.tag_manager._get_files_in_directory(directory_path, recursive, file_extensions)
+        self.all_files.sort(key=lambda x: os.path.basename(x).lower())
             
         self._apply_filter()
         self.endResetModel()
@@ -178,9 +174,9 @@ class FileListWidget(QWidget):
         # 디버깅용 시그널 연결
         self.list_view.selectionModel().selectionChanged.connect(lambda selected, deselected: print(f"DEBUG: selectionChanged signal emitted. Selected: {len(selected.indexes())}, Deselected: {len(deselected.indexes())}"))
 
-    def set_path(self, path):
+    def set_path(self, path, recursive=False, file_extensions=None):
         """지정된 경로의 파일 목록을 표시합니다."""
-        self.model.set_directory(path)
+        self.model.set_directory(path, recursive, file_extensions)
 
     def set_tag_filter(self, tag_text):
         """파일 목록을 태그로 필터링합니다."""

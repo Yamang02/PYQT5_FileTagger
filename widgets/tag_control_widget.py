@@ -1,12 +1,17 @@
 from PyQt5.QtWidgets import QWidget, QCompleter, QMessageBox, QListView, QLineEdit
 from PyQt5.uic import loadUi
-from PyQt5.QtCore import Qt, QStringListModel
+from PyQt5.QtCore import Qt, QStringListModel, pyqtSignal
+import logging
+
+logger = logging.getLogger(__name__)
 
 from widgets.tag_chip import TagChip
 from widgets.quick_tags_widget import QuickTagsWidget
 from widgets.batch_tagging_options_widget import BatchTaggingOptionsWidget
 
 class TagControlWidget(QWidget):
+    tags_updated = pyqtSignal()
+
     def __init__(self, tag_manager, parent=None):
         super().__init__(parent)
         self.tag_manager = tag_manager
@@ -23,6 +28,7 @@ class TagControlWidget(QWidget):
 
     def setup_ui(self):
         loadUi('ui/tag_control_widget.ui', self)
+        logger.info(f"[TagControlWidget] setup_ui: tagging_tab_widget type: {type(self.tagging_tab_widget)}")
 
         # QuickTagsWidget 인스턴스 생성 및 배치
         self.individual_quick_tags = QuickTagsWidget()
@@ -108,6 +114,7 @@ class TagControlWidget(QWidget):
         pass
 
     def update_for_target(self, target, is_dir):
+        logger.info(f"[TagControlWidget] update_for_target 호출됨: target={target}, is_dir={is_dir}")
         # target은 단일 경로(str) 또는 여러 경로(list)가 될 수 있음
         self.current_target_path = None
         self.current_target_paths = []
@@ -116,9 +123,11 @@ class TagControlWidget(QWidget):
         if isinstance(target, list):
             self.current_target_paths = target
             # 다중 파일 선택 시 일괄 태깅 탭으로 강제 전환
+            logger.info("[TagControlWidget] 다중 파일 선택 감지. 일괄 태깅 탭으로 전환 시도.")
             self.tagging_tab_widget.setTabEnabled(0, False) # 개별 태깅 탭 비활성화
             self.tagging_tab_widget.setTabEnabled(1, True)  # 일괄 태깅 탭 활성화
             self.tagging_tab_widget.setCurrentIndex(1) # 일괄 태깅 탭으로 전환
+            logger.info(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
 
             self.individual_target_label.setText("파일을 선택하세요.")
             self.batch_target_label.setText(f"선택된 파일: {len(target)}개")
@@ -140,9 +149,11 @@ class TagControlWidget(QWidget):
 
             if is_dir:
                 # 디렉토리 선택 시 일괄 태깅 탭 활성화, 개별 태깅 탭 비활성화
+                logger.info("[TagControlWidget] 디렉토리 선택 감지. 일괄 태깅 탭으로 전환 시도.")
                 self.tagging_tab_widget.setTabEnabled(0, False) # 개별 태깅 탭 비활성화
                 self.tagging_tab_widget.setTabEnabled(1, True)  # 일괄 태깅 탭 활성화
                 self.tagging_tab_widget.setCurrentIndex(1) # 일괄 태깅 탭으로 전환
+                logger.info(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
 
                 self.individual_target_label.setText("파일을 선택하세요.")
                 self.batch_target_label.setText(f"대상 디렉토리: {target}")
@@ -151,9 +162,11 @@ class TagControlWidget(QWidget):
 
             else: # 파일 선택 시
                 # 파일 선택 시 개별 태깅 탭 활성화, 일괄 태깅 탭 비활성화
+                logger.info("[TagControlWidget] 단일 파일 선택 감지. 개별 태깅 탭으로 전환 시도.")
                 self.tagging_tab_widget.setTabEnabled(0, True)  # 개별 태깅 탭 활성화
                 self.tagging_tab_widget.setTabEnabled(1, False) # 일괄 태깅 탭 비활성화
                 self.tagging_tab_widget.setCurrentIndex(0) # 개별 태깅 탭으로 전환
+                logger.info(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
 
                 self.individual_target_label.setText(f"선택된 파일: {target}")
                 self.batch_target_label.setText("디렉토리를 선택하세요.")
@@ -242,57 +255,49 @@ class TagControlWidget(QWidget):
             self.tag_manager.update_tags(self.current_target_path, self.individual_tags)
             self.update_completer_model() # 새 태그가 추가되었을 수 있으므로 자동완성 모델 업데이트
             self.update_all_tags_list() # 모든 태그 목록 업데이트
+            self.tags_updated.emit()
             QMessageBox.information(self, "저장 완료", f"'{self.current_target_path}' 파일의 태그가 저장되었습니다.")
         else:
             QMessageBox.warning(self, "오류", "파일이 선택되지 않았거나 디렉토리입니다.")
 
     def apply_batch_tags(self):
-        # 다중 파일 선택 또는 디렉토리 선택에 따라 처리
-        if self.current_target_paths: # 다중 파일 선택
-            target_files = self.current_target_paths
-            recursive = False # 다중 파일 선택 시 재귀는 의미 없음
-            file_extensions = [] # 다중 파일 선택 시 확장자 필터는 의미 없음
-        elif self.current_target_path and self.is_current_target_dir: # 단일 디렉토리 선택
-            target_files = [self.current_target_path] # 디렉토리 경로를 리스트로 감싸서 전달
-            recursive = self.batch_options.recursive_checkbox.isChecked()
-            file_extensions = self.batch_options._get_file_extensions()
-        else:
-            QMessageBox.warning(self, "오류", "태그를 적용할 대상이 선택되지 않았습니다.")
-            return
-
         if not self.batch_tags:
             QMessageBox.warning(self, "태그 입력 필요", "적용할 태그를 입력해주세요.")
             return
 
-        # TagManager의 add_tags_to_directory는 단일 디렉토리 경로와 옵션을 받으므로, 
-        # 다중 파일 선택 시에는 각 파일에 대해 개별적으로 update_tags를 호출해야 합니다.
-        # 여기서는 편의상 add_tags_to_directory를 호출하되, TagManager에서 다중 파일 처리를 고려해야 합니다.
-        # 또는, 다중 파일 선택 시에는 TagManager에 새로운 메서드를 추가하는 것이 더 적절합니다.
-        
-        # 현재는 add_tags_to_directory가 단일 디렉토리만 처리하므로, 다중 파일 선택 시에는 개별 업데이트 로직을 사용합니다.
-        if self.current_target_paths: # 다중 파일 선택인 경우
-            successful_count = 0
-            failed_count = 0
-            for file_path in self.current_target_paths:
-                if self.tag_manager.update_tags(file_path, self.batch_tags):
-                    successful_count += 1
-                else:
-                    failed_count += 1
-            QMessageBox.information(self, "일괄 태깅 완료", f"{successful_count}개 파일에 태그가 적용되었습니다. ({failed_count}개 실패)")
+        result = None
+        # 1. 다중 파일 선택의 경우
+        if self.current_target_paths:
+            result = self.tag_manager.add_tags_to_files(
+                self.current_target_paths, 
+                self.batch_tags
+            )
 
-        else: # 단일 디렉토리 선택인 경우
+        # 2. 단일 디렉토리 선택의 경우
+        elif self.current_target_path and self.is_current_target_dir:
+            recursive = self.batch_options.recursive_checkbox.isChecked()
+            file_extensions = self.batch_options._get_file_extensions()
             result = self.tag_manager.add_tags_to_directory(
                 self.current_target_path, 
                 self.batch_tags, 
                 recursive=recursive, 
                 file_extensions=file_extensions
             )
-            if result.get("success"):
-                QMessageBox.information(self, "일괄 태깅 완료", f"{result.get('successful', 0)}개 파일에 태그가 적용되었습니다.")
-                self.update_completer_model()
-                self.update_all_tags_list()
-            else:
-                QMessageBox.critical(self, "일괄 태깅 실패", f"오류: {result.get('error', '알 수 없는 오류')}")
+        
+        # 3. 그 외 (대상이 선택되지 않은 경우 등)
+        else:
+            QMessageBox.warning(self, "오류", "태그를 적용할 대상(파일/디렉토리)이 선택되지 않았습니다.")
+            return
+
+        # 결과 처리 및 UI 업데이트
+        if result and result.get("success"):
+            QMessageBox.information(self, "일괄 태깅 완료", f"{result.get('successful', 0)}개 항목에 태그가 성공적으로 적용되었습니다.")
+            self.update_completer_model()
+            self.update_all_tags_list()
+            self.tags_updated.emit()
+        else:
+            error_msg = result.get("error") if result else "알 수 없는 오류"
+            QMessageBox.critical(self, "일괄 태깅 실패", f"오류: {error_msg}")
 
     def set_enabled(self, enabled):
         # 탭 위젯 자체의 활성화/비활성화는 여기서 제어하지 않고, update_for_target에서 탭별로 제어
