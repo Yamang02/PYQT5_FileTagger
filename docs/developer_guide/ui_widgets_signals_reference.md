@@ -1,114 +1,67 @@
-# UI, 위젯 및 시그널 참조 문서
+# UI 위젯 및 시그널-슬롯 참조 가이드
 
-이 문서는 FileTagger 애플리케이션의 주요 UI 구성 요소, 커스텀 위젯, 그리고 이들 간의 시그널-슬롯 연결을 정리한 것입니다. 향후 개발 및 유지보수 시 참조를 목적으로 합니다.
+이 문서는 FileTagger 애플리케이션의 현재 아키텍처, 주요 UI 위젯, 그리고 이들 간의 시그널-슬롯 연결 구조를 설명합니다. 코드를 수정하거나 새로운 기능을 추가할 때 반드시 이 문서를 참조하고 최신 상태로 유지해야 합니다.
 
-**이 문서는 UI, 위젯, 시그널 관련 코드(예: `main_window.ui`, `ui_initializer.py`, `signal_connector.py`, `widgets/` 디렉토리 내 파일들)에 변경이 있을 때마다 반드시 업데이트되어야 합니다.**
+## 1. 아키텍처 개요: 컴포넌트 기반 UI
 
-## 1. 주요 UI 구성 요소 (MainWindow 및 기본 위젯)
+FileTagger는 각 위젯이 명확하게 정의된 단일 책임(Single Responsibility)을 갖는 **컴포넌트 기반 아키텍처**를 따릅니다. `MainWindow`가 중앙 컨트롤 타워 역할을 하며, 각 독립적인 위젯들을 조합하고 이들 간의 상호작용을 시그널-슬롯 메커니즘을 통해 조율합니다.
 
-### `MainWindow` (main_window.py)
-- **역할**: 애플리케이션의 메인 윈도우. 모든 UI 요소의 컨테이너 역할을 합니다.
-- **주요 속성/위젯 (main_window.ui 기반)**:
-    - `splitter_main` (QSplitter): 전체 화면을 좌우로 분할 (디렉토리 트리뷰 / 중앙+오른쪽 패널).
-    - `splitter_content` (QSplitter): 중앙+오른쪽 패널을 좌우로 분할 (파일 목록 / 상세 정보+태깅 패널).
-    - `treeView_dirs` (QTreeView): 왼쪽 패널. 디렉토리 구조를 표시합니다.
-    - `tableView_files` (QTableView): 중앙 패널. 선택된 디렉토리 내의 파일 목록을 표시합니다.
-    - `widget_details` (QWidget): 오른쪽 패널의 컨테이너 위젯.
-    - `label_file_info` (QLabel): 'File Information' 제목 레이블.
-    - `textBrowser_file_details` (QTextBrowser): 선택된 파일의 상세 정보를 표시합니다.
-    - `label_edit_tags` (QLabel): 'Edit Tags' 제목 레이블.
-    - `lineEdit_tags` (QLineEdit): 태그 입력을 위한 LineEdit.
-    - `btn_save_tags` (QPushButton): 태그 저장을 위한 버튼.
-    - `label_all_tags` (QLabel): 'All Tags (Filter)' 제목 레이블.
-    - `listWidget_all_tags` (QListWidget): 전체 태그 목록을 보여주고 필터로 사용됩니다.
+### 아키텍처 결정 배경 (UnifiedTaggingPanel 계획 취소)
 
-### `QFileSystemModel` (dir_model)
-- **역할**: `treeView_dirs`에 파일 시스템 데이터를 제공하는 모델입니다.
+> 초기에는 개별/일괄 태깅 기능을 `UnifiedTaggingPanel`이라는 단일 위젯으로 통합하려는 시도가 있었습니다. (`_backup_ui_refactoring` 디렉토리 참조) 하지만 개발 과정에서 해당 패널의 복잡성이 과도하게 증가하고 위젯 간의 의존성이 높아지는 문제가 발생했습니다. 
+> 
+> 그 결과, 각 위젯의 역할을 명확히 분리하고 `MainWindow`에서 이를 제어하는 현재의 컴포Nᅥᆫ트 기반 아키텍처가 유지보수성, 확장성, 안정성 측면에서 더 유리하다고 판단하여 **`UnifiedTaggingPanel` 계획은 공식적으로 취소되었습니다.**
 
-### `FileTableModel` (file_model)
-- **역할**: `tableView_files`에 파일 정보와 태그 정보를 함께 표시하는 커스텀 테이블 모델입니다.
+## 2. 핵심 위젯 및 역할
 
-## 2. 커스텀 위젯 (ui_initializer.py에서 동적 생성 및 할당)
+애플리케이션의 UI는 다음과 같은 핵심 위젯들로 구성됩니다.
 
-### `FileSelectionAndPreviewWidget` (widgets/file_selection_and_preview_widget.py)
-- **역할**: 파일 목록 테이블뷰 및 미리보기 기능을 담당합니다. `ui_initializer.py`에서 생성되어 `main_window.file_selection_and_preview_widget`으로 할당됩니다.
-- **주요 시그널**:
-    - `file_selected(str, list)`: 파일이 선택될 때 파일 경로와 태그 목록을 전달합니다.
-    - `directory_selected(str)`: 디렉토리가 선택될 때 디렉토리 경로를 전달합니다.
+| 위젯 클래스 | 파일 경로 | 역할 |
+| :--- | :--- | :--- |
+| `MainWindow` | `main_window.py` | 모든 위젯을 포함하고 배치하는 메인 컨테이너. 위젯 간 시그널-슬롯 연결을 총괄. |
+| `DirectoryTreeWidget` | `widgets/directory_tree_widget.py` | 파일 시스템의 디렉토리 구조를 트리 형태로 제공하고, 디렉토리 선택 및 검색 이벤트를 발생시킴. |
+| `FileListWidget` | `widgets/file_list_widget.py` | 선택된 디렉토리의 파일 목록 또는 검색 결과를 테이블 형태로 표시. 태그 기반 필터링 기능 포함. |
+| `FileDetailWidget` | `widgets/file_detail_widget.py` | 단일 파일 선택 시, 파일의 썸네일, 메타데이터, 현재 태그 목록을 표시. |
+| `TagControlWidget` | `widgets/tag_control_widget.py` | **태그 편집의 핵심 UI.** "개별 태깅"과 "일괄 태깅" 탭을 통해 상황에 맞는 태그 편집 기능을 제공. |
+| `BatchTaggingPanel` | `widgets/batch_tagging_panel.py` | **독립 실행 가능한 일괄 태깅 패널.** 디렉토리 단위의 상세한 일괄 태깅 옵션과 백그라운드 처리 기능을 제공. |
 
-### `BatchTaggingOptionsWidget` (widgets/batch_tagging_options_widget.py)
-- **역할**: 일괄 태깅 시 필요한 추가 옵션(예: 하위 디렉토리 포함)을 제공합니다. `ui_initializer.py`에서 생성되어 `main_window.batch_tagging_options_widget`으로 할당됩니다.
-- **주요 속성/위젯**:
-    - `include_subdirs_checkbox` (QCheckBox): 하위 디렉토리를 태깅에 포함할지 여부를 선택하는 체크박스입니다.
-- **주요 메소드**:
-    - `is_include_subdirectories_checked()`: 체크박스 상태를 반환합니다.
+## 3. 시그널-슬롯 연결 (`MainWindow.setup_connections`)
 
-### `UnifiedTaggingPanel` (widgets/unified_tagging_panel.py)
-- **역할**: 개별 태깅과 일괄 태깅 기능을 통합하여 제공하는 패널입니다. `ui_initializer.py`에서 생성되어 `main_window.unified_tagging_panel`으로 할당됩니다.
-- **주요 속성/위젯**:
-    - `target_label` (QLabel): 현재 선택된 파일 또는 디렉토리 경로를 표시합니다.
-    - `tag_input_widget` (TagInputWidget): 태그 입력 및 관리를 담당하는 위젯입니다.
-    - `batch_options_widget` (BatchTaggingOptionsWidget): 일괄 태깅 시에만 표시되는 옵션(예: 하위 디렉토리 포함)을 제공합니다.
-- **주요 시그널**:
-    - `mode_changed(str)`: 태깅 모드(개별/일괄)가 변경될 때 발생합니다.
-    - `tags_applied(str, list)`: 태그가 파일/디렉토리에 적용될 때 발생합니다.
-- **주요 슬롯/메소드**:
-    - `update_target(item_path, is_dir)`: 선택된 대상이 변경될 때 호출되어 UI를 업데이트합니다.
-    - `switch_to_mode(mode)`: 태깅 모드를 전환합니다.
-    - `update_tag_autocomplete()`: 태그 자동 완성 목록을 업데이트합니다.
+`MainWindow`는 다음과 같이 위젯 간의 상호작용을 정의합니다.
 
-### `TagInputWidget` (widgets/tag_input_widget.py)
-- **역할**: 태그를 입력하고 추가하며, 현재 적용된 태그를 표시하는 UI를 제공합니다. `UnifiedTaggingPanel` 내부에 포함됩니다.
-- **주요 속성/위젯**:
-    - `tag_input` (QLineEdit): 새로운 태그를 입력하는 필드입니다.
-    - `add_tag_button` (QPushButton): 입력된 태그를 추가하는 버튼입니다.
-    - `tags_display_label` (QLabel): 현재 적용된 태그들을 표시합니다.
+- **디렉토리 선택 → 파일 목록 업데이트**
+    - **시그널**: `DirectoryTreeWidget.tree_view.clicked`
+    - **슬롯**: `MainWindow.on_directory_selected`
+    - **동작**: 선택된 디렉토리 경로를 `FileListWidget.set_path()`에 전달하여 파일 목록을 갱신하고, `TagControlWidget`을 해당 디렉토리 타겟으로 설정합니다.
 
-## 3. 시그널-슬롯 연결 (signal_connector.py)
+- **파일 선택 → 상세 정보 및 태그 편집기 업데이트**
+    - **시그널**: `FileListWidget.list_view.selectionModel().selectionChanged`
+    - **슬롯**: `MainWindow.on_file_selection_changed`
+    - **동작**:
+        - **단일 파일 선택 시**: `FileDetailWidget.update_preview()`를 호출하여 상세 정보를 표시하고, `TagControlWidget`을 해당 파일 타겟 ("개별 태깅" 모드)으로 설정합니다.
+        - **다중 파일 선택 시**: `FileDetailWidget`을 초기화하고, `TagControlWidget`을 선택된 파일 목록 타겟 ("일괄 태깅" 모드)으로 설정합니다.
 
-`SignalConnector` 클래스는 다양한 UI 요소 간의 상호작용을 관리합니다.
+- **태그 필터링**
+    - **시그널**: `DirectoryTreeWidget.tag_filter_changed`
+    - **슬롯**: `FileListWidget.set_tag_filter`
+    - **동작**: 태그 검색어에 따라 `FileListWidget`의 파일 목록을 실시간으로 필터링합니다.
 
-- **`MainWindow.open_dir_action.triggered`** -> `SignalConnector.open_directory_dialog()`
-    - 디렉토리 열기 메뉴 클릭 시 디렉토리 선택 대화상자를 엽니다.
+- **전역 파일 검색**
+    - **시그널**: `DirectoryTreeWidget.global_file_search_requested`
+    - **슬롯**: `MainWindow.on_global_file_search_requested`
+    - **동작**: 작업 공간 전체에서 파일을 검색하여 `FileListWidget.set_search_results()`를 통해 결과를 표시합니다.
 
-- **`MainWindow.individual_mode_action.triggered`** -> `SignalConnector.switch_tagging_mode('individual')`
-- **`MainWindow.batch_mode_action.triggered`** -> `SignalConnector.switch_tagging_mode('batch')`
-    - 메뉴를 통해 태깅 모드를 전환합니다.
+- **일괄 태깅 다이얼로그 실행 (향후 연결 예정)**
+    - **시그널**: `MainWindow.actionBatchTagging.triggered`
+    - **슬롯**: `MainWindow.open_batch_tagging_dialog`
+    - **현재 상태**: 기능이 호출되었다는 로그만 출력합니다. 향후 이 슬롯에서 `BatchTaggingPanel`을 포함하는 별도의 다이얼로그를 생성하고 실행하는 로직이 구현될 예정입니다.
 
-- **`MainWindow.clear_filter_action.triggered`** -> `SignalConnector.clear_filter()`
-    - 필터 초기화 메뉴 클릭 시 필터를 해제합니다.
+## 4. 데이터 흐름 요약
 
-- **`MainWindow.tree_view_dirs.clicked`** -> `SignalConnector.on_directory_tree_clicked(index)`
-    - 디렉토리 트리뷰에서 디렉토리를 클릭할 때 호출됩니다.
-    - 선택된 디렉토리로 파일 목록을 업데이트하고, `TagUIStateManager`에 디렉토리 정보를 설정합니다.
+1.  사용자가 `DirectoryTreeWidget`에서 디렉토리를 선택합니다.
+2.  `MainWindow`가 이 시그널을 받아 `FileListWidget`에 파일 목록 표시를 지시합니다.
+3.  사용자가 `FileListWidget`에서 하나 또는 여러 파일을 선택합니다.
+4.  `MainWindow`가 선택 상태를 감지하여 `FileDetailWidget`과 `TagControlWidget`에 필요한 정보를 전달하고 UI를 업데이트하도록 지시합니다.
+5.  사용자는 `TagControlWidget`을 통해 태그를 편집하고, `TagControlWidget`은 내부적으로 `TagManager`를 호출하여 변경 사항을 데이터베이스에 저장합니다.
 
-- **`FileSelectionAndPreviewWidget.file_selected`** -> `SignalConnector.on_file_selected(file_path, tags)`
-    - 파일 목록 테이블뷰에서 파일이 선택될 때 호출됩니다.
-    - `TagUIStateManager`에 선택된 파일 및 태그 정보를 설정합니다.
-
-- **`UnifiedTaggingPanel.mode_changed`** -> `SignalConnector.on_tagging_mode_changed(mode)`
-    - `UnifiedTaggingPanel` 내부에서 태깅 모드가 변경될 때 호출됩니다. 메뉴 상태 및 상태바 메시지를 업데이트합니다.
-
-- **`UnifiedTaggingPanel.tags_applied`** -> `SignalConnector.on_tags_applied(file_path, tags)`
-    - `UnifiedTaggingPanel`에서 태그 적용이 완료될 때 호출됩니다. 상태바 메시지를 표시하고, 태그 자동 완성 및 파일 목록의 태그 정보를 업데이트합니다.
-
-- **`TagUIStateManager.state_changed`** -> `SignalConnector.on_state_changed(state)`
-    - 애플리케이션의 전역 상태가 변경될 때 호출됩니다. (현재는 주로 로깅 목적이며, `batch_tagging_options_widget`의 가시성을 제어하는 로직이 포함되어 있습니다.)
-
-## 4. 데이터 관리 및 상태 관리
-
-### `TagManager` (core/tag_manager.py)
-- **역할**: MongoDB와의 연동을 통해 파일 태그 데이터를 관리합니다. 태그 추가, 조회, 삭제 등의 핵심 로직을 담당합니다.
-
-### `TagUIStateManager` (core/tag_ui_state_manager.py)
-- **역할**: 애플리케이션의 UI 상태(예: 현재 선택된 파일/디렉토리, 태깅 모드)를 중앙에서 관리합니다. 상태 변경 시 `state_changed` 시그널을 발생시켜 관련 UI 요소들이 업데이트되도록 합니다.
-
-## 5. 기타 유틸리티
-
-### `UIInitializer` (ui_initializer.py)
-- **역할**: `MainWindow`의 UI 구성 요소를 초기화하고 배치합니다. `.ui` 파일을 로드하고 커스텀 위젯들을 동적으로 추가하는 역할을 합니다.
-
-### `DataLoader` (data_loader.py)
-- **역할**: 애플리케이션 시작 시 초기 데이터를 로드하거나, 특정 시점에 데이터를 새로고침하는 역할을 합니다.
-
----
+이러한 구조는 각 컴포넌트의 독립성을 보장하고, 기능 변경 및 확장이 용이하도록 설계되었습니다.
