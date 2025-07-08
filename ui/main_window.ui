@@ -54,6 +54,7 @@
      <string>도구(&amp;T)</string>
     </property>
     <addaction name="actionBatchTagging"/>
+    <addaction name="actionManageQuickTags"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTools"/>
@@ -71,6 +72,11 @@
   <action name="actionSetWorkspace">
    <property name="text">
     <string>작업 공간 설정(&amp;W)...</string>
+   </property>
+  </action>
+  <action name="actionManageQuickTags">
+   <property name="text">
+    <string>빠른 태그 관리(&amp;Q)</string>
    </property>
   </action>
   <widget class="QStatusBar" name="statusbar"/>

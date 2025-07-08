@@ -16,6 +16,8 @@ from widgets.tag_control_widget import TagControlWidget
 
 # 코어 로직 임포트
 from core.tag_manager import TagManager
+from core.custom_tag_manager import CustomTagManager
+from widgets.custom_tag_dialog import CustomTagDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -24,6 +26,7 @@ class MainWindow(QMainWindow):
 
         # --- 코어 로직 초기화 ---
         self.tag_manager = TagManager()
+        self.custom_tag_manager = CustomTagManager()
 
         # --- 위젯 인스턴스 생성 ---
         # 초기 작업 공간 경로 설정
@@ -33,7 +36,7 @@ class MainWindow(QMainWindow):
         logger.debug(f"[MainWindow] DirectoryTreeWidget extensions_input: {self.directory_tree.extensions_input.text()}")
         self.file_list = FileListWidget(self.tag_manager)
         self.file_detail = FileDetailWidget(self.tag_manager)
-        self.tag_control = TagControlWidget(self.tag_manager)
+        self.tag_control = TagControlWidget(self.tag_manager, self.custom_tag_manager)
 
         # --- 3열 레이아웃 구성 (QSplitter 사용) ---
         self.mainSplitter.insertWidget(0, self.directory_tree)
@@ -64,6 +67,7 @@ class MainWindow(QMainWindow):
         # 메뉴 액션
         self.actionExit.triggered.connect(self.close)
         self.actionSetWorkspace.triggered.connect(self.set_workspace)
+        self.actionManageQuickTags.triggered.connect(self.open_custom_tag_dialog)
 
         # 위젯 간 연결
         self.directory_tree.tree_view.clicked.connect(self.on_directory_selected)
@@ -214,3 +218,59 @@ class MainWindow(QMainWindow):
         # TagControlWidget의 전체 태그 목록 및 자동완성 업데이트
         self.tag_control.update_all_tags_list()
         self.tag_control.update_completer_model()
+
+    def open_custom_tag_dialog(self):
+        dialog = CustomTagDialog(self.custom_tag_manager, self)
+        if dialog.exec_():
+            # 다이얼로그에서 태그가 업데이트되었을 경우 QuickTagsWidget을 새로고침
+            self.tag_control.individual_quick_tags.load_quick_tags()
+            self.tag_control.batch_quick_tags.load_quick_tags()
+
+    def on_directory_tree_context_menu(self, directory_path, global_pos):
+        menu = QMenu(self)
+        remove_tags_action = menu.addAction("일괄 태그 제거...")
+        action = menu.exec_(global_pos)
+
+        if action == remove_tags_action:
+            self._open_batch_remove_tags_dialog(directory_path)
+
+    def _open_batch_remove_tags_dialog(self, target_path):
+        dialog = BatchRemoveTagsDialog(self)
+        if dialog.exec_():
+            tags_to_remove = dialog.get_tags_to_remove()
+            if tags_to_remove:
+                # TagManager의 remove_tags_from_files 또는 clear_all_tags_from_file 호출
+                # 여기서는 디렉토리 경로를 받았으므로, 해당 디렉토리 내 파일들에 대해 일괄 제거를 수행해야 함
+                # TagManager에 디렉토리 내 파일에서 태그를 제거하는 새로운 메서드가 필요할 수 있음
+                # 현재는 remove_tags_from_files를 사용하되, 대상 파일 목록을 먼저 가져와야 함
+                
+                # 임시: 디렉토리 내 모든 파일에 대해 태그 제거 (재귀적으로)
+                # 이 부분은 TagManager에 새로운 메서드를 추가하거나, 여기서 파일 목록을 가져와 처리해야 함
+                # 현재 TagManager에는 add_tags_to_directory는 있지만 remove_tags_from_directory는 없음
+                # 따라서, 여기서는 일단 선택된 디렉토리의 모든 파일에 대해 remove_tags_from_files를 호출하는 방식으로 구현
+                
+                # TODO: TagManager에 remove_tags_from_directory 메서드 추가 필요
+                # 현재는 임시로 디렉토리 내 모든 파일을 가져와서 처리
+                
+                # 디렉토리 내 파일 목록 가져오기 (recursive=True, file_extensions=None)
+                # TagManager의 _get_files_in_directory 메서드를 활용해야 하지만, private 메서드이므로 직접 호출 불가
+                # TagManager에 public 메서드로 get_files_in_directory를 추가하거나, 다른 방식으로 파일 목록을 가져와야 함
+                
+                # 일단은 임시로 TagManager의 add_tags_to_directory에서 사용하는 _get_files_in_directory 로직을 참고하여 구현
+                # 이 부분은 추후 리팩토링 필요
+                
+                # TagManager의 get_files_in_directory 메서드를 사용하여 파일 목록 가져오기
+                all_files_in_directory = self.tag_manager.get_files_in_directory(target_path, recursive=True, file_extensions=None)
+
+                if all_files_in_directory:
+                    result = self.tag_manager.remove_tags_from_files(all_files_in_directory, tags_to_remove)
+                    if result and result.get("success"):
+                        QMessageBox.information(self, "일괄 태그 제거 완료", f"{result.get('successful', 0)}개 항목에서 태그가 성공적으로 제거되었습니다.")
+                        self.on_tags_updated() # UI 업데이트
+                    else:
+                        error_msg = result.get("error") if result else "알 수 없는 오류"
+                        QMessageBox.critical(self, "일괄 태그 제거 실패", f"오류: {error_msg}")
+                else:
+                    QMessageBox.information(self, "정보", "선택된 디렉토리 내에 태그를 제거할 파일이 없습니다.")
+            else:
+                QMessageBox.information(self, "정보", "제거할 태그가 선택되지 않았습니다.")

@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.uic import loadUi
 import os
 import datetime
@@ -9,9 +9,12 @@ from widgets.tag_chip import TagChip
 from core.tag_manager import TagManager
 
 class FileDetailWidget(QWidget):
+    file_tags_changed = pyqtSignal() # 파일 태그 변경 시그널
+
     def __init__(self, tag_manager: TagManager, parent=None):
         super().__init__(parent)
         self.tag_manager = tag_manager
+        self.current_file_path = None # 현재 선택된 파일 경로 저장
         self.setup_ui()
 
     def setup_ui(self):
@@ -19,14 +22,13 @@ class FileDetailWidget(QWidget):
         self.thumbnail_label.setAlignment(Qt.AlignCenter)
         self.clear_preview()
 
+        # 모든 태그 삭제 버튼 연결
+        self.clear_all_tags_button.clicked.connect(self._on_clear_all_tags_clicked)
+
     def update_preview(self, file_path):
+        self.current_file_path = file_path # 현재 파일 경로 저장
         self.clear_preview()
 
-        if not file_path or not os.path.isfile(file_path):
-            return
-
-        # --- 썸네일 업데이트 ---
-        pixmap = QPixmap(file_path)
         if not file_path or not os.path.isfile(file_path):
             return
 
@@ -61,6 +63,7 @@ class FileDetailWidget(QWidget):
             self.thumbnail_label.setText(f"오류: {e}")
 
     def clear_preview(self):
+        self.current_file_path = None # 파일 경로 초기화
         self.thumbnail_label.setText("파일을 선택하세요.")
         self.thumbnail_label.setPixmap(QPixmap()) # 기존 이미지 제거
         self.metadata_browser.clear()
@@ -74,7 +77,7 @@ class FileDetailWidget(QWidget):
 
         for tag in tags:
             chip = TagChip(tag)
-            chip.delete_button.setVisible(False)
+            chip.tag_removed.connect(self._on_tag_chip_removed) # 시그널 연결
             self.tag_chip_layout.addWidget(chip, row, col)
             col += 1
             if col >= max_cols:
@@ -82,11 +85,24 @@ class FileDetailWidget(QWidget):
                 row += 1
 
     def _clear_tag_chips(self):
-        # 기존 칩 모두 제거 (스페이서 제외)
+        # 기존 칩 모두 제거
         while self.tag_chip_layout.count() > 0:
             item = self.tag_chip_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-            elif item.spacerItem():
-                # 스페이서도 제거
-                self.tag_chip_layout.removeItem(item)
+
+    def _on_tag_chip_removed(self, tag_text):
+        """태그 칩의 삭제 버튼 클릭 시 호출됩니다."""
+        if self.current_file_path:
+            success = self.tag_manager.remove_tags_from_file(self.current_file_path, [tag_text])
+            if success:
+                self.update_preview(self.current_file_path) # UI 업데이트
+                self.file_tags_changed.emit() # 태그 변경 시그널 발생
+
+    def _on_clear_all_tags_clicked(self):
+        """모든 태그 삭제 버튼 클릭 시 호출됩니다."""
+        if self.current_file_path:
+            success = self.tag_manager.clear_all_tags_from_file(self.current_file_path)
+            if success:
+                self.update_preview(self.current_file_path) # UI 업데이트
+                self.file_tags_changed.emit() # 태그 변경 시그널 발생

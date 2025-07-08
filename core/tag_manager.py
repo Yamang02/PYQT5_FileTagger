@@ -173,6 +173,156 @@ class TagManager:
             logger.error(f"[TagManager] 태그 업데이트 중 예상치 못한 오류: {e}")
             raise TagManagerError(f"태그 업데이트 중 오류: {e}")
 
+    def remove_tags_from_file(self, file_path: str, tags_to_remove: list[str]) -> bool:
+        """
+        지정된 file_path에서 tags_to_remove 리스트에 포함된 태그들을 제거합니다.
+        제거 후 해당 파일에 태그가 하나도 남지 않으면, 해당 파일의 태그 필드를 빈 리스트로 업데이트합니다.
+        성공 시 True, 실패 시 False를 반환합니다.
+        """
+        try:
+            self._ensure_connection()
+
+            if not file_path or not isinstance(file_path, str):
+                logger.error(f"[TagManager] 잘못된 파일 경로: {file_path}")
+                return False
+            if not isinstance(tags_to_remove, list):
+                logger.error(f"[TagManager] 잘못된 tags_to_remove 형식: {type(tags_to_remove)}")
+                return False
+
+            normalized_file_path = normalize_path(file_path)
+            document = self.collection.find_one({"_id": normalized_file_path})
+
+            if not document:
+                logger.debug(f"[TagManager] 파일 '{file_path}'을 찾을 수 없어 태그를 제거할 수 없습니다.")
+                return True # 파일이 없으면 제거할 태그도 없으므로 성공으로 간주
+
+            existing_tags = set(document.get("tags", []))
+            
+            # 제거할 태그들을 기존 태그에서 제외
+            updated_tags = list(existing_tags - set(tags_to_remove))
+
+            if not updated_tags: # 태그가 하나도 남지 않으면 태그 필드를 빈 리스트로 업데이트
+                result = self.collection.update_one(
+                    {"_id": normalized_file_path}, {"$set": {"tags": []}}
+                )
+            else:
+                result = self.collection.update_one(
+                    {"_id": normalized_file_path}, {"$set": {"tags": updated_tags}}
+                )
+            
+            if result.modified_count > 0 or result.upserted_count > 0:
+                logger.debug(f"[TagManager] 파일 '{file_path}'에서 태그 제거 성공. 남은 태그: {updated_tags}")
+                return True
+            else:
+                logger.warning(f"[TagManager] 파일 '{file_path}'에서 태그 제거 실패 또는 변경 없음.")
+                return False
+
+        except TagManagerError:
+            raise
+        except OperationFailure as e:
+            logger.error(f"[TagManager] 태그 제거 중 데이터베이스 오류: {e}")
+            raise TagManagerError(f"태그 제거 중 데이터베이스 오류: {e}")
+        except Exception as e:
+            logger.error(f"[TagManager] 태그 제거 중 예상치 못한 오류: {e}")
+            raise TagManagerError(f"태그 제거 중 오류: {e}")
+
+    def clear_all_tags_from_file(self, file_path: str) -> bool:
+        """
+        지정된 file_path의 모든 태그를 제거합니다.
+        성공 시 True, 실패 시 False를 반환합니다.
+        """
+        try:
+            self._ensure_connection()
+
+            if not file_path or not isinstance(file_path, str):
+                logger.error(f"[TagManager] 잘못된 파일 경로: {file_path}")
+                return False
+
+            normalized_file_path = normalize_path(file_path)
+            result = self.collection.update_one(
+                {"_id": normalized_file_path}, {"$set": {"tags": []}}
+            )
+
+            if result.modified_count > 0 or result.upserted_count > 0:
+                logger.debug(f"[TagManager] 파일 '{file_path}'의 모든 태그 제거 성공.")
+                return True
+            else:
+                logger.warning(f"[TagManager] 파일 '{file_path}'의 모든 태그 제거 실패 또는 변경 없음.")
+                return False
+
+        except TagManagerError:
+            raise
+        except OperationFailure as e:
+            logger.error(f"[TagManager] 모든 태그 제거 중 데이터베이스 오류: {e}")
+            raise TagManagerError(f"모든 태그 제거 중 데이터베이스 오류: {e}")
+        except Exception as e:
+            logger.error(f"[TagManager] 모든 태그 제거 중 예상치 못한 오류: {e}")
+            raise TagManagerError(f"모든 태그 제거 중 오류: {e}")
+
+    def remove_tags_from_files(self, file_paths: list[str], tags_to_remove: list[str]) -> dict:
+        """
+        여러 file_paths에 대해 tags_to_remove 리스트에 포함된 태그들을 일괄적으로 제거합니다.
+        add_tags_to_files 메서드와 유사한 반환 형식(처리 결과 정보)을 가집니다.
+        """
+        try:
+            self._ensure_connection()
+
+            if not isinstance(file_paths, list) or not file_paths:
+                return {"success": False, "error": "잘못된 파일 경로 리스트"}
+            if not isinstance(tags_to_remove, list):
+                return {"success": False, "error": "잘못된 tags_to_remove 형식"}
+
+            logger.debug(f"[TagManager] 다중 파일 태그 제거 시작: {len(file_paths)}개 파일, 태그: {tags_to_remove}")
+
+            bulk_operations = []
+            error_files = []
+            
+            # DB에서 기존 태그를 한 번에 가져옵니다.
+            existing_docs = {doc['_id']: doc.get('tags', []) for doc in self.collection.find({"_id": {"$in": file_paths}})}
+
+            for file_path in file_paths:
+                normalized_file_path = normalize_path(file_path)
+                try:
+                    existing_tags = set(existing_docs.get(normalized_file_path, []))
+                    
+                    # 제거할 태그들을 기존 태그에서 제외
+                    updated_tags = list(existing_tags - set(tags_to_remove))
+
+                    bulk_operations.append(
+                        UpdateOne({"_id": normalized_file_path}, {"$set": {"tags": updated_tags}}, upsert=True)
+                    )
+                except Exception as e:
+                    logger.error(f"[TagManager] 파일 '{file_path}' 처리 중 오류: {e}")
+                    error_files.append({"file": file_path, "error": str(e)})
+
+            if not bulk_operations:
+                 return {"success": True, "message": "태그를 제거할 파일이 없습니다.", "processed": 0}
+
+            result = self.collection.bulk_write(bulk_operations, ordered=False)
+            
+            success_count = len(file_paths) - len(error_files)
+            logger.debug(f"[TagManager] 다중 파일 태그 제거 완료: {success_count}개 성공, {len(error_files)}개 실패")
+            
+            return {
+                "success": True,
+                "processed": len(file_paths),
+                "successful": success_count,
+                "failed": len(error_files),
+                "modified": result.modified_count,
+                "upserted": result.upserted_count,
+                "errors": error_files
+            }
+
+        except TagManagerError as e:
+            logger.error(f"[TagManager] 다중 파일 태그 제거 중 TagManager 오류: {e}")
+            return {"success": False, "error": str(e)}
+        except OperationFailure as e:
+            logger.error(f"[TagManager] 다중 파일 태그 제거 중 데이터베이스 오류: {e}")
+            return {"success": False, "error": f"데이터베이스 오류: {e}"}
+        except Exception as e:
+            logger.error(f"[TagManager] 다중 파일 태그 제거 중 예상치 못한 오류: {e}")
+            return {"success": False, "error": f"예상치 못한 오류: {e}"}
+
     def _validate_tags(self, tags):
         """태그 리스트의 유효성을 검사합니다."""
         if not isinstance(tags, list):
@@ -367,6 +517,12 @@ class TagManager:
         except Exception as e:
             logger.error(f"[TagManager] _get_files_in_directory: 파일 탐색 중 오류: {e}")
             return []
+
+    def get_files_in_directory(self, directory_path, recursive=False, file_extensions=None):
+        """
+        지정된 디렉토리 내에서 조건에 맞는 파일 경로를 탐색하여 반환합니다. (공개 메서드)
+        """
+        return self._get_files_in_directory(directory_path, recursive, file_extensions)
 
     def add_tags_to_directory(self, directory_path, tags, recursive=False, file_extensions=None):
         """

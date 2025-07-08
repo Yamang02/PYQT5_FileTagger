@@ -176,6 +176,13 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QPushButton" name="batch_remove_tags_button">
+         <property name="text">
+          <string>일괄 태그 제거</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </widget>

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QMessageBox
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5 import uic
-
+from core.custom_tag_manager import CustomTagManager
 
 class QuickTagsWidget(QWidget):
     """
@@ -12,18 +12,18 @@ class QuickTagsWidget(QWidget):
     tag_toggled = pyqtSignal(str, bool)  # (tag_name, is_added) 시그널
     tags_changed = pyqtSignal(list)
 
-    def __init__(self, quick_tags=None, parent=None):
+    def __init__(self, custom_tag_manager: CustomTagManager, parent=None):
         super().__init__(parent)
         uic.loadUi('ui/quick_tags_widget.ui', self)
         self.layout = self.findChild(QHBoxLayout, 'horizontalLayout') # .ui 파일에서 로드된 레이아웃 참조
-        self._quick_tags = quick_tags or ["중요", "검토", "완료", "보류"]
+        self.custom_tag_manager = custom_tag_manager
         self._selected_tags = []
         self._buttons = {}
         self.is_enabled = True  # 위젯 활성화 상태 추적
-        self._init_buttons()
+        self.load_quick_tags() # 커스텀 태그 로드
 
-    def set_quick_tags(self, tags):
-        self._quick_tags = list(tags)
+    def load_quick_tags(self):
+        self._quick_tags = self.custom_tag_manager.load_custom_quick_tags()
         # 기존 버튼/레이아웃 제거
         try:
             for btn in self._buttons.values():
@@ -68,15 +68,12 @@ class QuickTagsWidget(QWidget):
 
     def set_enabled(self, enabled: bool):
         """위젯 전체 활성/비활성 상태를 설정합니다."""
-        self.is_enabled = enabled  # 내부 상태 업데이트
+        self.is_enabled = enabled  
         
-        # 위젯 자체 비활성화
         self.setEnabled(enabled)
         
-        # 모든 버튼 개별 비활성화
         for button in self._buttons.values():
             button.setEnabled(enabled)
-            # 버튼 스타일도 비활성화 상태에 맞게 조정
             if not enabled:
                 button.setStyleSheet("""
                     QPushButton {
@@ -89,7 +86,6 @@ class QuickTagsWidget(QWidget):
                     }
                 """)
             else:
-                # 활성화 상태 스타일 복원
                 button.setStyleSheet("""
                     QPushButton {
                         background-color: #f0f0f0;

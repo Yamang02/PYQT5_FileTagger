@@ -6,6 +6,7 @@ class DirectoryTreeWidget(QWidget):
     tag_filter_changed = pyqtSignal(str) # 태그 필터 텍스트가 변경될 때 방출
     global_file_search_requested = pyqtSignal(str) # 전역 파일 검색 요청 시 방출
     filter_options_changed = pyqtSignal(bool, list) # 재귀 여부, 파일 확장자 리스트가 변경될 때 방출
+    directory_context_menu_requested = pyqtSignal(str, object) # 디렉토리 경로와 전역 위치를 전달
 
     def __init__(self, initial_root_path, parent=None):
         super().__init__(parent)
@@ -63,6 +64,10 @@ class DirectoryTreeWidget(QWidget):
         self.tree_view.hideColumn(2) # Type
         self.tree_view.hideColumn(3) # Date Modified
         
+        # 컨텍스트 메뉴 활성화
+        self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree_view.customContextMenuRequested.connect(self._on_tree_view_context_menu_requested)
+
         # 레이아웃에 트리 뷰 추가
         layout.addWidget(self.tree_view)
         self.setLayout(layout)
@@ -81,5 +86,13 @@ class DirectoryTreeWidget(QWidget):
         extensions_text = self.extensions_input.text().strip()
         file_extensions = [ext.strip() for ext in extensions_text.split(',') if ext.strip()]
         self.filter_options_changed.emit(recursive, file_extensions)
+
+    def _on_tree_view_context_menu_requested(self, position):
+        index = self.tree_view.indexAt(position)
+        if index.isValid():
+            # 실제 파일 시스템 경로 가져오기
+            file_path = self.model.filePath(self.proxy_model.mapToSource(index))
+            if self.model.isDir(self.proxy_model.mapToSource(index)): # 디렉토리인 경우에만
+                self.directory_context_menu_requested.emit(file_path, self.tree_view.mapToGlobal(position))
 
     # _on_tree_search_text_changed 메서드 제거

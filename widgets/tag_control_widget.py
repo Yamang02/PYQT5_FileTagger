@@ -8,13 +8,16 @@ logger = logging.getLogger(__name__)
 from widgets.tag_chip import TagChip
 from widgets.quick_tags_widget import QuickTagsWidget
 from widgets.batch_tagging_options_widget import BatchTaggingOptionsWidget
+from core.custom_tag_manager import CustomTagManager
+from widgets.batch_remove_tags_dialog import BatchRemoveTagsDialog
 
 class TagControlWidget(QWidget):
     tags_updated = pyqtSignal()
 
-    def __init__(self, tag_manager, parent=None):
+    def __init__(self, tag_manager, custom_tag_manager: CustomTagManager, parent=None):
         super().__init__(parent)
         self.tag_manager = tag_manager
+        self.custom_tag_manager = custom_tag_manager
         self.current_target_path = None # 현재 선택된 파일 또는 디렉토리 경로 (단일 파일/디렉토리)
         self.current_target_paths = [] # 현재 선택된 파일 목록 (다중 파일)
         self.is_current_target_dir = False # 현재 대상이 디렉토리인지 여부
@@ -31,11 +34,11 @@ class TagControlWidget(QWidget):
         logger.debug(f"[TagControlWidget] setup_ui: tagging_tab_widget type: {type(self.tagging_tab_widget)}")
 
         # QuickTagsWidget 인스턴스 생성 및 배치
-        self.individual_quick_tags = QuickTagsWidget()
+        self.individual_quick_tags = QuickTagsWidget(self.custom_tag_manager, self)
         self.individual_verticalLayout.replaceWidget(self.individual_quick_tags_placeholder, self.individual_quick_tags)
         self.individual_quick_tags_placeholder.deleteLater()
 
-        self.batch_quick_tags = QuickTagsWidget()
+        self.batch_quick_tags = QuickTagsWidget(self.custom_tag_manager, self)
         self.batch_verticalLayout.replaceWidget(self.batch_quick_tags_placeholder, self.batch_quick_tags)
         self.batch_quick_tags_placeholder.deleteLater()
 
@@ -332,6 +335,37 @@ class TagControlWidget(QWidget):
         # 빠른 태그 변경 시 일괄 태깅 탭의 태그 목록 업데이트
         self.batch_tags = list(set(self.batch_tags + tags)) # 중복 제거
         self._refresh_chip_layout(self.batch_tags, self.batch_chip_layout, self.batch_tag_input)
+
+    def _on_batch_remove_tags_clicked(self):
+        if not self.current_target_path and not self.current_target_paths:
+            QMessageBox.warning(self, "대상 없음", "태그를 제거할 파일 또는 디렉토리를 선택해주세요.")
+            return
+
+        dialog = BatchRemoveTagsDialog(self)
+        if dialog.exec_():
+            tags_to_remove = dialog.get_tags_to_remove()
+            if not tags_to_remove:
+                QMessageBox.information(self, "정보", "제거할 태그가 선택되지 않았습니다.")
+                return
+
+            target_files = []
+            if self.current_target_paths: # 다중 파일 선택
+                target_files = self.current_target_paths
+            elif self.current_target_path and self.is_current_target_dir: # 단일 디렉토리 선택
+                # TagManager의 get_files_in_directory를 사용하여 파일 목록 가져오기
+                target_files = self.tag_manager.get_files_in_directory(self.current_target_path, recursive=True, file_extensions=None)
+            
+            if not target_files:
+                QMessageBox.information(self, "정보", "선택된 대상 내에 태그를 제거할 파일이 없습니다.")
+                return
+
+            result = self.tag_manager.remove_tags_from_files(target_files, tags_to_remove)
+            if result and result.get("success"):
+                QMessageBox.information(self, "일괄 태그 제거 완료", f"{result.get('successful', 0)}개 항목에서 태그가 성공적으로 제거되었습니다.")
+                self.tags_updated.emit() # UI 업데이트
+            else:
+                error_msg = result.get("error") if result else "알 수 없는 오류"
+                QMessageBox.critical(self, "일괄 태그 제거 실패", f"오류: {error_msg}")
 
     def clear_view(self):
         self.current_target_path = None
