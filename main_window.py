@@ -205,9 +205,8 @@ class MainWindow(QMainWindow):
 
         # 파일 목록 위젯의 태그 정보 새로고침
         # 현재는 모델을 리셋하는 방식으로 간단히 구현
-        current_path = self.file_list.model.current_directory
-        if current_path:
-            self.file_list.set_path(current_path)
+        # 파일 목록 위젯의 태그 정보 새로고침
+        self.file_list.refresh_tags_for_current_files()
 
         # 파일 상세 위젯의 정보 새로고침
         if len(selected_file_paths) == 1:
@@ -227,11 +226,14 @@ class MainWindow(QMainWindow):
             self.tag_control.batch_quick_tags.load_quick_tags()
 
     def on_directory_tree_context_menu(self, directory_path, global_pos):
+        print(f"DEBUG: on_directory_tree_context_menu called for {directory_path}") # 진단용
         menu = QMenu(self)
         remove_tags_action = menu.addAction("일괄 태그 제거...")
+        print(f"DEBUG: Menu created, action added. Executing menu at {global_pos}") # 진단용
         action = menu.exec_(global_pos)
 
         if action == remove_tags_action:
+            print(f"DEBUG: '일괄 태그 제거...' action triggered for {directory_path}") # 진단용
             self._open_batch_remove_tags_dialog(directory_path)
 
     def _open_batch_remove_tags_dialog(self, target_path):

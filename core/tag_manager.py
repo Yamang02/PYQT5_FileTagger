@@ -6,6 +6,9 @@ from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, Opera
 import config  # config.py 파일을 import
 from core.path_utils import normalize_path # 새로 추가된 path_utils 모듈 임포트
 
+# 이 모듈은 MongoDB와 상호작용하여 파일 태그를 관리하는 TagManager 클래스를 정의합니다.
+# 이 클래스는 데이터베이스 연결, 태그 조회, 업데이트, 삭제 등의 기능을 제공합니다.
+# 또한, 파일 경로를 정규화하는 헬퍼 함수도 포함되어 있습니다.   
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -210,7 +213,7 @@ class TagManager:
                     {"_id": normalized_file_path}, {"$set": {"tags": updated_tags}}
                 )
             
-            if result.modified_count > 0 or result.upserted_count > 0:
+            if result.modified_count > 0 or getattr(result, 'upserted_id', None) is not None:
                 logger.debug(f"[TagManager] 파일 '{file_path}'에서 태그 제거 성공. 남은 태그: {updated_tags}")
                 return True
             else:
@@ -242,8 +245,8 @@ class TagManager:
             result = self.collection.update_one(
                 {"_id": normalized_file_path}, {"$set": {"tags": []}}
             )
-
-            if result.modified_count > 0 or result.upserted_count > 0:
+            
+            if result.modified_count > 0 or getattr(result, 'upserted_id', None) is not None:
                 logger.debug(f"[TagManager] 파일 '{file_path}'의 모든 태그 제거 성공.")
                 return True
             else:

@@ -337,12 +337,15 @@ class TagControlWidget(QWidget):
         self._refresh_chip_layout(self.batch_tags, self.batch_chip_layout, self.batch_tag_input)
 
     def _on_batch_remove_tags_clicked(self):
+        print("DEBUG: _on_batch_remove_tags_clicked called.") # 진단용
         if not self.current_target_path and not self.current_target_paths:
             QMessageBox.warning(self, "대상 없음", "태그를 제거할 파일 또는 디렉토리를 선택해주세요.")
             return
 
         dialog = BatchRemoveTagsDialog(self)
+        print(f"DEBUG: BatchRemoveTagsDialog created: {dialog}") # 진단용
         if dialog.exec_():
+            print("DEBUG: BatchRemoveTagsDialog accepted.") # 진단용
             tags_to_remove = dialog.get_tags_to_remove()
             if not tags_to_remove:
                 QMessageBox.information(self, "정보", "제거할 태그가 선택되지 않았습니다.")
@@ -360,6 +363,7 @@ class TagControlWidget(QWidget):
                 return
 
             result = self.tag_manager.remove_tags_from_files(target_files, tags_to_remove)
+            print(f"DEBUG: tag_manager.remove_tags_from_files result: {result}") # 진단용
             if result and result.get("success"):
                 QMessageBox.information(self, "일괄 태그 제거 완료", f"{result.get('successful', 0)}개 항목에서 태그가 성공적으로 제거되었습니다.")
                 self.tags_updated.emit() # UI 업데이트

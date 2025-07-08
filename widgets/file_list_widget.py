@@ -126,25 +126,20 @@ class FileTableModel(QAbstractTableModel):
                 return self.filtered_files[index.row()]
         return ""
         
-    def refresh_file_tags(self, file_path):
-        """특정 파일의 태그 정보를 새로고침"""
-        # 태그 정보가 변경되었을 수 있으므로 필터를 다시 적용
-        self._apply_filter()
-        # 필터링된 파일 목록에서 해당 파일의 새 인덱스를 찾아 업데이트 시그널 발생
-        if file_path in self.filtered_files:
-            new_file_index = self.filtered_files.index(file_path)
-            top_left = self.index(new_file_index, 2)
-            bottom_right = self.index(new_file_index, 2)
-            self.dataChanged.emit(top_left, bottom_right)
-        elif file_path in self.search_results:
-            # 검색 결과에 있는 경우에도 업데이트
-            new_file_index = self.search_results.index(file_path)
-            top_left = self.index(new_file_index, 2)
-            bottom_right = self.index(new_file_index, 2)
-            self.dataChanged.emit(top_left, bottom_right)
-        else:
-            # 필터링으로 인해 파일이 사라지거나 나타날 수 있으므로 전체 리셋
-            self.layoutChanged.emit()
+    def refresh_tags_for_current_files(self):
+        """현재 표시된 모든 파일의 태그 정보를 새로고침합니다.
+        파일 목록 자체는 변경되지 않고, 태그 컬럼만 업데이트됩니다.
+        """
+        # 현재 표시되는 파일 목록 (필터링된 파일 또는 검색 결과)
+        current_display_files = self.filtered_files if not self._is_search_mode else self.search_results
+        
+        if not current_display_files:
+            return
+
+        # 태그 컬럼 (인덱스 2)에 대해서만 dataChanged 시그널 발생
+        top_left = self.index(0, 2)
+        bottom_right = self.index(len(current_display_files) - 1, 2)
+        self.dataChanged.emit(top_left, bottom_right)
 
 
 class FileListWidget(QWidget):
@@ -198,3 +193,7 @@ class FileListWidget(QWidget):
             if file_path:
                 selected_paths.append(file_path)
         return selected_paths
+
+    def refresh_tags_for_current_files(self):
+        """모델의 태그 정보를 새로고침하도록 요청합니다."""
+        self.model.refresh_tags_for_current_files()
