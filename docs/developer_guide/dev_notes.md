@@ -19,8 +19,7 @@
 ### DRS 검토 결과 (태그 관리 기능 강화)
 - **DRS-20250708-003_Tag_Management_Enhancements.md**:
     - **목표**: 태그 삭제 일관성 확보 및 커스텀 태그 버튼 기능 도입.
-    - **현재 상태**: 이 DRS에 명시된 기능들은 현재 코드베이스에 구현되어 있지 않음. 따라서 요구사항은 충족되지 않음.
-    - **향후 계획**:
+    - **최종 결정 사항 (기획팀 협의)**:
         1.  **태그 삭제 기능 구현**:
             - `core/tag_manager.py`에 `remove_tags_from_file`, `clear_all_tags_from_file`, `remove_tags_from_files` 메서드 추가.
             - `widgets/tag_chip.py`에 삭제 버튼 추가 및 기능 연동 (팝업 없이 즉시 삭제).
@@ -32,6 +31,63 @@
             - **커스텀 태그 관리 UI 진입점**: 메인 윈도우 메뉴바를 통해서만 진입.
             - 커스텀 태그를 편집할 수 있는 새로운 다이얼로그/패널 구현 (세부 사항은 개발 중 논의).
             - `QuickTagsWidget`이 이 커스텀 태그 목록을 로드하고 표시하도록 수정.
+
+### 개발 진행 상황 (2025년 7월 8일)
+- **태그 삭제 백엔드 로직 구현 완료**:
+    - `core/tag_manager.py`에 `remove_tags_from_file`, `clear_all_tags_from_file`, `remove_tags_from_files` 메서드 추가.
+    - `core/tag_manager.py`에 `get_files_in_directory` 공개 메서드 추가.
+- **커스텀 태그 저장/로드 로직 구현 완료**:
+    - `config.py`에 `CUSTOM_TAGS_FILE` 경로 추가.
+    - `core/custom_tag_manager.py` 파일 생성 및 `CustomTagManager` 클래스 구현 (JSON 파일 기반).
+- **개별 태그 삭제 UI 구현 완료**:
+    - `widgets/tag_chip.py`에 `tag_removed` 시그널 추가 및 `_on_delete_button_clicked` 메서드 구현.
+    - `ui/file_detail_content_widget.ui`에 '모든 태그 삭제' 버튼 추가.
+    - `widgets/file_detail_widget.py`에 `_on_clear_all_tags_clicked` 및 `_on_tag_chip_removed` 메서드 구현, `file_tags_changed` 시그널 추가.
+- **커스텀 태그 관리 UI 구현 완료**:
+    - `ui/main_window.ui`에 '빠른 태그 관리' 메뉴 항목 추가.
+    - `ui/custom_tag_dialog.ui` 파일 생성.
+    - `widgets/custom_tag_dialog.py` 파일 생성 및 `CustomTagDialog` 클래스 구현.
+    - `main_window.py`에 `CustomTagManager` 및 `CustomTagDialog` 임포트, `open_custom_tag_dialog` 메서드 구현 및 메뉴 연결.
+    - `widgets/quick_tags_widget.py`가 `CustomTagManager`를 통해 태그를 로드하도록 수정.
+    - `widgets/tag_control_widget.py`에서 `QuickTagsWidget` 초기화 시 `CustomTagManager` 인스턴스 전달.
+- **일괄 태그 제거 기능 UI 구현 완료**:
+    - `ui/batch_remove_tags_dialog.ui` 파일 생성.
+    - `widgets/batch_remove_tags_dialog.py` 파일 생성 및 `BatchRemoveTagsDialog` 클래스 구현.
+    - `widgets/directory_tree_widget.py`에 `directory_context_menu_requested` 시그널 추가 및 컨텍스트 메뉴 로직 구현.
+    - `main_window.py`에 `on_directory_tree_context_menu` 메서드 구현 및 `_open_batch_remove_tags_dialog` 호출.
+    - `ui/tag_control_widget.ui`에 '일괄 태그 제거' 버튼 추가.
+    - `widgets/tag_control_widget.py`에 `_on_batch_remove_tags_clicked` 메서드 구현 및 `BatchRemoveTagsDialog` 호출.
+
+### 발생한 이슈 및 해결 (2025년 7월 8일)
+- **이슈 1: `AttributeError: 'MainWindow' object has no attribute 'custom_tag_manager'`**
+    - **원인**: `MainWindow`의 `__init__` 메서드에서 `self.custom_tag_manager`가 `self.tag_control`에 전달되기 전에 초기화되지 않아 발생.
+    - **해결**: `main_window.py`에서 `self.custom_tag_manager = CustomTagManager()` 초기화 순서를 `self.tag_control` 생성보다 앞으로 이동하여 해결.
+- **이슈 2: `TypeError: QWidget(parent: Optional[QWidget] = None, flags: Union[Qt.WindowFlags, Qt.WindowType] = Qt.WindowFlags()): argument 1 has unexpected type 'CustomTagManager'`**
+    - **원인**: `widgets/tag_control_widget.py`에서 `QuickTagsWidget`을 초기화할 때 `CustomTagManager` 객체가 `parent` 인자로 잘못 전달되었기 때문에 발생.
+    - **해결**: `widgets/tag_control_widget.py`에서 `QuickTagsWidget` 생성 시 `CustomTagManager` 인스턴스를 첫 번째 인자로, `self` (부모 위젯)를 두 번째 인자로 명시적으로 전달하도록 수정.
+- **이슈 3: `AttributeError: 'TagControlWidget' object has no attribute 'custom_tag_manager'` (재발)**
+    - **원인**: `widgets/tag_control_widget.py`의 `__init__` 메서드에 `self.custom_tag_manager = custom_tag_manager` 할당 라인이 누락되어 발생.
+    - **해결**: `widgets/tag_control_widget.py`의 `__init__` 메서드에 `self.custom_tag_manager = custom_tag_manager` 할당을 추가하여 해결.
+- **이슈 4: `AttributeError: 'TagControlWidget' object has no attribute 'quick_tags_widget'`**
+    - **원인**: `main_window.py`에서 `self.tag_control.quick_tags_widget.load_quick_tags()`를 호출할 때, `TagControlWidget` 내에 `quick_tags_widget`이라는 직접적인 속성이 없었기 때문. `individual_quick_tags`와 `batch_quick_tags` 두 개의 인스턴스가 존재.
+    - **해결**: `main_window.py`의 `open_custom_tag_dialog` 메서드에서 `self.tag_control.individual_quick_tags.load_quick_tags()`와 `self.tag_control.batch_quick_tags.load_quick_tags()`를 모두 호출하도록 수정.
+
+### 현재 미해결 이슈 (2025년 7월 8일)
+- **이슈 5: 파일 상세 탭에서 태그 삭제 미동작**
+    - **증상**: 개별 태그 칩의 'X' 버튼 및 '모든 태그 삭제' 버튼이 파일 상세 탭에서 동작하지 않음. (개별 태깅 탭에서는 'X' 버튼 동작 확인됨)
+    - **진단**: `widgets/file_detail_widget.py`의 `_on_tag_chip_removed` 및 `_on_clear_all_tags_clicked` 메서드 호출 여부 및 `tag_manager`의 태그 삭제 메서드 성공 여부 확인 필요. `FileDetailWidget`의 `current_file_path` 값 확인 필요.
+- **이슈 6: 태그 저장 시 파일 목록 사라짐**
+    - **증상**: 태그를 저장한 후 파일 목록이 사라지거나 초기화됨.
+    - **진단**: `main_window.py`의 `on_tags_updated` 메서드에서 파일 목록을 새로고침하는 방식(`self.file_list.set_path(current_path)`)이 문제의 원인으로 추정됨. 기존 선택 상태나 스크롤 위치를 잃게 만듦.
+- **이슈 7: 일괄 태그 제거 기능 미동작 (컨텍스트 메뉴)**
+    - **증상**: 디렉토리 뷰에서 디렉토리를 우클릭했을 때 '일괄 태그 제거...' 컨텍스트 메뉴가 나타나지 않음.
+    - **진단**: `widgets/directory_tree_widget.py`의 컨텍스트 메뉴 관련 설정 및 `main_window.py`의 시그널 연결 확인 필요.
+- **이슈 8: 일괄 태그 제거 기능 미동작 (버튼)**
+    - **증상**: 일괄 태깅 탭 내의 '일괄 태그 제거' 버튼 클릭 시 다이얼로그가 나타나지 않음.
+    - **진단**: `widgets/tag_control_widget.py`의 `_on_batch_remove_tags_clicked` 메서드 호출 여부 및 `BatchRemoveTagsDialog` 생성 및 실행 로직 확인 필요.
+
+---
+
 
 ### DRS 검토 결과 (일괄/멀티 태깅)
 - **DRS-20250704-001_Batch_Tagging_Feature.md (일괄 태깅 기능)**:
