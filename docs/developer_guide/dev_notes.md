@@ -14,6 +14,27 @@
 
 ---
 
+## 2025년 7월 8일
+
+### 로그 레벨 조정 및 디버깅용 출력 제거
+- **목표**: 애플리케이션의 로그 출력 수준을 최적화하고, 개발 과정에서 사용된 디버깅용 `print` 문을 제거하여 코드 가독성 및 성능 향상.
+- **변경 사항**:
+    - `core/tag_manager.py`: 파일 태그 조회, 업데이트 성공, 전체 태그/파일 검색, 파일 탐색 시작/완료, 일괄 태그 추가 시작/완료 등 상세한 정보성 `INFO` 로그들을 `DEBUG` 레벨로 조정.
+    - `widgets/tag_control_widget.py`: UI 상태 변화, 탭 전환 시도 등 상세한 `INFO` 로그들을 `DEBUG` 레벨로 조정.
+    - `main_window.py`: 초기화 상태, 디렉토리/파일 선택 이벤트 등 상세한 `INFO` 로그들을 `DEBUG` 레벨로 조정.
+    - `main_window.py` 및 `widgets/file_list_widget.py`에 남아있던 디버깅용 `print` 문들을 모두 제거.
+- **기대 효과**: 운영 환경에서 불필요한 로그 출력 감소 및 필요한 경우 상세한 디버깅 정보 확인 가능. 코드베이스의 정리 및 유지보수성 향상.
+
+### 파일 경로 정규화 및 모듈화
+- **문제**: 디렉토리 일괄 태깅 후 하위 디렉토리 파일의 태그가 파일 목록에 표시되지 않는 문제 발생. `TagManager`와 `FileTableModel` 간의 파일 경로 문자열 불일치(슬래시/역슬래시 혼용, 대소문자 등)가 원인으로 파악됨.
+- **해결**:
+    - `core/path_utils.py` 모듈을 신규 생성하여 `normalize_path` 함수를 정의. 이 함수는 `os.path.normpath`를 사용하여 운영체제에 맞는 경로를 생성하고, Windows 환경에 맞게 모든 슬래시를 역슬래시로 통일하도록 구현.
+    - `TagManager` (core/tag_manager.py)의 모든 파일 경로 처리 메서드(`get_tags_for_file`, `update_tags`, `add_tags_to_files`, `add_tags_to_directory`)에 `normalize_path` 함수를 적용하여 MongoDB에 저장 및 조회 시 경로의 일관성을 확보.
+    - `FileTableModel` (widgets/file_list_widget.py)에서도 `TagManager`에 태그 조회를 요청하기 전에 `normalize_path` 함수를 사용하여 파일 경로를 정규화하도록 수정.
+- **기대 효과**: 파일 경로 불일치로 인한 태그 조회 실패 문제 해결 및 경로 처리 로직의 중앙 집중화로 유지보수성 향상.
+
+---
+
 ## 2025년 7월 7일 (업데이트)
 
 ### UI 리팩토링 방향 전환 및 문서 재정비

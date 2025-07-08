@@ -29,8 +29,8 @@ class MainWindow(QMainWindow):
         # 초기 작업 공간 경로 설정
         initial_workspace = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
         self.directory_tree = DirectoryTreeWidget(initial_workspace)
-        logger.info(f"[MainWindow] DirectoryTreeWidget recursive_checkbox: {self.directory_tree.recursive_checkbox.isChecked()}")
-        logger.info(f"[MainWindow] DirectoryTreeWidget extensions_input: {self.directory_tree.extensions_input.text()}")
+        logger.debug(f"[MainWindow] DirectoryTreeWidget recursive_checkbox: {self.directory_tree.recursive_checkbox.isChecked()}")
+        logger.debug(f"[MainWindow] DirectoryTreeWidget extensions_input: {self.directory_tree.extensions_input.text()}")
         self.file_list = FileListWidget(self.tag_manager)
         self.file_detail = FileDetailWidget(self.tag_manager)
         self.tag_control = TagControlWidget(self.tag_manager)
@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
                 self.statusbar.showMessage("작업 공간 설정 실패", 3000)
 
     def on_directory_selected(self, *args):
-        logger.info(f"[MainWindow] on_directory_selected 호출됨. args: {args}")
+        logger.debug(f"[MainWindow] on_directory_selected 호출됨. args: {args}")
         path = None
         recursive = self.directory_tree.recursive_checkbox.isChecked()
         extensions_text = self.directory_tree.extensions_input.text().strip()
@@ -122,20 +122,18 @@ class MainWindow(QMainWindow):
                 # 초기 로드 시 current_directory가 비어있을 수 있으므로, workspace_path 사용
                 path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
 
-        logger.info(f"[MainWindow] on_directory_selected: 최종 path={path}, recursive={recursive}, file_extensions={file_extensions}")
-
         if path:
-            logger.info(f"[MainWindow] Calling file_list.set_path with path={path}, recursive={recursive}, file_extensions={file_extensions}")
+            logger.debug(f"[MainWindow] Calling file_list.set_path with path={path}, recursive={recursive}, file_extensions={file_extensions}")
             self.file_list.set_path(path, recursive, file_extensions) # 디렉토리 선택 시 파일 목록을 해당 디렉토리 내용으로 설정
             self.file_detail.clear_preview()
-            logger.info(f"[MainWindow] Calling tag_control.update_for_target with path={path}, is_dir=True")
+            logger.debug(f"[MainWindow] Calling tag_control.update_for_target with path={path}, is_dir=True")
             self.tag_control.update_for_target(path, True) # 디렉토리 선택 시
             self.statusbar.showMessage(f"'{path}' 디렉토리를 보고 있습니다.")
         else:
             self.statusbar.showMessage("디렉토리를 선택해주세요.")
 
     def on_file_selection_changed(self, selected: QModelIndex, deselected: QModelIndex):
-        print(f"on_file_selection_changed 호출됨")
+        
         """파일 리스트에서 선택이 변경될 때 호출됩니다. 단일/다중 선택을 처리합니다."""
         selected_indexes = self.file_list.list_view.selectionModel().selectedIndexes()
 
@@ -150,21 +148,21 @@ class MainWindow(QMainWindow):
                 processed_rows.add(index.row())
 
         if len(selected_file_paths) == 1:
-            print(f"단일 파일 선택")
+            
             # 단일 파일 선택
             file_path = selected_file_paths[0]
             self.file_detail.update_preview(file_path)
             self.tag_control.update_for_target(file_path, False) # 파일 선택 시
             self.statusbar.showMessage(f"'{file_path}' 파일을 선택했습니다.")
         elif len(selected_file_paths) > 1:
-            print(f"다중 파일 선택")
+            
             # 다중 파일 선택
             self.file_detail.clear_preview() # 상세 정보 초기화
             self.tag_control.update_for_target(selected_file_paths, False) # 다중 파일 선택 시 (TagControlWidget에서 처리)
             self.statusbar.showMessage(f"{len(selected_file_paths)}개 파일을 선택했습니다.")
         else:
             # 선택 해제
-            print(f"선택 해제")
+            
             self.file_detail.clear_preview()
             self.tag_control.clear_view()
             self.statusbar.showMessage("파일 선택이 해제되었습니다.")

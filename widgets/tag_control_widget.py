@@ -28,7 +28,7 @@ class TagControlWidget(QWidget):
 
     def setup_ui(self):
         loadUi('ui/tag_control_widget.ui', self)
-        logger.info(f"[TagControlWidget] setup_ui: tagging_tab_widget type: {type(self.tagging_tab_widget)}")
+        logger.debug(f"[TagControlWidget] setup_ui: tagging_tab_widget type: {type(self.tagging_tab_widget)}")
 
         # QuickTagsWidget 인스턴스 생성 및 배치
         self.individual_quick_tags = QuickTagsWidget()
@@ -114,7 +114,7 @@ class TagControlWidget(QWidget):
         pass
 
     def update_for_target(self, target, is_dir):
-        logger.info(f"[TagControlWidget] update_for_target 호출됨: target={target}, is_dir={is_dir}")
+        logger.debug(f"[TagControlWidget] update_for_target 호출됨: target={target}, is_dir={is_dir}")
         # target은 단일 경로(str) 또는 여러 경로(list)가 될 수 있음
         self.current_target_path = None
         self.current_target_paths = []
@@ -123,11 +123,11 @@ class TagControlWidget(QWidget):
         if isinstance(target, list):
             self.current_target_paths = target
             # 다중 파일 선택 시 일괄 태깅 탭으로 강제 전환
-            logger.info("[TagControlWidget] 다중 파일 선택 감지. 일괄 태깅 탭으로 전환 시도.")
+            logger.debug("[TagControlWidget] 다중 파일 선택 감지. 일괄 태깅 탭으로 전환 시도.")
             self.tagging_tab_widget.setTabEnabled(0, False) # 개별 태깅 탭 비활성화
             self.tagging_tab_widget.setTabEnabled(1, True)  # 일괄 태깅 탭 활성화
             self.tagging_tab_widget.setCurrentIndex(1) # 일괄 태깅 탭으로 전환
-            logger.info(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
+            logger.debug(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
 
             self.individual_target_label.setText("파일을 선택하세요.")
             self.batch_target_label.setText(f"선택된 파일: {len(target)}개")
@@ -149,11 +149,11 @@ class TagControlWidget(QWidget):
 
             if is_dir:
                 # 디렉토리 선택 시 일괄 태깅 탭 활성화, 개별 태깅 탭 비활성화
-                logger.info("[TagControlWidget] 디렉토리 선택 감지. 일괄 태깅 탭으로 전환 시도.")
+                logger.debug("[TagControlWidget] 디렉토리 선택 감지. 일괄 태깅 탭으로 전환 시도.")
                 self.tagging_tab_widget.setTabEnabled(0, False) # 개별 태깅 탭 비활성화
                 self.tagging_tab_widget.setTabEnabled(1, True)  # 일괄 태깅 탭 활성화
                 self.tagging_tab_widget.setCurrentIndex(1) # 일괄 태깅 탭으로 전환
-                logger.info(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
+                logger.debug(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
 
                 self.individual_target_label.setText("파일을 선택하세요.")
                 self.batch_target_label.setText(f"대상 디렉토리: {target}")
@@ -162,11 +162,11 @@ class TagControlWidget(QWidget):
 
             else: # 파일 선택 시
                 # 파일 선택 시 개별 태깅 탭 활성화, 일괄 태깅 탭 비활성화
-                logger.info("[TagControlWidget] 단일 파일 선택 감지. 개별 태깅 탭으로 전환 시도.")
+                logger.debug("[TagControlWidget] 단일 파일 선택 감지. 개별 태깅 탭으로 전환 시도.")
                 self.tagging_tab_widget.setTabEnabled(0, True)  # 개별 태깅 탭 활성화
                 self.tagging_tab_widget.setTabEnabled(1, False) # 일괄 태깅 탭 비활성화
                 self.tagging_tab_widget.setCurrentIndex(0) # 개별 태깅 탭으로 전환
-                logger.info(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
+                logger.debug(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
 
                 self.individual_target_label.setText(f"선택된 파일: {target}")
                 self.batch_target_label.setText("디렉토리를 선택하세요.")

@@ -4,6 +4,7 @@ import os
 from pymongo import MongoClient, UpdateOne
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, OperationFailure
 import config  # config.py 파일을 import
+from core.path_utils import normalize_path # 새로 추가된 path_utils 모듈 임포트
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -108,6 +109,7 @@ class TagManager:
                 logger.warning(f"[TagManager] 잘못된 파일 경로: {file_path}")
                 return []
 
+            file_path = normalize_path(file_path)
             document = self.collection.find_one({"_id": file_path})
             tags = document.get("tags", []) if document else []
             
@@ -142,6 +144,7 @@ class TagManager:
                 logger.error(f"[TagManager] 잘못된 파일 경로: {file_path}")
                 return False
 
+            file_path = normalize_path(file_path)
             # tags가 문자열이면 리스트로 변환 (하위 호환성)
             if isinstance(tags, str):
                 tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
@@ -158,7 +161,7 @@ class TagManager:
                 {"_id": file_path}, {"$set": {"tags": tags}}, upsert=True
             )
             
-            logger.info(f"[TagManager] 태그 업데이트 성공: {file_path} -> {tags}")
+            logger.debug(f"[TagManager] 태그 업데이트 성공: {file_path} -> {tags}")
             return True
             
         except TagManagerError:
@@ -271,7 +274,7 @@ class TagManager:
             if not self._validate_tags(tags):
                 return {"success": False, "error": "유효하지 않은 태그가 포함되어 있습니다"}
 
-            logger.info(f"[TagManager] 다중 파일 태그 추가 시작: {len(file_paths)}개 파일, 태그: {tags}")
+            logger.debug(f"[TagManager] 다중 파일 태그 추가 시작: {len(file_paths)}개 파일, 태그: {tags}")
 
             bulk_operations = []
             error_files = []
@@ -280,12 +283,13 @@ class TagManager:
             existing_docs = {doc['_id']: doc.get('tags', []) for doc in self.collection.find({"_id": {"$in": file_paths}})}
 
             for file_path in file_paths:
+                normalized_file_path = normalize_path(file_path)
                 try:
-                    existing_tags = existing_docs.get(file_path, [])
+                    existing_tags = existing_docs.get(normalized_file_path, [])
                     new_tags = list(set(existing_tags + tags))
                     
                     bulk_operations.append(
-                        UpdateOne({"_id": file_path}, {"$set": {"tags": new_tags}}, upsert=True)
+                        UpdateOne({"_id": normalized_file_path}, {"$set": {"tags": new_tags}}, upsert=True)
                     )
                 except Exception as e:
                     logger.error(f"[TagManager] 파일 '{file_path}' 처리 중 오류: {e}")
@@ -297,7 +301,7 @@ class TagManager:
             result = self.collection.bulk_write(bulk_operations, ordered=False)
             
             success_count = len(file_paths) - len(error_files)
-            logger.info(f"[TagManager] 다중 파일 태그 추가 완료: {success_count}개 성공, {len(error_files)}개 실패")
+            logger.debug(f"[TagManager] 다중 파일 태그 추가 완료: {success_count}개 성공, {len(error_files)}개 실패")
             
             return {
                 "success": True,
@@ -346,19 +350,19 @@ class TagManager:
 
         try:
             if recursive:
-                logger.info(f"[TagManager] _get_files_in_directory: 하위 디렉토리 포함하여 파일 탐색 시작: {directory_path}")
+                logger.debug(f"[TagManager] _get_files_in_directory: 하위 디렉토리 포함하여 파일 탐색 시작: {directory_path}")
                 for root, _, files in os.walk(directory_path):
                     for file in files:
                         file_path = os.path.join(root, file)
                         if should_include_file(file_path):
                             target_files.append(file_path)
             else:
-                logger.info(f"[TagManager] _get_files_in_directory: 현재 디렉토리만 파일 탐색 시작: {directory_path}")
+                logger.debug(f"[TagManager] _get_files_in_directory: 현재 디렉토리만 파일 탐색 시작: {directory_path}")
                 for item in os.listdir(directory_path):
                     item_path = os.path.join(directory_path, item)
                     if os.path.isfile(item_path) and should_include_file(item_path):
                         target_files.append(item_path)
-            logger.info(f"[TagManager] _get_files_in_directory: 탐색된 파일 수: {len(target_files)}")
+            logger.debug(f"[TagManager] _get_files_in_directory: 탐색된 파일 수: {len(target_files)}")
             return target_files
         except Exception as e:
             logger.error(f"[TagManager] _get_files_in_directory: 파일 탐색 중 오류: {e}")
@@ -368,7 +372,7 @@ class TagManager:
         """
         특정 디렉토리 내의 파일들에 대해 일괄적으로 태그를 추가합니다.
         """
-        logger.info(f"[TagManager] add_tags_to_directory 호출됨: dir={directory_path}, tags={tags}, recursive={recursive}, ext={file_extensions}")
+        logger.debug(f"[TagManager] add_tags_to_directory 호출됨: dir={directory_path}, tags={tags}, recursive={recursive}, ext={file_extensions}")
         try:
             self._ensure_connection()
             
@@ -379,10 +383,10 @@ class TagManager:
             target_files = self._get_files_in_directory(directory_path, recursive, file_extensions)
             
             if not target_files:
-                logger.info("[TagManager] 조건에 맞는 파일이 없습니다. 태그 작업 건너뜀.")
+                logger.debug("[TagManager] 조건에 맞는 파일이 없습니다. 태그 작업 건너뜀.")
                 return {"success": True, "message": "조건에 맞는 파일이 없습니다", "processed": 0}
 
-            logger.info(f"[TagManager] 일괄 태그 추가 시작: {len(target_files)}개 파일, 태그: {tags}")
+            logger.debug(f"[TagManager] 일괄 태그 추가 시작: {len(target_files)}개 파일, 태그: {tags}")
 
             bulk_operations = []
             error_files = []
@@ -391,16 +395,16 @@ class TagManager:
             existing_docs = {doc['_id']: doc.get('tags', []) for doc in self.collection.find({"_id": {"$in": target_files}})}
 
             for file_path in target_files:
+                normalized_file_path = normalize_path(file_path)
                 try:
-                    # 기존 태그 가져오기
-                    existing_doc = self.collection.find_one({"_id": file_path})
-                    existing_tags = existing_doc.get("tags", []) if existing_doc else []
+                    # 기존 태그 가져오기 (existing_docs에서 조회)
+                    existing_tags = existing_docs.get(normalized_file_path, [])
                     
                     # 중복 제거하면서 새 태그 추가
                     new_tags = list(set(existing_tags + tags))
                     
                     bulk_operations.append(
-                        UpdateOne({"_id": file_path}, {"$set": {"tags": new_tags}}, upsert=True)
+                        UpdateOne({"_id": normalized_file_path}, {"$set": {"tags": new_tags}}, upsert=True)
                     )
                 except Exception as e:
                     logger.error(f"[TagManager] 파일 '{file_path}' 처리 중 오류: {e}")
@@ -411,7 +415,7 @@ class TagManager:
                 result = self.collection.bulk_write(bulk_operations, ordered=False)
                 
                 success_count = len(target_files) - len(error_files)
-                logger.info(f"[TagManager] 일괄 태그 추가 완료: {success_count}개 성공, {len(error_files)}개 실패")
+                logger.debug(f"[TagManager] 일괄 태그 추가 완료: {success_count}개 성공, {len(error_files)}개 실패")
                 
                 return {
                     "success": True,
@@ -468,5 +472,5 @@ class TagManager:
         디렉토리 선택 메서드 (하위 호환성)
         현재는 로깅만 수행하고 실제 동작은 없음
         """
-        logger.info(f"[TagManager] 선택된 디렉토리: {directory_path}")
+        logger.debug(f"[TagManager] 선택된 디렉토리: {directory_path}")
         return True

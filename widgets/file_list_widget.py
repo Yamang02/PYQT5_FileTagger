@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableView, QHeaderView, QAbstractItemView
 from PyQt5.QtCore import QDir, QAbstractTableModel, QModelIndex, Qt, QVariant
 import os
+from core.path_utils import normalize_path # path_utils 모듈 임포트
 
 # 백업에서 가져온 FileTableModel 정의
 class FileTableModel(QAbstractTableModel):
@@ -95,7 +96,10 @@ class FileTableModel(QAbstractTableModel):
                 return file_path
             elif index.column() == 2:  # 태그
                 try:
-                    tags = self.tag_manager.get_tags_for_file(file_path)
+                    # 태그를 요청하기 전에 파일 경로를 정규화
+                    normalized_file_path = normalize_path(file_path)
+                    tags = self.tag_manager.get_tags_for_file(normalized_file_path)
+                    
                     return ", ".join(tags) if tags else ""
                 except Exception:
                     return ""
