@@ -42,22 +42,15 @@ class QuickTagsWidget(QWidget):
     def _init_buttons(self):
         for tag in self._quick_tags:
             btn = QPushButton(tag, self)
-            btn.setCheckable(True)
-            btn.clicked.connect(lambda checked, t=tag: self._on_btn_clicked(t, checked))
+            
+            btn.clicked.connect(lambda _, t=tag: self._on_btn_clicked(t))
             self.layout.addWidget(btn)
             self._buttons[tag] = btn
 
 
-    def _on_btn_clicked(self, tag, checked):
-        if checked:
-            if tag not in self._selected_tags:
-                self._selected_tags.append(tag)
-            else:
-                # 중복 선택 방지(이론상 불필요, 안전장치)
-                QMessageBox.warning(self, "중복 태그", f"이미 선택된 태그입니다: {tag}")
-        else:
-            if tag in self._selected_tags:
-                self._selected_tags.remove(tag)
+    def _on_btn_clicked(self, tag):
+        if tag not in self._selected_tags:
+            self._selected_tags.append(tag)
         self.tags_changed.emit(self._selected_tags)
 
     def set_selected_tags(self, tags):

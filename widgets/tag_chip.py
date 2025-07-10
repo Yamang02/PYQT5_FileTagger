@@ -8,6 +8,7 @@ class TagChip(QFrame):
     태그 이름과 삭제 버튼을 포함합니다.
     """
     tag_removed = pyqtSignal(str) # 태그 텍스트를 인자로 전달하는 시그널
+    clicked = pyqtSignal() # TagChip이 클릭되었을 때 발생하는 시그널
 
     def __init__(self, tag_text, parent=None):
         super().__init__(parent)
@@ -44,6 +45,13 @@ class TagChip(QFrame):
                 background-color: #1e88e5;
             }
         """)
+
+    def mousePressEvent(self, event):
+        """마우스 클릭 이벤트를 처리하여 clicked 시그널을 발생시킵니다."""
+        self.clicked.emit()
+        super().mousePressEvent(event)
+
+        
 
     def _on_delete_button_clicked(self):
         print(f"DEBUG: TagChip delete button clicked for tag: {self.tag_text}") # 디버그용 print
