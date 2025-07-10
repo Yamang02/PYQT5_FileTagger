@@ -1,7 +1,8 @@
 import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox, QMenu
 from PyQt5.uic import loadUi
-from PyQt5.QtCore import QDir, QModelIndex
+from PyQt5.QtCore import QDir, QModelIndex, Qt
+from PyQt5.QtGui import QKeySequence
 import os
 import config
 import logging
@@ -13,6 +14,7 @@ from widgets.directory_tree_widget import DirectoryTreeWidget
 from widgets.file_list_widget import FileListWidget
 from widgets.file_detail_widget import FileDetailWidget
 from widgets.tag_control_widget import TagControlWidget
+
 
 # 코어 로직 임포트
 from core.tag_manager import TagManager
@@ -62,6 +64,92 @@ class MainWindow(QMainWindow):
         self.statusbar.showMessage("준비 완료")
 
         self.show()
+
+    def open_widget_inspector(self):
+        """PyQt5 위젯 인스펙터를 엽니다."""
+        try:
+            from PyQt5.QtWidgets import QApplication
+            # PyQt5 Inspector 활성화
+            QApplication.instance().setProperty("_q_inspector_enabled", True)
+            # 인스펙터 창 열기
+            QApplication.instance().setProperty("_q_inspector_visible", True)
+            print("위젯 인스펙터가 활성화되었습니다. Ctrl+Shift+I로 다시 열 수 있습니다.")
+        except Exception as e:
+            QMessageBox.warning(self, "디버그", f"인스펙터 활성화 실패: {e}")
+
+    def print_widget_tree(self):
+        """현재 윈도우의 위젯 트리 구조를 콘솔에 출력합니다."""
+        def print_widget_info(widget, level=0):
+            indent = "  " * level
+            widget_name = widget.objectName() or "unnamed"
+            widget_class = widget.__class__.__name__
+            widget_visible = widget.isVisible()
+            widget_enabled = widget.isEnabled()
+            
+            print(f"{indent}{widget_class} (name: {widget_name}, visible: {widget_visible}, enabled: {widget_enabled})")
+            
+            # 자식 위젯들 재귀적으로 출력
+            for child in widget.findChildren(widget.__class__, "", Qt.FindDirectChildrenOnly):
+                print_widget_info(child, level + 1)
+        
+        print("\n=== 위젯 트리 구조 ===")
+        print_widget_info(self)
+        print("=====================\n")
+
+    def toggle_object_names(self):
+        """모든 위젯에 객체 이름을 표시하거나 숨깁니다."""
+        def set_widget_tooltip(widget):
+            widget_name = widget.objectName()
+            if widget_name:
+                widget.setToolTip(f"객체명: {widget_name}\n클래스: {widget.__class__.__name__}")
+            else:
+                widget.setToolTip(f"클래스: {widget.__class__.__name__}")
+            
+            # 자식 위젯들도 재귀적으로 처리
+            for child in widget.findChildren(widget.__class__, "", Qt.FindDirectChildrenOnly):
+                set_widget_tooltip(child)
+        
+        set_widget_tooltip(self)
+        print("모든 위젯에 객체 이름이 툴팁으로 표시됩니다.")
+
+    def print_current_widget_info(self):
+        """현재 포커스된 위젯의 정보를 출력합니다."""
+        focused_widget = self.focusWidget()
+        if focused_widget:
+            print(f"\n=== 현재 포커스된 위젯 정보 ===")
+            print(f"클래스: {focused_widget.__class__.__name__}")
+            print(f"객체명: {focused_widget.objectName() or 'unnamed'}")
+            print(f"위치: {focused_widget.geometry()}")
+            print(f"크기: {focused_widget.size()}")
+            print(f"보임: {focused_widget.isVisible()}")
+            print(f"활성: {focused_widget.isEnabled()}")
+            print(f"부모: {focused_widget.parent().__class__.__name__ if focused_widget.parent() else 'None'}")
+            print("==============================\n")
+        else:
+            print("현재 포커스된 위젯이 없습니다.")
+
+    def open_visual_debug_panel(self):
+        """시각적 디버깅 패널을 엽니다."""
+        try:
+            from PyQt5.QtWidgets import QDialog, QVBoxLayout
+            
+            # 디버그 패널을 포함할 다이얼로그 생성
+            dialog = QDialog(self)
+            dialog.setWindowTitle("위젯 시각적 디버깅 도구")
+            dialog.setModal(False)
+            dialog.resize(300, 400)
+            
+            layout = QVBoxLayout(dialog)
+            
+            # 디버그 패널 생성 (전체 메인 윈도우를 타겟으로)
+            debug_panel = WidgetDebugPanel(self, dialog)
+            layout.addWidget(debug_panel)
+            
+            dialog.show()
+            print("시각적 디버깅 패널이 열렸습니다.")
+            
+        except Exception as e:
+            QMessageBox.warning(self, "디버그", f"시각적 디버깅 패널 열기 실패: {e}")
 
     def setup_connections(self):
         """위젯 및 메뉴 액션의 시그널-슬롯을 연결합니다."""

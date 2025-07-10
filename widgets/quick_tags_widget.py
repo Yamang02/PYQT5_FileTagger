@@ -16,6 +16,7 @@ class QuickTagsWidget(QWidget):
         super().__init__(parent)
         uic.loadUi('ui/quick_tags_widget.ui', self)
         self.layout = self.findChild(QHBoxLayout, 'horizontalLayout') # .ui 파일에서 로드된 레이아웃 참조
+        self.layout.setAlignment(Qt.AlignLeft)  # 왼쪽 정렬 명시
         self.custom_tag_manager = custom_tag_manager
         self._selected_tags = []
         self._buttons = {}
@@ -46,8 +47,6 @@ class QuickTagsWidget(QWidget):
             self.layout.addWidget(btn)
             self._buttons[tag] = btn
 
-        # 오른쪽 공간 채우기
-        self.layout.addStretch()
 
     def _on_btn_clicked(self, tag, checked):
         if checked:

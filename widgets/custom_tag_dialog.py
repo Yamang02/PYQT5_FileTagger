@@ -24,7 +24,7 @@ class CustomTagDialog(QDialog):
         self.buttonBox.accepted.connect(self._save_tags)
         self.buttonBox.rejected.connect(self.reject)
         self.tag_input_line_edit.returnPressed.connect(self._add_tag)
-        self.buttonBox.setDefaultButton(None) # 엔터 키가 다이얼로그를 닫지 않도록 설정
+        
 
     def _add_tag(self):
         new_tag = self.tag_input_line_edit.text().strip()

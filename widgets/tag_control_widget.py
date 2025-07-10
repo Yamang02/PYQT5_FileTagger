@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QCompleter, QMessageBox, QListView, QLineEdit
+from PyQt5.QtWidgets import QWidget, QCompleter, QMessageBox, QListView, QLineEdit, QSizePolicy
 from PyQt5.uic import loadUi
 from PyQt5.QtCore import Qt, QStringListModel, pyqtSignal
 import logging
@@ -35,10 +35,12 @@ class TagControlWidget(QWidget):
 
         # QuickTagsWidget 인스턴스 생성 및 배치
         self.individual_quick_tags = QuickTagsWidget(self.custom_tag_manager, self)
+        self.individual_quick_tags.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.individual_verticalLayout.replaceWidget(self.individual_quick_tags_placeholder, self.individual_quick_tags)
         self.individual_quick_tags_placeholder.deleteLater()
 
         self.batch_quick_tags = QuickTagsWidget(self.custom_tag_manager, self)
+        self.batch_quick_tags.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.batch_verticalLayout.replaceWidget(self.batch_quick_tags_placeholder, self.batch_quick_tags)
         self.batch_quick_tags_placeholder.deleteLater()
 
