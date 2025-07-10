@@ -1,6 +1,7 @@
 # FileTagger 애플리케이션을 위한 Python 의존성
 # GUI 프레임워크
 PyQt5>=5.15.0
+PyQtWebEngine>=5.15.0
 
 # 파일 처리 및 유틸리티
 pathlib2>=2.3.0
@@ -16,4 +17,4 @@ pytest         # 테스트 실행 프레임워크
 pytest-qt      # PyQt 애플리케이션 테스트 지원
 
 pytest-timeout # 테스트 시간 초과 방지
-pytest-mock    # Mocking 라이브러리 
+pytest-mock    # Mocking 라이브러리
