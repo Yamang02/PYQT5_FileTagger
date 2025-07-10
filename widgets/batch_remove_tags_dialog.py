@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QDialog, QMessageBox, QListWidgetItem, QVBoxLayout, QListWidget, QLineEdit, QPushButton, QDialogButtonBox, QLabel
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QDialogButtonBox, QLabel, QScrollArea, QWidget, QGridLayout
+from widgets.tag_chip import TagChip
 
 class BatchRemoveTagsDialog(QDialog):
     def __init__(self, tag_manager, target_path, parent=None):
@@ -10,7 +10,7 @@ class BatchRemoveTagsDialog(QDialog):
         self.setMinimumWidth(400)
 
         self.all_tags = []
-        self.tags_to_remove = []
+        self.tag_chips = []
 
         self.setup_ui()
         self.populate_tags()
@@ -27,15 +27,18 @@ class BatchRemoveTagsDialog(QDialog):
         self.search_input.textChanged.connect(self.filter_tags)
         layout.addWidget(self.search_input)
 
-        self.tags_list_widget = QListWidget()
-        layout.addWidget(self.tags_list_widget)
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        container = QWidget()
+        self.chip_layout = QGridLayout(container)
+        scroll_area.setWidget(container)
+        layout.addWidget(scroll_area)
 
         self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
         layout.addWidget(self.button_box)
 
-        # 대상 경로 표시
         if isinstance(self.target_path, list):
             self.target_label.setText(f"<b>대상 파일:</b><br>{'<br>'.join(self.target_path[:5])}")
             if len(self.target_path) > 5:
@@ -44,7 +47,6 @@ class BatchRemoveTagsDialog(QDialog):
             self.target_label.setText(f"<b>대상 디렉토리:</b><br>{self.target_path}")
 
     def populate_tags(self):
-        # 대상 경로의 모든 파일에서 태그를 수집
         files = []
         if isinstance(self.target_path, list):
             files = self.target_path
@@ -60,28 +62,36 @@ class BatchRemoveTagsDialog(QDialog):
             all_tags_set.update(tags)
 
         self.all_tags = sorted(list(all_tags_set))
-        self.update_list_widget(self.all_tags)
+        self.update_chip_layout(self.all_tags)
 
     def filter_tags(self, text):
         if not text:
-            self.update_list_widget(self.all_tags)
+            self.update_chip_layout(self.all_tags)
             return
 
         filtered_tags = [tag for tag in self.all_tags if text.lower() in tag.lower()]
-        self.update_list_widget(filtered_tags)
+        self.update_chip_layout(filtered_tags)
 
-    def update_list_widget(self, tags):
-        self.tags_list_widget.clear()
+    def update_chip_layout(self, tags):
+        self._clear_layout()
+        self.tag_chips = []
+        row, col = 0, 0
+        max_cols = 3
+
         for tag in tags:
-            item = QListWidgetItem(tag)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Unchecked)
-            self.tags_list_widget.addItem(item)
+            chip = TagChip(tag, checkable=True)
+            self.tag_chips.append(chip)
+            self.chip_layout.addWidget(chip, row, col)
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
+
+    def _clear_layout(self):
+        while self.chip_layout.count():
+            child = self.chip_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
 
     def get_tags_to_remove(self):
-        self.tags_to_remove = []
-        for i in range(self.tags_list_widget.count()):
-            item = self.tags_list_widget.item(i)
-            if item.checkState() == Qt.Checked:
-                self.tags_to_remove.append(item.text())
-        return self.tags_to_remove
+        return [chip.tag_text for chip in self.tag_chips if chip.is_checked()]
