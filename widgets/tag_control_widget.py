@@ -66,6 +66,7 @@ class TagControlWidget(QWidget):
         self.batch_tag_input.returnPressed.connect(lambda: self.add_tag_from_input(mode='batch'))
         self.batch_apply_button.clicked.connect(self.apply_batch_tags)
         self.batch_quick_tags.tags_changed.connect(self.on_batch_quick_tags_changed)
+        self.batch_remove_tags_button.clicked.connect(self._on_batch_remove_tags_clicked)
 
         # 모든 태그 검색 시그널
         self.all_tags_search_input.textChanged.connect(self.filter_all_tags_list)
@@ -342,7 +343,8 @@ class TagControlWidget(QWidget):
             QMessageBox.warning(self, "대상 없음", "태그를 제거할 파일 또는 디렉토리를 선택해주세요.")
             return
 
-        dialog = BatchRemoveTagsDialog(self)
+        target = self.current_target_paths if self.current_target_paths else self.current_target_path
+        dialog = BatchRemoveTagsDialog(self.tag_manager, target, self)
         print(f"DEBUG: BatchRemoveTagsDialog created: {dialog}") # 진단용
         if dialog.exec_():
             print("DEBUG: BatchRemoveTagsDialog accepted.") # 진단용

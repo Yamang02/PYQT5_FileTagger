@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox, QMenu
 from PyQt5.uic import loadUi
 from PyQt5.QtCore import QDir, QModelIndex
 import os
@@ -18,6 +18,7 @@ from widgets.tag_control_widget import TagControlWidget
 from core.tag_manager import TagManager
 from core.custom_tag_manager import CustomTagManager
 from widgets.custom_tag_dialog import CustomTagDialog
+from widgets.batch_remove_tags_dialog import BatchRemoveTagsDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -77,6 +78,8 @@ class MainWindow(QMainWindow):
         self.directory_tree.tag_filter_changed.connect(self.file_list.set_tag_filter)
         self.directory_tree.global_file_search_requested.connect(self.on_global_file_search_requested)
         self.tag_control.tags_updated.connect(self.on_tags_updated)
+        self.file_detail.file_tags_changed.connect(self.on_tags_updated) # 파일 상세 위젯에서 태그 변경 시
+        self.directory_tree.directory_context_menu_requested.connect(self.on_directory_tree_context_menu)
 
     def set_workspace(self):
         """사용자에게 작업 공간 디렉토리를 설정하도록 요청합니다."""
@@ -206,7 +209,8 @@ class MainWindow(QMainWindow):
         # 파일 목록 위젯의 태그 정보 새로고침
         # 현재는 모델을 리셋하는 방식으로 간단히 구현
         # 파일 목록 위젯의 태그 정보 새로고침
-        self.file_list.refresh_tags_for_current_files()
+        # self.file_list.refresh_tags_for_current_files()
+        self.file_list.model.layoutChanged.emit()
 
         # 파일 상세 위젯의 정보 새로고침
         if len(selected_file_paths) == 1:
@@ -237,7 +241,7 @@ class MainWindow(QMainWindow):
             self._open_batch_remove_tags_dialog(directory_path)
 
     def _open_batch_remove_tags_dialog(self, target_path):
-        dialog = BatchRemoveTagsDialog(self)
+        dialog = BatchRemoveTagsDialog(self.tag_manager, target_path, self)
         if dialog.exec_():
             tags_to_remove = dialog.get_tags_to_remove()
             if tags_to_remove:

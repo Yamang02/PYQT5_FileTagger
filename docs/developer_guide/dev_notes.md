@@ -14,6 +14,31 @@
 
 ---
 
+## 2025년 7월 10일
+
+### 미해결 이슈 해결 (이슈 5, 6, 7, 8)
+- **목표**: `dev_notes.md`에 기록된 미해결 이슈 4건을 모두 해결하여 애플리케이션의 안정성을 확보.
+
+- **이슈 5: 파일 상세 탭에서 태그 삭제 미동작 (해결 완료)**
+    - **원인**: `FileDetailWidget`에서 `TagChip`의 `tag_removed` 시그널을 사용하지 않고, 내부 `delete_button`의 `clicked` 시그널에 직접 연결하여 `TagChip`의 캡슐화를 위반하고 있었음.
+    - **해결**: `file_detail_widget.py`의 `_refresh_tag_chips` 메서드에서 `chip.tag_removed.connect(self._on_tag_chip_removed)`를 사용하도록 수정하여 `TagChip`의 `tag_removed` 시그널을 정상적으로 처리하도록 변경.
+
+- **이슈 6: 태그 저장 시 파일 목록 사라짐 (해결 완료)**
+    - **원인**: `main_window.py`의 `on_tags_updated` 메서드에서 `self.file_list.refresh_tags_for_current_files()`를 호출하여 파일 목록을 새로고침하는 방식이 선택 상태 및 스크롤 위치를 초기화하는 문제 발생.
+    - **해결**: `self.file_list.refresh_tags_for_current_files()` 대신 `self.file_list.model.layoutChanged.emit()`를 호출하여 뷰만 강제로 다시 그리도록 수정. 이로써 선택 상태와 스크롤 위치를 유지하면서 태그 정보만 업데이트.
+
+- **이슈 7: 일괄 태그 제거 기능 미동작 (컨텍스트 메뉴) (해결 완료)**
+    - **원인**: `main_window.py`의 `setup_connections` 메서드에서 `directory_tree.directory_context_menu_requested` 시그널과 `on_directory_tree_context_menu` 슬롯의 연결이 누락되어 있었음.
+    - **해결**: `setup_connections` 메서드에 `self.directory_tree.directory_context_menu_requested.connect(self.on_directory_tree_context_menu)` 코드를 추가하여 시그널-슬롯 연결.
+
+- **이슈 8: 일괄 태그 제거 기능 미동작 (버튼) (해결 완료)**
+    - **원인**: `TagControlWidget`의 `connect_signals` 메서드에서 `batch_remove_tags_button`의 `clicked` 시그널과 `_on_batch_remove_tags_clicked` 슬롯의 연결이 누락되어 있었음.
+    - **해결**: `connect_signals` 메서드에 `self.batch_remove_tags_button.clicked.connect(self._on_batch_remove_tags_clicked)` 코드를 추가하여 시그널-슬롯 연결.
+
+- **추가 조치: 파일 상세 정보 태그 삭제 시 파일 목록 즉시 반영**
+    - **요구사항**: 파일 상세 정보(`FileDetailWidget`)에서 태그 삭제 시, 변경 사항이 파일 목록(`FileListWidget`)에 즉시 반영되어야 함.
+    - **해결**: `main_window.py`의 `setup_connections` 메서드에 `self.file_detail.file_tags_changed.connect(self.on_tags_updated)` 코드를 추가하여, `FileDetailWidget`의 `file_tags_changed` 시그널을 `on_tags_updated` 슬롯에 연결. 이로써 데이터 변경 시 UI가 일관성 있게 업데이트됨.
+
 ## 2025년 7월 8일
 
 ### DRS 검토 결과 (태그 관리 기능 강화)

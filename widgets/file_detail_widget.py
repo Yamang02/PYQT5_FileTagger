@@ -87,7 +87,7 @@ class FileDetailWidget(QWidget):
 
         for tag in tags:
             chip = TagChip(tag)
-            chip.delete_button.clicked.connect(lambda _, t=tag: self._on_tag_chip_removed(t)) # 직접 clicked 시그널 연결
+            chip.tag_removed.connect(self._on_tag_chip_removed)
             print(f"DEBUG: TagChip {tag} delete button connected in FileDetailWidget.") # 진단용
             self.tag_chip_layout.addWidget(chip, row, col)
             col += 1
