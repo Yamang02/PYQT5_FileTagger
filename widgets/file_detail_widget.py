@@ -19,6 +19,19 @@ from core.tag_manager import TagManager
 
 
 
+class ClickableSlider(QSlider):
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            # 클릭 위치를 슬라이더 값으로 변환
+            if self.orientation() == Qt.Horizontal:
+                value = self.minimum() + ((self.maximum() - self.minimum()) * event.x()) / self.width()
+            else: # Qt.Vertical
+                value = self.maximum() - ((self.maximum() - self.minimum()) * event.y()) / self.height()
+            self.setValue(int(value))
+            # 슬라이더 값이 변경되었음을 알리는 시그널을 발생시킵니다.
+            self.sliderMoved.emit(int(value))
+        super().mousePressEvent(event)
+
 class FileDetailWidget(QWidget):
     PDF_EXTENSIONS = ['.pdf']
     MAX_PDF_PAGES_TO_PREVIEW = 3 # 미리보기할 최대 PDF 페이지 수
@@ -76,8 +89,9 @@ class FileDetailWidget(QWidget):
         self.volume_slider.setRange(0, 100)
         self.volume_slider.setValue(50) # 초기 볼륨 설정
         self.volume_slider.hide() # 초기에는 숨김
+        self.volume_slider.setMinimumHeight(100) # 최소 높이 설정
 
-        self.position_slider = QSlider(Qt.Horizontal)
+        self.position_slider = ClickableSlider(Qt.Horizontal)
         self.position_slider.setRange(0, 0) # 초기 범위는 0
         self.position_slider.sliderMoved.connect(self.set_position)
 
