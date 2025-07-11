@@ -16,6 +16,80 @@
 
 ## 2025년 7월 11일
 
+### DRS-20250711-009 태그 기반 검색 기능 개발 시작
+
+#### **코드베이스 검토 결과**
+- **현재 검색 관련 기능 현황**:
+  - `DirectoryTreeWidget`에 분산된 검색 기능들:
+    - `global_file_search_input`: 전역 파일 검색
+    - `tag_search_input`: 태그 검색 (단순 필터링)
+    - `extensions_input`: 확장자 필터링
+  - `MainWindow`의 검색 처리:
+    - `on_global_file_search_requested()`: 전역 파일 검색 처리
+    - `FileListWidget`의 `set_search_results()`: 검색 결과 표시
+  - `FileListWidget`의 검색 모드:
+    - `_is_search_mode`: 검색 모드와 디렉토리 모드 구분
+    - `set_search_results()`: 검색 결과 설정
+    - `set_tag_filter()`: 태그 필터링
+
+#### **DRS 변경사항과의 호환성 분석**
+- **긍정적 측면**:
+  - `TagManager`의 `get_files_by_tag()` 메서드 활용 가능
+  - `FileListWidget`의 검색 모드 구조 재사용 가능
+  - MongoDB 연결 및 태그 관리 시스템 그대로 활용
+  - 기존 3분할 레이아웃 유지하면서 검색 툴바 추가 가능
+
+- **주요 변경 필요사항**:
+  1. **UI 구조 대폭 변경**: 분산된 검색 기능들을 통합 검색 툴바로 통합
+  2. **검색 로직 확장**: 단순 필터링에서 복합 검색(AND/OR/NOT)으로 확장
+  3. **새로운 컴포넌트 필요**: `SearchWidget`, `SearchManager`, `SearchHistory`, `AdvancedSearchPanel`
+
+#### **단계별 개발 계획**
+
+**1단계: 기존 기능 마이그레이션 (1-2주)**
+- `DirectoryTreeWidget`에서 제거할 요소들:
+  - `global_file_search_input` → `SearchWidget`로 이동
+  - `tag_search_input` → `SearchWidget`로 이동  
+  - `extensions_input` → `SearchWidget` 파일명 영역으로 이동
+- 유지할 요소들:
+  - `show_files_checkbox` (체크박스 형태로 유지)
+  - `recursive_checkbox` (체크박스 형태로 유지)
+  - 파일 시스템 트리 뷰
+  - 컨텍스트 메뉴 기능
+
+**2단계: 통합 검색 툴바 구현 (2-3주)**
+- `SearchWidget` 클래스 구현:
+  - 파일명 검색 영역 (25%)
+  - 태그 검색 영역 (25%)
+  - 검색 제어 버튼들
+  - 검색 결과 표시 (우측)
+- `MainWindow`에 통합 검색 툴바 추가
+
+**3단계: 검색 로직 확장 (2-3주)**
+- `SearchManager` 클래스 구현:
+  - 복합 검색 조건 처리
+  - 검색 쿼리 파싱 로직
+  - MongoDB 인덱스 최적화
+- `SearchHistory` 클래스 구현
+
+**4단계: 고급 기능 (1-2주)**
+- 고급 검색 패널 구현
+- 검색 히스토리 UI
+- 성능 최적화
+- 실시간 검색
+
+#### **기술적 고려사항**
+- **기존 코드와의 호환성**: `MainWindow`의 시그널 연결 구조 변경 필요
+- **성능 최적화**: MongoDB 인덱스 추가, 검색 결과 캐싱, 디바운싱 구현
+- **UI/UX 일관성**: 기존 PyQt5 스타일 가이드라인 준수, 키보드 단축키 구현
+
+#### **개발 시작**
+- **현재 상태**: DRS 검토 완료, 개발 계획 수립 완료
+- **다음 단계**: 1단계 기존 기능 마이그레이션 시작
+- **예상 완료일**: 2025년 8월 말 (총 8-10주)
+
+---
+
 ### PDF 미리보기 기능 구현 완료
 - **목표**: PDF 파일에 대한 미리보기 기능 추가.
 - **구현 내용**:
@@ -48,7 +122,7 @@
         - `_on_directory_tree_filter_options_changed` 함수를 추가하여 `directory_tree.filter_options_changed` 시그널을 처리.
     - `widgets/file_list_widget.py` 수정:
         - `index_from_path` 메서드를 추가하여 파일 경로로부터 `QModelIndex`를 얻을 수 있도록 함.
-- **디버그 로그 제거**: `widgets/file_list_widget.py`에 있던 디버그 로그 (`DEBUG: selectionChanged signal emitted...`)를 제거하여 코드 정리.
+- **디버그 로그 제거**: `widgets/file_list_widget.py`에 있던 디버깅 로그 (`DEBUG: selectionChanged signal emitted...`)를 제거하여 코드 정리.
 - **검토 결과**: 기능 요구사항이 모두 구현되었으며, 성능 측면의 고려사항은 향후 최적화 단계에서 추가 검토 예정.
 
 ### 동영상 섬네일 표시 오류 수정 및 개선점

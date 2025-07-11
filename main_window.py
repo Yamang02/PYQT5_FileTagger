@@ -9,6 +9,7 @@ from widgets.directory_tree_widget import DirectoryTreeWidget
 from widgets.file_list_widget import FileListWidget
 from widgets.file_detail_widget import FileDetailWidget
 from widgets.tag_control_widget import TagControlWidget
+from widgets.search_widget import SearchWidget
 from core.tag_manager import TagManager
 from core.custom_tag_manager import CustomTagManager
 from widgets.custom_tag_dialog import CustomTagDialog
@@ -32,6 +33,13 @@ class MainWindow(QMainWindow):
         # FileDetailWidget에 file_server 인스턴스 전달
         self.file_detail = FileDetailWidget(self.tag_manager)
         self.tag_control = TagControlWidget(self.tag_manager, self.custom_tag_manager)
+        
+        # --- 통합 검색 툴바 추가 ---
+        self.search_widget = SearchWidget()
+        self.search_toolbar = self.addToolBar("Search")
+        self.search_toolbar.addWidget(self.search_widget)
+        self.search_toolbar.setMovable(False)
+        self.search_toolbar.setFloatable(False)
 
         # --- 3열 레이아웃 구성 (QSplitter 사용) ---
         self.mainSplitter.insertWidget(0, self.directory_tree)
@@ -73,11 +81,14 @@ class MainWindow(QMainWindow):
         self.directory_tree.tree_view.clicked.connect(self.on_directory_selected)
         self.directory_tree.filter_options_changed.connect(self._on_directory_tree_filter_options_changed)
         self.file_list.list_view.selectionModel().selectionChanged.connect(self.on_file_selection_changed)
-        self.directory_tree.tag_filter_changed.connect(self.file_list.set_tag_filter)
-        self.directory_tree.global_file_search_requested.connect(self.on_global_file_search_requested)
         self.tag_control.tags_updated.connect(self.on_tags_updated)
         self.file_detail.file_tags_changed.connect(self.on_tags_updated)
         self.directory_tree.directory_context_menu_requested.connect(self.on_directory_tree_context_menu)
+        
+        # --- 새로운 검색 위젯 시그널 연결 ---
+        self.search_widget.search_requested.connect(self.on_search_requested)
+        self.search_widget.search_cleared.connect(self.on_search_cleared)
+        self.search_widget.advanced_search_requested.connect(self.on_advanced_search_requested)
 
     def set_workspace(self):
         current_workspace = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
@@ -111,8 +122,8 @@ class MainWindow(QMainWindow):
         is_dir = self.directory_tree.model.isDir(self.directory_tree.proxy_model.mapToSource(index))
 
         recursive = self.directory_tree.recursive_checkbox.isChecked()
-        extensions_text = self.directory_tree.extensions_input.text().strip()
-        file_extensions = [ext.strip() for ext in extensions_text.split(',') if ext.strip()]
+        # extensions_input이 제거되었으므로 빈 리스트로 설정
+        file_extensions = []
 
         if is_dir:
             # If a directory is selected, update the file list with its contents
@@ -187,64 +198,114 @@ class MainWindow(QMainWindow):
             self.tag_control.clear_view()
             self.statusbar.showMessage("파일 선택이 해제되었습니다.")
 
-    def on_global_file_search_requested(self, search_text):
-        workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
-        if not search_text:
+    def on_search_requested(self, search_conditions: dict):
+        """통합 검색 요청 처리"""
+        self.statusbar.showMessage("검색 중...")
+        
+        # TODO: SearchManager를 사용한 검색 로직 구현
+        # 현재는 기본적인 파일명 검색만 구현
+        if 'filename' in search_conditions:
+            filename_cond = search_conditions['filename']
+            search_text = filename_cond.get('name', '')
+            extensions = filename_cond.get('extensions', [])
+            
+            if search_text or extensions:
+                workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
+                search_results = []
+                
+                for root, _, files in os.walk(workspace_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        
+                        # 파일명 검색
+                        if search_text and search_text.lower() not in file.lower():
+                            continue
+                            
+                        # 확장자 필터
+                        if extensions:
+                            file_ext = os.path.splitext(file)[1].lower()
+                            if not any(ext.lower() in file_ext for ext in extensions):
+                                continue
+                                
+                        search_results.append(file_path)
+                
+                self.file_list.set_search_results(search_results)
+                self.search_widget.update_search_results(len(search_results), f"파일명: '{search_text}'")
+                self.statusbar.showMessage(f"'{search_text}' 검색 완료: {len(search_results)}개 파일")
+            else:
+                # 검색 조건이 없으면 현재 디렉토리로 복원
+                workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
+                self.file_list.set_path(workspace_path)
+                self.search_widget.update_search_results(0, "")
+                self.statusbar.showMessage("검색이 초기화되었습니다.")
+        else:
+            # 검색 조건이 없으면 현재 디렉토리로 복원
+            workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
             self.file_list.set_path(workspace_path)
-            self.file_detail.clear_preview()
-            self.tag_control.clear_view()
-            self.statusbar.showMessage("전역 검색이 초기화되었습니다.")
-            return
-        self.statusbar.showMessage(f"'{search_text}' 검색 중...")
-        search_results = []
-        for root, _, files in os.walk(workspace_path):
-            for file in files:
-                if search_text.lower() in file.lower():
-                    search_results.append(os.path.join(root, file))
-        self.file_list.set_search_results(search_results)
+            self.search_widget.update_search_results(0, "")
+            self.statusbar.showMessage("검색이 초기화되었습니다.")
+
+    def on_search_cleared(self):
+        """검색 초기화 처리"""
+        workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
+        self.file_list.set_path(workspace_path)
         self.file_detail.clear_preview()
         self.tag_control.clear_view()
-        self.statusbar.showMessage(f"'{search_text}' 검색 완료: {len(search_results)}개 파일 발견.")
+        self.statusbar.showMessage("검색이 초기화되었습니다.")
+
+    def on_advanced_search_requested(self, advanced_conditions: dict):
+        """고급 검색 패널 표시/숨김 처리"""
+        visible = advanced_conditions.get('visible', False)
+        
+        if visible and not hasattr(self, 'advanced_panel_widget'):
+            # 고급 검색 패널을 메인 윈도우에 추가
+            self.advanced_panel_widget = self.search_widget.get_advanced_panel()
+            self.advanced_panel_widget.setParent(self)
+            
+            # 메인 레이아웃에 고급 검색 패널 추가 (검색 툴바 아래)
+            # TODO: QVBoxLayout을 사용하여 검색 툴바 아래에 패널 배치
+            pass
+        elif hasattr(self, 'advanced_panel_widget'):
+            self.advanced_panel_widget.setVisible(visible)
 
     def on_tags_updated(self):
-        self.statusbar.showMessage("태그가 업데이트되었습니다.", 3000)
-        selected_file_paths = self.file_list.get_selected_file_paths()
-        self.file_list.model.layoutChanged.emit()
-        if len(selected_file_paths) == 1:
-            self.file_detail.update_preview(selected_file_paths[0])
+        """태그 업데이트 시 파일 목록의 태그 정보를 새로고침합니다."""
+        # 현재 선택된 디렉토리 경로 가져오기
+        selected_index = self.directory_tree.tree_view.currentIndex()
+        if selected_index.isValid():
+            current_path = self.directory_tree.model.filePath(self.directory_tree.proxy_model.mapToSource(selected_index))
+            # If the selected item is a file, use its parent directory
+            if not self.directory_tree.model.isDir(self.directory_tree.proxy_model.mapToSource(selected_index)):
+                current_path = os.path.dirname(current_path)
         else:
-            self.file_detail.clear_preview()
-        self.tag_control.update_all_tags_list()
-        self.tag_control.update_completer_model()
+            current_path = self.file_list.model.current_directory
+            if not current_path:
+                current_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
+
+        # 파일 목록의 태그 정보만 새로고침 (선택 상태 유지)
+        self.file_list.refresh_tags_for_current_files()
 
     def open_custom_tag_dialog(self):
+        """커스텀 태그 관리 다이얼로그를 엽니다."""
         dialog = CustomTagDialog(self.custom_tag_manager, self)
-        if dialog.exec_():
+        if dialog.exec_() == CustomTagDialog.Accepted:
+            # 커스텀 태그가 변경되었으므로 QuickTagsWidget들을 새로고침
             self.tag_control.individual_quick_tags.load_quick_tags()
             self.tag_control.batch_quick_tags.load_quick_tags()
+            self.statusbar.showMessage("빠른 태그가 업데이트되었습니다.", 3000)
 
     def on_directory_tree_context_menu(self, directory_path, global_pos):
+        """디렉토리 트리 컨텍스트 메뉴 처리"""
         menu = QMenu(self)
-        remove_tags_action = menu.addAction("일괄 태그 제거...")
+        batch_remove_action = menu.addAction("일괄 태그 제거...")
         action = menu.exec_(global_pos)
-        if action == remove_tags_action:
+        
+        if action == batch_remove_action:
             self._open_batch_remove_tags_dialog(directory_path)
 
     def _open_batch_remove_tags_dialog(self, target_path):
-        dialog = BatchRemoveTagsDialog(self.tag_manager, target_path, self)
-        if dialog.exec_():
-            tags_to_remove = dialog.get_tags_to_remove()
-            if tags_to_remove:
-                all_files_in_directory = self.tag_manager.get_files_in_directory(target_path, recursive=True, file_extensions=None)
-                if all_files_in_directory:
-                    result = self.tag_manager.remove_tags_from_files(all_files_in_directory, tags_to_remove)
-                    if result and result.get("success"):
-                        QMessageBox.information(self, "일괄 태그 제거 완료", f"{result.get('successful', 0)}개 항목에서 태그가 성공적으로 제거되었습니다.")
-                        self.on_tags_updated()
-                    else:
-                        error_msg = result.get("error") if result else "알 수 없는 오류"
-                        QMessageBox.critical(self, "일괄 태그 제거 실패", f"오류: {error_msg}")
-                else:
-                    QMessageBox.information(self, "정보", "선택된 디렉토리 내에 태그를 제거할 파일이 없습니다.")
-            else:
-                QMessageBox.information(self, "정보", "제거할 태그가 선택되지 않았습니다.")
+        """일괄 태그 제거 다이얼로그를 엽니다."""
+        dialog = BatchRemoveTagsDialog(self.tag_manager, target_path, True, self)
+        if dialog.exec_() == BatchRemoveTagsDialog.Accepted:
+            self.on_tags_updated()
+            self.statusbar.showMessage("일괄 태그 제거가 완료되었습니다.", 3000)
