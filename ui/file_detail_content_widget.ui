@@ -97,11 +97,6 @@ p, li { white-space: pre-wrap; }
        </layout>
       </widget>
      </widget>
-     <widget class="QPushButton" name="clear_all_tags_button">
-      <property name="text">
-       <string>모든 태그 삭제</string>
-      </property>
-     </widget>
     </widget>
    </item>
   </layout>

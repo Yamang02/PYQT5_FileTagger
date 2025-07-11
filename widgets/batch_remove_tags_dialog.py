@@ -79,7 +79,8 @@ class BatchRemoveTagsDialog(QDialog):
         max_cols = 3
 
         for tag in tags:
-            chip = TagChip(tag, checkable=True)
+            chip = TagChip(tag)
+            chip.tag_removed.connect(lambda tag_text, chip_widget=chip: self.on_tag_chip_remove(tag_text, chip_widget))
             self.tag_chips.append(chip)
             self.chip_layout.addWidget(chip, row, col)
             col += 1
@@ -92,6 +93,27 @@ class BatchRemoveTagsDialog(QDialog):
             child = self.chip_layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
+
+    def on_tag_chip_remove(self, tag, chip_widget):
+        # 1. 파일 목록 결정
+        if isinstance(self.target_path, list):
+            files = self.target_path
+        elif isinstance(self.target_path, str):
+            files = self.tag_manager.get_files_in_directory(self.target_path, recursive=True)
+        else:
+            files = []
+        if not files:
+            return
+        # 2. TagManager를 통해 일괄 삭제
+        self.tag_manager.remove_tags_from_files(files, [tag])
+        # 3. UI에서 해당 칩 제거
+        chip_widget.setParent(None)
+        chip_widget.deleteLater()
+        if chip_widget in self.tag_chips:
+            self.tag_chips.remove(chip_widget)  # 리스트에서도 제거
+        # 4. (선택) 메인 윈도우 갱신 시그널 emit (필요시)
+        if hasattr(self, 'tags_updated'):
+            self.tags_updated.emit()
 
     def get_tags_to_remove(self):
         return [chip.tag_text for chip in self.tag_chips if chip.is_checked()]

@@ -1,7 +1,7 @@
 import os
 import logging
 import config
-from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QMenu, QAbstractItemView
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QMenu, QAbstractItemView, QVBoxLayout, QSpacerItem, QSizePolicy
 from PyQt5.uic import loadUi
 from PyQt5.QtCore import QDir, QModelIndex, QEvent
 
@@ -14,6 +14,7 @@ from core.tag_manager import TagManager
 from core.custom_tag_manager import CustomTagManager
 from widgets.custom_tag_dialog import CustomTagDialog
 from widgets.batch_remove_tags_dialog import BatchRemoveTagsDialog
+from core.search_manager import SearchManager
 
 logger = logging.getLogger(__name__)
 
@@ -25,34 +26,52 @@ class MainWindow(QMainWindow):
         # --- 코어 로직 초기화 ---
         self.tag_manager = TagManager()
         self.custom_tag_manager = CustomTagManager()
+        self.search_manager = SearchManager(self.tag_manager)
 
         # --- 위젯 인스턴스 생성 ---
         initial_workspace = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
         self.directory_tree = DirectoryTreeWidget(initial_workspace)
         self.file_list = FileListWidget(self.tag_manager)
-        # FileDetailWidget에 file_server 인스턴스 전달
         self.file_detail = FileDetailWidget(self.tag_manager)
         self.tag_control = TagControlWidget(self.tag_manager, self.custom_tag_manager)
-        
-        # --- 통합 검색 툴바 추가 ---
-        self.search_widget = SearchWidget()
-        self.search_toolbar = self.addToolBar("Search")
-        self.search_toolbar.addWidget(self.search_widget)
-        self.search_toolbar.setMovable(False)
-        self.search_toolbar.setFloatable(False)
+        self.search_widget = SearchWidget(self.tag_manager)
 
-        # --- 3열 레이아웃 구성 (QSplitter 사용) ---
+        # --- 메인 레이아웃 구조 리팩토링 ---
+        # 기존 centralwidget의 레이아웃 완전 삭제 후 QVBoxLayout 적용
+        central_layout = self.centralwidget.layout()
+        if central_layout is not None:
+            while central_layout.count():
+                item = central_layout.takeAt(0)
+                widget = item.widget()
+                if widget:
+                    widget.setParent(None)
+            import sip
+            sip.delete(central_layout)
+        vbox = QVBoxLayout()
+        vbox.setContentsMargins(0, 0, 0, 0)
+        vbox.setSpacing(0)
+        self.centralwidget.setLayout(vbox)
+
+        # --- 검색 툴바(툴바 대신 위젯으로 직접 추가) ---
+        vbox.addWidget(self.search_widget)
+
+        # --- 고급 검색 패널 추가 (기본 숨김) ---
+        self.advanced_panel_widget = self.search_widget.get_advanced_panel()
+        self.advanced_panel_widget.setVisible(False)
+        vbox.addWidget(self.advanced_panel_widget)
+
+        # --- 3열 레이아웃(mainSplitter) 구성 ---
         self.mainSplitter.insertWidget(0, self.directory_tree)
         self.mainSplitter.insertWidget(1, self.splitter)
         self.mainSplitter.insertWidget(2, self.tag_control)
         self.directoryTreeWidget.deleteLater()
         self.tagControlWidget.deleteLater()
-
-        # 2열: 파일 상세 정보(상)와 파일 목록(하)을 담는 Splitter
         self.splitter.insertWidget(0, self.file_detail)
         self.splitter.insertWidget(1, self.file_list)
         self.fileDetailWidget.deleteLater()
         self.fileListWidget.deleteLater()
+        vbox.addWidget(self.mainSplitter)
+        vbox.setStretchFactor(self.mainSplitter, 1)
 
         # 초기 크기 설정
         self.mainSplitter.setSizes([150, self.width() - 300, 150])
@@ -199,51 +218,23 @@ class MainWindow(QMainWindow):
             self.statusbar.showMessage("파일 선택이 해제되었습니다.")
 
     def on_search_requested(self, search_conditions: dict):
-        """통합 검색 요청 처리"""
         self.statusbar.showMessage("검색 중...")
-        
-        # TODO: SearchManager를 사용한 검색 로직 구현
-        # 현재는 기본적인 파일명 검색만 구현
-        if 'filename' in search_conditions:
+        search_results = self.search_manager.search_files(search_conditions)
+        self.file_list.set_search_results(search_results)
+        # 검색 조건 요약 문자열 생성
+        summary = ""
+        if 'tags' in search_conditions:
+            tag_cond = search_conditions['tags']
+            tag_query = tag_cond.get('query', '').strip()
+            if tag_query:
+                summary = f"태그: '{tag_query}'"
+        elif 'filename' in search_conditions:
             filename_cond = search_conditions['filename']
-            search_text = filename_cond.get('name', '')
-            extensions = filename_cond.get('extensions', [])
-            
-            if search_text or extensions:
-                workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
-                search_results = []
-                
-                for root, _, files in os.walk(workspace_path):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        
-                        # 파일명 검색
-                        if search_text and search_text.lower() not in file.lower():
-                            continue
-                            
-                        # 확장자 필터
-                        if extensions:
-                            file_ext = os.path.splitext(file)[1].lower()
-                            if not any(ext.lower() in file_ext for ext in extensions):
-                                continue
-                                
-                        search_results.append(file_path)
-                
-                self.file_list.set_search_results(search_results)
-                self.search_widget.update_search_results(len(search_results), f"파일명: '{search_text}'")
-                self.statusbar.showMessage(f"'{search_text}' 검색 완료: {len(search_results)}개 파일")
-            else:
-                # 검색 조건이 없으면 현재 디렉토리로 복원
-                workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
-                self.file_list.set_path(workspace_path)
-                self.search_widget.update_search_results(0, "")
-                self.statusbar.showMessage("검색이 초기화되었습니다.")
-        else:
-            # 검색 조건이 없으면 현재 디렉토리로 복원
-            workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
-            self.file_list.set_path(workspace_path)
-            self.search_widget.update_search_results(0, "")
-            self.statusbar.showMessage("검색이 초기화되었습니다.")
+            search_text = filename_cond.get('name', '').strip()
+            if search_text:
+                summary = f"파일명: '{search_text}'"
+        self.search_widget.update_search_results(len(search_results), summary)
+        self.statusbar.showMessage(f"검색 완료: {len(search_results)}개 파일")
 
     def on_search_cleared(self):
         """검색 초기화 처리"""
@@ -256,16 +247,7 @@ class MainWindow(QMainWindow):
     def on_advanced_search_requested(self, advanced_conditions: dict):
         """고급 검색 패널 표시/숨김 처리"""
         visible = advanced_conditions.get('visible', False)
-        
-        if visible and not hasattr(self, 'advanced_panel_widget'):
-            # 고급 검색 패널을 메인 윈도우에 추가
-            self.advanced_panel_widget = self.search_widget.get_advanced_panel()
-            self.advanced_panel_widget.setParent(self)
-            
-            # 메인 레이아웃에 고급 검색 패널 추가 (검색 툴바 아래)
-            # TODO: QVBoxLayout을 사용하여 검색 툴바 아래에 패널 배치
-            pass
-        elif hasattr(self, 'advanced_panel_widget'):
+        if hasattr(self, 'advanced_panel_widget'):
             self.advanced_panel_widget.setVisible(visible)
 
     def on_tags_updated(self):

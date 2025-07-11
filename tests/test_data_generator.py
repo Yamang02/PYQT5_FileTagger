@@ -43,8 +43,6 @@ def generate_test_tags():
         print("❌ MongoDB 연결 실패")
         return False
 
-    print("✅ MongoDB 연결 성공")
-
     # 현재 디렉토리의 파일들에 태그 추가
     current_dir = os.path.dirname(os.path.abspath(__file__))
     files_processed = 0
@@ -100,8 +98,6 @@ def clear_test_tags():
     if not tag_manager.connect():
         print("❌ MongoDB 연결 실패")
         return False
-
-    print("✅ MongoDB 연결 성공")
 
     # 모든 태그 데이터 삭제
     try:

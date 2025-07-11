@@ -54,5 +54,4 @@ class TagChip(QFrame):
         
 
     def _on_delete_button_clicked(self):
-        print(f"DEBUG: TagChip delete button clicked for tag: {self.tag_text}") # 디버그용 print
         self.tag_removed.emit(self.tag_text)

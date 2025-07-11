@@ -88,13 +88,6 @@
          </property>
         </widget>
        </item>
-       <item>
-        <widget class="QPushButton" name="individual_save_button">
-         <property name="text">
-          <string>태그 저장</string>
-         </property>
-        </widget>
-       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="batch_tagging_tab">

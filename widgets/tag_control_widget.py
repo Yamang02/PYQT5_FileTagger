@@ -32,7 +32,6 @@ class TagControlWidget(QWidget):
 
     def setup_ui(self):
         loadUi('ui/tag_control_widget.ui', self)
-        logger.debug(f"[TagControlWidget] setup_ui: tagging_tab_widget type: {type(self.tagging_tab_widget)}")
 
         # QuickTagsWidget 인스턴스 생성 및 배치
         self.individual_quick_tags = QuickTagsWidget(self.custom_tag_manager, self)
@@ -62,7 +61,6 @@ class TagControlWidget(QWidget):
 
         # 개별 태깅 탭 시그널
         self.individual_tag_input.returnPressed.connect(lambda: self.add_tag_from_input(mode='individual'))
-        self.individual_save_button.clicked.connect(self.save_individual_tags)
         self.individual_quick_tags.tags_changed.connect(self.on_individual_quick_tags_changed)
 
         # 일괄 태깅 탭 시그널
@@ -106,6 +104,12 @@ class TagControlWidget(QWidget):
 
         if current_tab_index == 0: # 개별 태깅 탭
             self._add_tag_to_list(selected_tag, self.individual_tags, self.individual_chip_layout, self.individual_tag_input)
+            # 즉시 저장
+            if self.current_target_path and not self.is_current_target_dir:
+                self.tag_manager.update_tags(self.current_target_path, self.individual_tags)
+                self.tags_updated.emit()
+                if hasattr(self, 'file_tags_changed'):
+                    self.file_tags_changed.emit()
         elif current_tab_index == 1: # 일괄 태깅 탭
             self._add_tag_to_list(selected_tag, self.batch_tags, self.batch_chip_layout, self.batch_tag_input)
 
@@ -121,8 +125,6 @@ class TagControlWidget(QWidget):
         pass
 
     def update_for_target(self, target, is_dir):
-        logger.debug(f"[TagControlWidget] update_for_target 호출됨: target={target}, is_dir={is_dir}")
-        # target은 단일 경로(str) 또는 여러 경로(list)가 될 수 있음
         self.current_target_path = None
         self.current_target_paths = []
         self.is_current_target_dir = is_dir
@@ -130,11 +132,9 @@ class TagControlWidget(QWidget):
         if isinstance(target, list):
             self.current_target_paths = target
             # 다중 파일 선택 시 일괄 태깅 탭으로 강제 전환
-            logger.debug("[TagControlWidget] 다중 파일 선택 감지. 일괄 태깅 탭으로 전환 시도.")
             self.tagging_tab_widget.setTabEnabled(0, False) # 개별 태깅 탭 비활성화
             self.tagging_tab_widget.setTabEnabled(1, True)  # 일괄 태깅 탭 활성화
             self.tagging_tab_widget.setCurrentIndex(1) # 일괄 태깅 탭으로 전환
-            logger.debug(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
 
             self.individual_target_label.setText("파일을 선택하세요.")
             self.batch_target_label.setText(f"선택된 파일: {len(target)}개")
@@ -156,11 +156,9 @@ class TagControlWidget(QWidget):
 
             if is_dir:
                 # 디렉토리 선택 시 일괄 태깅 탭 활성화, 개별 태깅 탭 비활성화
-                logger.debug("[TagControlWidget] 디렉토리 선택 감지. 일괄 태깅 탭으로 전환 시도.")
                 self.tagging_tab_widget.setTabEnabled(0, False) # 개별 태깅 탭 비활성화
                 self.tagging_tab_widget.setTabEnabled(1, True)  # 일괄 태깅 탭 활성화
                 self.tagging_tab_widget.setCurrentIndex(1) # 일괄 태깅 탭으로 전환
-                logger.debug(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
 
                 self.individual_target_label.setText("파일을 선택하세요.")
                 self.batch_target_label.setText(f"대상 디렉토리: {target}")
@@ -169,11 +167,9 @@ class TagControlWidget(QWidget):
 
             else: # 파일 선택 시
                 # 파일 선택 시 개별 태깅 탭 활성화, 일괄 태깅 탭 비활성화
-                logger.debug("[TagControlWidget] 단일 파일 선택 감지. 개별 태깅 탭으로 전환 시도.")
                 self.tagging_tab_widget.setTabEnabled(0, True)  # 개별 태깅 탭 활성화
                 self.tagging_tab_widget.setTabEnabled(1, False) # 일괄 태깅 탭 비활성화
                 self.tagging_tab_widget.setCurrentIndex(0) # 개별 태깅 탭으로 전환
-                logger.debug(f"[TagControlWidget] 현재 탭 인덱스: {self.tagging_tab_widget.currentIndex()}")
 
                 self.individual_target_label.setText(f"선택된 파일: {target}")
                 self.batch_target_label.setText("디렉토리를 선택하세요.")
@@ -221,6 +217,12 @@ class TagControlWidget(QWidget):
         if tag_text not in tag_list:
             tag_list.append(tag_text)
             self._refresh_chip_layout(tag_list, chip_layout, tag_input_field)
+            # 개별 태깅 탭에서는 즉시 저장
+            if mode == 'individual' and self.current_target_path and not self.is_current_target_dir:
+                self.tag_manager.update_tags(self.current_target_path, self.individual_tags)
+                self.tags_updated.emit()  # 파일 상세 등 외부 위젯 갱신용
+                if hasattr(self, 'file_tags_changed'):
+                    self.file_tags_changed.emit()
         tag_input_field.clear()
 
     def remove_tag(self, tag_text, mode):
@@ -258,14 +260,7 @@ class TagControlWidget(QWidget):
             chip_layout.insertWidget(chip_layout.count() - 1, chip)
 
     def save_individual_tags(self):
-        if self.current_target_path and not self.is_current_target_dir:
-            self.tag_manager.update_tags(self.current_target_path, self.individual_tags)
-            self.update_completer_model() # 새 태그가 추가되었을 수 있으므로 자동완성 모델 업데이트
-            self.update_all_tags_list() # 모든 태그 목록 업데이트
-            self.tags_updated.emit()
-            QMessageBox.information(self, "저장 완료", f"'{self.current_target_path}' 파일의 태그가 저장되었습니다.")
-        else:
-            QMessageBox.warning(self, "오류", "파일이 선택되지 않았거나 디렉토리입니다.")
+        pass  # 더 이상 사용하지 않음, 버튼도 UI에서 제거 필요
 
     def apply_batch_tags(self):
         if not self.batch_tags:
@@ -309,7 +304,6 @@ class TagControlWidget(QWidget):
     def set_enabled(self, enabled):
         # 탭 위젯 자체의 활성화/비활성화는 여기서 제어하지 않고, update_for_target에서 탭별로 제어
         self.individual_tag_input.setEnabled(enabled)
-        self.individual_save_button.setEnabled(enabled)
         self.individual_quick_tags.set_enabled(enabled)
 
         self.batch_tag_input.setEnabled(enabled)
@@ -334,6 +328,12 @@ class TagControlWidget(QWidget):
         # 빠른 태그 변경 시 개별 태깅 탭의 태그 목록 업데이트
         self.individual_tags = list(set(self.individual_tags + tags)) # 중복 제거
         self._refresh_chip_layout(self.individual_tags, self.individual_chip_layout, self.individual_tag_input)
+        # 즉시 저장
+        if self.current_target_path and not self.is_current_target_dir:
+            self.tag_manager.update_tags(self.current_target_path, self.individual_tags)
+            self.tags_updated.emit()
+            if hasattr(self, 'file_tags_changed'):
+                self.file_tags_changed.emit()
 
     def on_batch_quick_tags_changed(self, tags):
         # 빠른 태그 변경 시 일괄 태깅 탭의 태그 목록 업데이트
@@ -341,19 +341,15 @@ class TagControlWidget(QWidget):
         self._refresh_chip_layout(self.batch_tags, self.batch_chip_layout, self.batch_tag_input)
 
     def _on_batch_remove_tags_clicked(self):
-        print("DEBUG: _on_batch_remove_tags_clicked called.") # 진단용
         if not self.current_target_path and not self.current_target_paths:
             QMessageBox.warning(self, "대상 없음", "태그를 제거할 파일 또는 디렉토리를 선택해주세요.")
             return
 
         target = self.current_target_paths if self.current_target_paths else self.current_target_path
         dialog = BatchRemoveTagsDialog(self.tag_manager, target, self)
-        print(f"DEBUG: BatchRemoveTagsDialog created: {dialog}") # 진단용
         if dialog.exec_():
-            print("DEBUG: BatchRemoveTagsDialog accepted.") # 진단용
             tags_to_remove = dialog.get_tags_to_remove()
             if not tags_to_remove:
-                QMessageBox.information(self, "정보", "제거할 태그가 선택되지 않았습니다.")
                 return
 
             target_files = []
@@ -368,7 +364,6 @@ class TagControlWidget(QWidget):
                 return
 
             result = self.tag_manager.remove_tags_from_files(target_files, tags_to_remove)
-            print(f"DEBUG: tag_manager.remove_tags_from_files result: {result}") # 진단용
             if result and result.get("success"):
                 QMessageBox.information(self, "일괄 태그 제거 완료", f"{result.get('successful', 0)}개 항목에서 태그가 성공적으로 제거되었습니다.")
                 self.tags_updated.emit() # UI 업데이트

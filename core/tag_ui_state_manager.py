@@ -40,24 +40,18 @@ class TagUIStateManager(QObject):
     def register_widget(self, name: str, widget):
         """관리할 위젯을 등록합니다."""
         self.widgets[name] = widget
-        print(f"[TagUIStateManager] 위젯 등록: {name}")
 
     def unregister_widget(self, name: str):
         """위젯 등록을 해제합니다."""
         if name in self.widgets:
             del self.widgets[name]
-            print(f"[TagUIStateManager] 위젯 등록 해제: {name}")
 
     # 모드 관리
     def set_mode(self, mode: str):
-        print(f"[TUSM] set_mode 호출: {mode}")
         if mode in ['individual', 'batch'] and self._mode != mode:
             self._mode = mode
-            print(f"[TUSM] _update_mode_dependent_state 호출 (모드: {mode})")
             self._update_mode_dependent_state()
-            print(f"[TUSM] _emit_state 호출 (모드: {mode})")
             self._emit_state()
-            print(f"[TagUIStateManager] 모드 변경: {mode}")
 
     def get_mode(self):
         """현재 모드를 반환합니다."""
@@ -159,7 +153,6 @@ class TagUIStateManager(QObject):
 
     # UI 가시성 관리
     def set_ui_visibility(self, component: str, visible: bool):
-        print(f"[TUSM] UI 가시성 설정 시도: {component}, {visible}")
         if component in self._ui_visibility and self._ui_visibility[component] != visible:
             self._ui_visibility[component] = visible
             self._emit_state()
@@ -228,16 +221,11 @@ class TagUIStateManager(QObject):
 
     # 내부 헬퍼 메서드들
     def _update_mode_dependent_state(self):
-        print(f"[TUSM] _update_mode_dependent_state 시작 (현재 모드: {self._mode})")
         if self._mode == 'individual':
-            print("[TUSM] UI 가시성 설정 시도: individual_panel, True")
             self.set_ui_visibility('individual_panel', True)
-            print("[TUSM] UI 가시성 설정 시도: batch_panel, False")
             self.set_ui_visibility('batch_panel', False)
         elif self._mode == 'batch':
-            print("[TUSM] UI 가시성 설정 시도: individual_panel, False")
             self.set_ui_visibility('individual_panel', False)
-            print("[TUSM] UI 가시성 설정 시도: batch_panel, True")
             self.set_ui_visibility('batch_panel', True)
 
     def _update_file_selection_dependent_state(self):

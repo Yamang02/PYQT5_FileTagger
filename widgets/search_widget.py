@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, 
-                             QPushButton, QLabel, QFrame, QSizePolicy, QSpacerItem)
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer
+                             QPushButton, QLabel, QFrame, QSizePolicy, QSpacerItem, QCompleter)
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QStringListModel
 from PyQt5.QtGui import QIcon, QFont
 
 class SearchWidget(QWidget):
@@ -11,8 +11,11 @@ class SearchWidget(QWidget):
     search_cleared = pyqtSignal()        # 검색 초기화
     advanced_search_requested = pyqtSignal(dict)  # 고급 검색 요청
 
-    def __init__(self, parent=None):
+    MAX_HISTORY = 10  # 검색 히스토리 최대 개수
+
+    def __init__(self, tag_manager, parent=None):
         super().__init__(parent)
+        self.tag_manager = tag_manager
         self.setup_ui()
         self.setup_connections()
         self.setup_styles()
@@ -20,6 +23,7 @@ class SearchWidget(QWidget):
         self._debounce_timer.setSingleShot(True)
         self._debounce_timer.timeout.connect(self._on_debounce_timeout)
         self._advanced_panel_visible = False
+        # self._search_history = []  # 검색 조건 히스토리 리스트
 
     def setup_ui(self):
         main_layout = QHBoxLayout(self)
@@ -47,9 +51,16 @@ class SearchWidget(QWidget):
         self.tag_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.tag_input.setToolTip("쉼표(,)는 AND, 파이프(|)는 OR, 별표(*)는 NOT 조건입니다.")
         main_layout.addWidget(self.tag_input, 3)
-        self.tag_input.focusInEvent = self._show_tag_tooltip
+        # 자동완성 관련
+        self._tag_completer_model = QStringListModel()
+        self._tag_completer = QCompleter(self._tag_completer_model, self)
+        self._tag_completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self._tag_completer.setFilterMode(Qt.MatchContains)
+        self.tag_input.setCompleter(self._tag_completer)
+        self.tag_input.focusInEvent = self._on_tag_input_focus
+        self.tag_input.textChanged.connect(self._on_tag_input_text_changed)
 
-        # 아이콘 버튼 (태그 입력란 바로 오른쪽, 순서: 검색, 삭제, 히스토리, 고급검색)
+        # 아이콘 버튼 (태그 입력란 바로 오른쪽, 순서: 검색, 삭제, 고급검색)
         button_layout = QHBoxLayout()
         button_layout.setSpacing(4)
         button_layout.setContentsMargins(0, 0, 0, 0)
@@ -63,11 +74,6 @@ class SearchWidget(QWidget):
         self.clear_button.setFixedSize(32, 32)
         self.clear_button.setToolTip("검색 초기화")
         button_layout.addWidget(self.clear_button)
-
-        self.history_button = QPushButton("⏰")
-        self.history_button.setFixedSize(32, 32)
-        self.history_button.setToolTip("검색 히스토리")
-        button_layout.addWidget(self.history_button)
 
         self.advanced_toggle = QPushButton("▼")
         self.advanced_toggle.setFixedSize(32, 32)
@@ -103,10 +109,10 @@ class SearchWidget(QWidget):
         self.advanced_panel = QFrame()
         self.advanced_panel.setFrameStyle(QFrame.StyledPanel)
         self.advanced_panel.setVisible(False)
-        self.advanced_panel.setMaximumHeight(120)
+        self.advanced_panel.setMaximumHeight(160)  # 기존 120 → 160
         advanced_layout = QHBoxLayout(self.advanced_panel)
         advanced_layout.setContentsMargins(16, 8, 16, 8)
-        advanced_layout.setSpacing(16)
+        advanced_layout.setSpacing(20)  # 기존 16 → 20
         
         # 파일명 고급 검색 영역 (왼쪽 20%)
         filename_advanced_layout = QVBoxLayout()
@@ -115,11 +121,13 @@ class SearchWidget(QWidget):
         # 정확한 파일명
         self.exact_filename_input = QLineEdit()
         self.exact_filename_input.setPlaceholderText("정확한 파일명")
+        self.exact_filename_input.setMinimumHeight(40)
         filename_advanced_layout.addWidget(self.exact_filename_input)
         
         # 부분 일치
         self.partial_filename_input = QLineEdit()
         self.partial_filename_input.setPlaceholderText("파일명에 포함된 텍스트")
+        self.partial_filename_input.setMinimumHeight(40)
         filename_advanced_layout.addWidget(self.partial_filename_input)
         
         # 정규식 체크박스
@@ -142,16 +150,19 @@ class SearchWidget(QWidget):
         # AND 검색
         self.and_tags_input = QLineEdit()
         self.and_tags_input.setPlaceholderText("AND 조건 태그들 (쉼표로 구분)")
+        self.and_tags_input.setMinimumHeight(40)
         tag_advanced_layout.addWidget(self.and_tags_input)
         
         # OR 검색
         self.or_tags_input = QLineEdit()
         self.or_tags_input.setPlaceholderText("OR 조건 태그들 (파이프로 구분)")
+        self.or_tags_input.setMinimumHeight(40)
         tag_advanced_layout.addWidget(self.or_tags_input)
         
         # NOT 검색
         self.not_tags_input = QLineEdit()
         self.not_tags_input.setPlaceholderText("제외할 태그들 (별표로 시작)")
+        self.not_tags_input.setMinimumHeight(40)
         tag_advanced_layout.addWidget(self.not_tags_input)
         
         advanced_layout.addLayout(tag_advanced_layout, 80)
@@ -165,13 +176,10 @@ class SearchWidget(QWidget):
         self.search_button.clicked.connect(self._on_search_requested)
         self.clear_button.clicked.connect(self.clear_search)
         self.advanced_toggle.clicked.connect(self._toggle_advanced_panel)
-        self.history_button.clicked.connect(self._on_history_requested)
-        
         # 입력 필드 연결 (디바운싱 적용)
         self.filename_input.textChanged.connect(self._on_input_changed)
         self.tag_input.textChanged.connect(self._on_input_changed)
         self.extensions_input.textChanged.connect(self._on_input_changed)
-        
         # Enter 키 연결
         self.filename_input.returnPressed.connect(self._on_search_requested)
         self.tag_input.returnPressed.connect(self._on_search_requested)
@@ -223,6 +231,7 @@ class SearchWidget(QWidget):
         """검색 요청 처리"""
         search_conditions = self.get_search_conditions()
         if search_conditions:
+            # self._add_to_history(search_conditions) # 히스토리 관련 코드 제거
             self.search_requested.emit(search_conditions)
             
     def _toggle_advanced_panel(self):
@@ -232,10 +241,7 @@ class SearchWidget(QWidget):
         # 부모 위젯에서 패널 표시/숨김 처리
         self.advanced_search_requested.emit({"visible": self._advanced_panel_visible})
         
-    def _on_history_requested(self):
-        """검색 히스토리 요청"""
-        # TODO: 검색 히스토리 드롭다운 표시
-        pass
+    # self._search_history, MAX_HISTORY, _add_to_history, _on_history_requested, _history_summary 등 히스토리 관련 메서드/변수 전체 삭제
         
     def get_search_conditions(self) -> dict:
         """현재 검색 조건을 딕셔너리로 반환"""
@@ -351,3 +357,21 @@ class SearchWidget(QWidget):
     def get_advanced_panel(self):
         """고급 검색 패널 반환"""
         return self.advanced_panel 
+
+    def _on_tag_input_focus(self, event):
+        # QLineEdit 기본 포커스 동작 유지
+        QLineEdit.focusInEvent(self.tag_input, event)
+        self._update_tag_completer()
+
+    def _on_tag_input_text_changed(self, text):
+        self._update_tag_completer()
+
+    def _update_tag_completer(self):
+        all_tags = self.tag_manager.get_all_tags() if self.tag_manager and hasattr(self.tag_manager, 'get_all_tags') else []
+        text = self.tag_input.text().strip()
+        if not text:
+            sorted_tags = sorted(all_tags, key=lambda x: x)
+            self._tag_completer_model.setStringList(sorted_tags[:5])
+        else:
+            filtered = [tag for tag in all_tags if text.lower() in tag.lower()]
+            self._tag_completer_model.setStringList(filtered) 

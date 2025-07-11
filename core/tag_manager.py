@@ -492,13 +492,10 @@ class TagManager:
 
         def should_include_file(file_path):
             if file_extensions is None or len(file_extensions) == 0:
-                logger.debug(f"[TagManager] _get_files_in_directory: 필터 없음, 모든 파일 포함: {file_path}")
                 return True
             for ext in file_extensions:
                 if file_path.lower().endswith(ext.lower()):
-                    logger.debug(f"[TagManager] _get_files_in_directory: 확장자 필터 일치: {file_path} (.{ext})")
                     return True
-            logger.debug(f"[TagManager] _get_files_in_directory: 확장자 필터 불일치: {file_path}")
             return False
 
         try:

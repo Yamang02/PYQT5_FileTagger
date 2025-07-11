@@ -264,13 +264,6 @@ class FileDetailWidget(QWidget):
                 self.update_preview(self.current_file_path)
                 self.file_tags_changed.emit()
 
-    def _on_clear_all_tags_clicked(self):
-        if self.current_file_path:
-            success = self.tag_manager.clear_all_tags_from_file(self.current_file_path)
-            if success:
-                self.update_preview(self.current_file_path)
-                self.file_tags_changed.emit()
-
     def toggle_play_pause(self):
         if self.media_player.state() == QMediaPlayer.PlayingState:
             self.media_player.pause()
@@ -321,3 +314,6 @@ class FileDetailWidget(QWidget):
         minutes = int(seconds / 60)
         seconds %= 60
         return f"{minutes:02d}:{seconds:02d}"
+
+    def connect_tag_control_signals(self, tag_control_widget):
+        tag_control_widget.file_tags_changed.connect(lambda: self.update_preview(self.current_file_path))
