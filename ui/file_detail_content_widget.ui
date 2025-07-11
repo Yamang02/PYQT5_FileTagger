@@ -37,6 +37,7 @@
      <widget class="QWidget" name="image_preview_page"/>
      <widget class="QWidget" name="video_preview_page"/>
      <widget class="QWidget" name="text_preview_page"/>
+     <widget class="QWidget" name="pdf_preview_page"/>
      <widget class="QWidget" name="unsupported_preview_page">
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>

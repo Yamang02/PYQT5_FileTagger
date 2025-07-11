@@ -16,6 +16,18 @@
 
 ## 2025년 7월 11일
 
+### PDF 미리보기 기능 구현 완료
+- **목표**: PDF 파일에 대한 미리보기 기능 추가.
+- **구현 내용**:
+    - `widgets/file_detail_widget.py` 수정:
+        - `fitz` (PyMuPDF) 라이브러리 임포트.
+        - `PDF_EXTENSIONS` 및 `MAX_PDF_PAGES_TO_PREVIEW` 상수 정의.
+        - `setup_ui`에 PDF 미리보기를 위한 `pdf_preview_label` 및 관련 레이아웃 추가.
+        - `update_preview` 메서드에서 PDF 파일 감지 시 `_render_pdf_thumbnail` 호출.
+        - `_render_pdf_thumbnail` 메서드 구현: PDF 페이지를 이미지로 렌더링하여 `pdf_preview_label`에 표시 (최대 페이지 수 제한).
+        - `PyQt5.QtGui`에서 `QImage` 임포트 추가.
+- **개선점**: 현재는 PDF의 첫 페이지만 렌더링하여 표시하고 있음. 향후 여러 페이지를 스크롤하여 볼 수 있는 기능 또는 페이지 이동 기능 추가 고려.
+
 ### DRS 구현 완료 및 디버그 로그 제거 (DRS-20250711-001: 디렉토리 뷰에 파일 표시)
 - **DRS ID**: `DRS-20250711-001_display_files_in_directory_view.md`
 - **목표**: 디렉토리 뷰(좌측 트리 뷰)에 폴더와 함께 파일을 표시하여 사용성을 향상시키고, 워크스페이스(루트) 선택 기능을 추가하며, UI 레이아웃을 조정.

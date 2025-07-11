@@ -18,3 +18,7 @@ pytest-qt      # PyQt 애플리케이션 테스트 지원
 
 pytest-timeout # 테스트 시간 초과 방지
 pytest-mock    # Mocking 라이브러리
+
+
+# 섬네일용 PDF 라이브러리
+pymupdf
