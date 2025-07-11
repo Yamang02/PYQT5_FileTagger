@@ -13,7 +13,7 @@ if __name__ == '__main__':
     file_server.start()
 
     app = QApplication(sys.argv)
-    window = MainWindow(file_server=file_server)
+    window = MainWindow()
     
     # 애플리케이션 종료 시 서버 중지
     app.aboutToQuit.connect(file_server.stop)

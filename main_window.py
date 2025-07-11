@@ -66,7 +66,7 @@ class MainWindow(QMainWindow):
         if event.type() == QEvent.WindowStateChange:
             if self.isMaximized():
                 # 전체 화면: file_detail을 80%, file_list를 20%로 설정
-                self.splitter.setSizes([self.height() * 0.8, self.height() * 0.2])
+                self.splitter.setSizes([int(self.height() * 0.8), int(self.height() * 0.2)])
             else:
                 # 일반 화면: 50:50 비율로 복원
                 self.splitter.setSizes([self.height() // 2, self.height() // 2])

@@ -1,10 +1,15 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QStackedWidget
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QStackedWidget, QPushButton, QSlider, QHBoxLayout, QToolButton, QApplication
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
 from PyQt5.uic import loadUi
+from PyQt5.QtWidgets import QStyle
 import os
 import datetime
 import logging
+
+# 비디오 재생을 위한 모듈 임포트
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtMultimediaWidgets import QVideoWidget
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +22,7 @@ class FileDetailWidget(QWidget):
     file_tags_changed = pyqtSignal()
 
     IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
+    VIDEO_EXTENSIONS = ['.mp4', '.avi', '.mkv', '.mov', '.webm'] # 추가된 비디오 확장자
     TEXT_EXTENSIONS = ['.txt', '.md', '.py', '.js', '.html', '.css']
     # MAX_VIDEO_SIZE_MB = 50 # Base64 인코딩 시 필요했으므로 제거
 
@@ -24,6 +30,7 @@ class FileDetailWidget(QWidget):
         super().__init__(parent)
         self.tag_manager = tag_manager
         self.current_file_path = None
+        self.media_player = None # QMediaPlayer 인스턴스 초기화
         self.setup_ui()
 
     def setup_ui(self):
@@ -34,7 +41,61 @@ class FileDetailWidget(QWidget):
         self.image_preview_page.setLayout(QVBoxLayout())
         self.image_preview_page.layout().addWidget(self.image_preview_label)
 
-        
+        # 텍스트 미리보기 페이지 설정
+        self.text_browser = QTextBrowser()
+        self.text_preview_page.setLayout(QVBoxLayout())
+        self.text_preview_page.layout().addWidget(self.text_browser)
+
+        # 비디오 미리보기 페이지 설정
+        self.video_widget = QVideoWidget()
+        video_page_layout = QVBoxLayout()
+        video_page_layout.addWidget(self.video_widget)
+        self.video_preview_page.setLayout(video_page_layout)
+
+        # 비디오 컨트롤 추가
+        self.play_button = QToolButton()
+        self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.stop_button = QToolButton()
+        self.stop_button.setIcon(self.style().standardIcon(QStyle.SP_MediaStop))
+
+        # 볼륨 버튼 (음소거 아이콘)
+        self.volume_button = QToolButton()
+        self.volume_button.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
+
+        # 볼륨 슬라이더 (세로, 초기 숨김)
+        self.volume_slider = QSlider(Qt.Vertical, self.video_preview_page) # video_preview_page의 자식으로 설정
+        self.volume_slider.setRange(0, 100)
+        self.volume_slider.setValue(50) # 초기 볼륨 설정
+        self.volume_slider.hide() # 초기에는 숨김
+
+        self.position_slider = QSlider(Qt.Horizontal)
+        self.position_slider.setRange(0, 0) # 초기 범위는 0
+        self.position_slider.sliderMoved.connect(self.set_position)
+
+        self.current_time_label = QLabel("00:00")
+        self.total_time_label = QLabel("00:00")
+
+        video_controls_layout = QHBoxLayout()
+        video_controls_layout.addWidget(self.play_button)
+        video_controls_layout.addWidget(self.stop_button)
+        video_controls_layout.addWidget(self.volume_button) # 볼륨 버튼 추가
+        video_controls_layout.addWidget(self.current_time_label)
+        video_controls_layout.addWidget(self.position_slider)
+        video_controls_layout.addWidget(self.total_time_label)
+
+        self.video_preview_page.layout().addLayout(video_controls_layout)
+
+        self.media_player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.media_player.setVideoOutput(self.video_widget)
+
+        # 컨트롤 연결
+        self.play_button.clicked.connect(self.toggle_play_pause)
+        self.stop_button.clicked.connect(self.media_player.stop)
+        self.volume_button.clicked.connect(self.toggle_volume_slider) # 볼륨 버튼 클릭 시 볼륨 슬라이더 토글
+        self.volume_slider.valueChanged.connect(self.media_player.setVolume)
+        self.media_player.positionChanged.connect(self.position_changed)
+        self.media_player.durationChanged.connect(self.duration_changed)
+        self.media_player.stateChanged.connect(self.update_play_button_icon) # 재생 상태 변경 시 아이콘 업데이트
 
     def update_preview(self, file_path):
         self.current_file_path = file_path
@@ -57,8 +118,12 @@ class FileDetailWidget(QWidget):
                 else:
                     self.image_preview_label.setText("이미지 로드 실패")
             
-            
-
+            elif file_ext in self.VIDEO_EXTENSIONS:
+                self.preview_stacked_widget.setCurrentWidget(self.video_preview_page)
+                if self.media_player.state() == QMediaPlayer.PlayingState:
+                    self.media_player.stop()
+                self.media_player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
+                self.media_player.play()
             elif file_ext in self.TEXT_EXTENSIONS:
                 self.preview_stacked_widget.setCurrentWidget(self.text_preview_page)
                 try:
@@ -95,6 +160,15 @@ class FileDetailWidget(QWidget):
         self.metadata_browser.setHtml(file_info)
 
     def clear_preview(self):
+        # 비디오 플레이어 정지 및 미디어 해제
+        if self.media_player and self.media_player.state() == QMediaPlayer.PlayingState:
+            self.media_player.stop()
+        if self.media_player:
+            self.media_player.setMedia(QMediaContent())
+
+        # 볼륨 슬라이더 숨기기
+        self.volume_slider.hide()
+
         self.image_preview_label.clear()
         self.image_preview_label.setText("파일을 선택하세요.")
         self.text_browser.clear()
@@ -134,6 +208,53 @@ class FileDetailWidget(QWidget):
                 self.update_preview(self.current_file_path)
                 self.file_tags_changed.emit()
 
-    
+    def toggle_play_pause(self):
+        if self.media_player.state() == QMediaPlayer.PlayingState:
+            self.media_player.pause()
+        else:
+            self.media_player.play()
 
-    
+    def update_play_button_icon(self, state):
+        if state == QMediaPlayer.PlayingState:
+            self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
+        else:
+            self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+
+    def toggle_volume_slider(self):
+        # 볼륨 슬라이더를 보이거나 숨깁니다.
+        if self.volume_slider.isVisible():
+            self.volume_slider.hide()
+        else:
+            # 볼륨 버튼의 위치를 기준으로 슬라이더 위치 조정
+            button_rect = self.volume_button.geometry()
+            # video_preview_page 내에서의 상대적 위치 계산
+            # volume_button의 전역 위치를 video_preview_page의 지역 위치로 변환
+            global_button_pos = self.volume_button.mapToGlobal(self.volume_button.rect().topLeft())
+            local_pos_in_video_page = self.video_preview_page.mapFromGlobal(global_button_pos)
+
+            slider_width = self.volume_slider.width()
+            slider_height = self.volume_slider.height()
+
+            # 볼륨 버튼 중앙 상단에 슬라이더가 위치하도록 조정
+            x = local_pos_in_video_page.x() + (button_rect.width() - slider_width) // 2
+            y = local_pos_in_video_page.y() - slider_height # 버튼 위로
+
+            self.volume_slider.setGeometry(x, y, slider_width, slider_height)
+            self.volume_slider.show()
+
+    def position_changed(self, position):
+        self.position_slider.setValue(position)
+        self.current_time_label.setText(self.format_time(position))
+
+    def duration_changed(self, duration):
+        self.position_slider.setRange(0, duration)
+        self.total_time_label.setText(self.format_time(duration))
+
+    def set_position(self, position):
+        self.media_player.setPosition(position)
+
+    def format_time(self, milliseconds):
+        seconds = int(milliseconds / 1000)
+        minutes = int(seconds / 60)
+        seconds %= 60
+        return f"{minutes:02d}:{seconds:02d}"
