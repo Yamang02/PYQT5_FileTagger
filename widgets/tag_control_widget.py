@@ -1,15 +1,16 @@
-from PyQt5.QtWidgets import QWidget, QCompleter, QMessageBox, QListView, QLineEdit, QSizePolicy
-from PyQt5.uic import loadUi
-from PyQt5.QtCore import Qt, QStringListModel, pyqtSignal
 import logging
 
-logger = logging.getLogger(__name__)
+from PyQt5.QtWidgets import QWidget, QCompleter, QMessageBox, QSizePolicy
+from PyQt5.uic import loadUi
+from PyQt5.QtCore import Qt, QStringListModel, pyqtSignal
 
 from widgets.tag_chip import TagChip
 from widgets.quick_tags_widget import QuickTagsWidget
 from widgets.batch_tagging_options_widget import BatchTaggingOptionsWidget
 from core.custom_tag_manager import CustomTagManager
 from widgets.batch_remove_tags_dialog import BatchRemoveTagsDialog
+
+logger = logging.getLogger(__name__)
 
 class TagControlWidget(QWidget):
     tags_updated = pyqtSignal()
@@ -19,10 +20,10 @@ class TagControlWidget(QWidget):
         self.tag_manager = tag_manager
         self.custom_tag_manager = custom_tag_manager
         self.current_target_path = None # 현재 선택된 파일 또는 디렉토리 경로 (단일 파일/디렉토리)
-        self.current_target_paths = [] # 현재 선택된 파일 목록 (다중 파일)
+        self.current_target_paths: list[str] = [] # 현재 선택된 파일 목록 (다중 파일)
         self.is_current_target_dir = False # 현재 대상이 디렉토리인지 여부
-        self.individual_tags = [] # 개별 태깅 탭의 태그 목록
-        self.batch_tags = []      # 일괄 태깅 탭의 태그 목록
+        self.individual_tags: list[str] = [] # 개별 태깅 탭의 태그 목록
+        self.batch_tags: list[str] = []      # 일괄 태깅 탭의 태그 목록
 
         self.setup_ui()
         self.setup_completer()

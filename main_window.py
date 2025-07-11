@@ -1,26 +1,20 @@
-import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox, QMenu
-from PyQt5.uic import loadUi
-from PyQt5.QtCore import QDir, QModelIndex, Qt, QEvent
-from PyQt5.QtGui import QKeySequence
 import os
-import config
 import logging
+import config
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QMenu, QAbstractItemView
+from PyQt5.uic import loadUi
+from PyQt5.QtCore import QDir, QModelIndex, QEvent
 
-logger = logging.getLogger(__name__)
-
-# 위젯 임포트
 from widgets.directory_tree_widget import DirectoryTreeWidget
 from widgets.file_list_widget import FileListWidget
 from widgets.file_detail_widget import FileDetailWidget
 from widgets.tag_control_widget import TagControlWidget
-
-
-# 코어 로직 임포트
 from core.tag_manager import TagManager
 from core.custom_tag_manager import CustomTagManager
 from widgets.custom_tag_dialog import CustomTagDialog
 from widgets.batch_remove_tags_dialog import BatchRemoveTagsDialog
+
+logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
     def __init__(self):

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableView, QHeaderView, QAbstractItemView
-from PyQt5.QtCore import QDir, QAbstractTableModel, QModelIndex, Qt, QVariant
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, QVariant
 import os
-from core.path_utils import normalize_path # path_utils 모듈 임포트
+from core.path_utils import normalize_path
 
 # 백업에서 가져온 FileTableModel 정의
 class FileTableModel(QAbstractTableModel):

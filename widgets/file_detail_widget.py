@@ -1,21 +1,19 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QStackedWidget, QPushButton, QSlider, QHBoxLayout, QToolButton, QApplication
-from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import Qt, pyqtSignal, QUrl
-from PyQt5.uic import loadUi
-from PyQt5.QtWidgets import QStyle
 import os
 import datetime
 import logging
-import fitz # PyMuPDF
+import fitz # type: ignore # PyMuPDF
 
-# 비디오 재생을 위한 모듈 임포트
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QSlider, QHBoxLayout, QToolButton, QStyle
+from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtCore import Qt, pyqtSignal, QUrl
+from PyQt5.uic import loadUi
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 
-logger = logging.getLogger(__name__)
-
 from widgets.tag_chip import TagChip
 from core.tag_manager import TagManager
+
+logger = logging.getLogger(__name__)
 
 
 

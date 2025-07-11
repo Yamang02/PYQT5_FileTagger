@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QDialog, QMessageBox, QListWidgetItem
+from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.uic import loadUi
 from core.custom_tag_manager import CustomTagManager
 

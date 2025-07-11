@@ -1,10 +1,9 @@
 import sys
 import logging
-
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s:%(name)s:%(lineno)d] %(message)s')
-
 from PyQt5.QtWidgets import QApplication
 from main_window import MainWindow
+
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s:%(name)s:%(lineno)d] %(message)s')
 
 
 if __name__ == '__main__':

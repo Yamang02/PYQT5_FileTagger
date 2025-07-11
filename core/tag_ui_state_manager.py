@@ -117,7 +117,7 @@ class TagUIStateManager(QObject):
         """일괄 태깅 대상 파일들을 반환합니다."""
         return self._batch_target_files.copy()
 
-    def set_batch_options(self, recursive: bool = None, file_extensions: list = None):
+    def set_batch_options(self, recursive: bool = False, file_extensions: list = []):
         """일괄 태깅 옵션을 설정합니다."""
         changed = False
         if recursive is not None and self._batch_options['recursive'] != recursive:
@@ -169,7 +169,7 @@ class TagUIStateManager(QObject):
         return self._ui_visibility.get(component, True)
 
     # 통합 상태 관리 메서드들
-    def set_file_selected(self, selected: bool, file_path: str = None, tags: list = None):
+    def set_file_selected(self, selected: bool, file_path: str | None = None, tags: list | None = None):
         """파일 선택/해제에 따라 관련 위젯 상태를 일괄 변경합니다."""
         if self._updating_state:
             return  # 순환 호출 방지
@@ -230,14 +230,14 @@ class TagUIStateManager(QObject):
     def _update_mode_dependent_state(self):
         print(f"[TUSM] _update_mode_dependent_state 시작 (현재 모드: {self._mode})")
         if self._mode == 'individual':
-            print(f"[TUSM] UI 가시성 설정 시도: individual_panel, True")
+            print("[TUSM] UI 가시성 설정 시도: individual_panel, True")
             self.set_ui_visibility('individual_panel', True)
-            print(f"[TUSM] UI 가시성 설정 시도: batch_panel, False")
+            print("[TUSM] UI 가시성 설정 시도: batch_panel, False")
             self.set_ui_visibility('batch_panel', False)
         elif self._mode == 'batch':
-            print(f"[TUSM] UI 가시성 설정 시도: individual_panel, False")
+            print("[TUSM] UI 가시성 설정 시도: individual_panel, False")
             self.set_ui_visibility('individual_panel', False)
-            print(f"[TUSM] UI 가시성 설정 시도: batch_panel, True")
+            print("[TUSM] UI 가시성 설정 시도: batch_panel, True")
             self.set_ui_visibility('batch_panel', True)
 
     def _update_file_selection_dependent_state(self):

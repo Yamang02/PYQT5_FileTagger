@@ -1,7 +1,7 @@
 
 import pytest
 from unittest.mock import MagicMock
-from core.tag_manager import TagManager, TagManagerError
+from core.tag_manager import TagManager
 import config
 import os
 

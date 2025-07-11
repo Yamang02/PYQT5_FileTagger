@@ -90,7 +90,7 @@ class TagManager:
         if self._connection_retry_count < self._max_retry_attempts:
             logger.warning(f"[TagManager] 연결 재시도 {self._connection_retry_count}/{self._max_retry_attempts}")
         else:
-            logger.error(f"[TagManager] 최대 재시도 횟수 초과. 연결 실패")
+            logger.error("[TagManager] 최대 재시도 횟수 초과. 연결 실패")
 
     def _ensure_connection(self):
         """연결 상태를 확인하고 필요시 재연결을 시도합니다."""
@@ -160,7 +160,7 @@ class TagManager:
                 logger.error(f"[TagManager] 유효하지 않은 태그: {tags}")
                 return False
 
-            result = self.collection.update_one(
+            self.collection.update_one(
                 {"_id": file_path}, {"$set": {"tags": tags}}, upsert=True
             )
             

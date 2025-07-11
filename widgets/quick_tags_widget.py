@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5 import uic
 from core.custom_tag_manager import CustomTagManager
@@ -15,11 +15,10 @@ class QuickTagsWidget(QWidget):
     def __init__(self, custom_tag_manager: CustomTagManager, parent=None):
         super().__init__(parent)
         uic.loadUi('ui/quick_tags_widget.ui', self)
-        self.layout = self.findChild(QHBoxLayout, 'horizontalLayout') # .ui 파일에서 로드된 레이아웃 참조
-        self.layout.setAlignment(Qt.AlignLeft)  # 왼쪽 정렬 명시
+        self.horizontalLayout.setAlignment(Qt.AlignmentFlag.AlignLeft)  # 왼쪽 정렬 명시
         self.custom_tag_manager = custom_tag_manager
-        self._selected_tags = []
-        self._buttons = {}
+        self._selected_tags: list[str] = []
+        self._buttons: dict[str, QPushButton] = {}
         self.is_enabled = True  # 위젯 활성화 상태 추적
         self.load_quick_tags() # 커스텀 태그 로드
 
@@ -28,7 +27,7 @@ class QuickTagsWidget(QWidget):
         # 기존 버튼/레이아웃 제거
         try:
             for btn in self._buttons.values():
-                self.layout.removeWidget(btn)
+                self.horizontalLayout.removeWidget(btn)
                 btn.deleteLater()
             self._buttons.clear()
             self._init_buttons()
@@ -44,7 +43,7 @@ class QuickTagsWidget(QWidget):
             btn = QPushButton(tag, self)
             
             btn.clicked.connect(lambda _, t=tag: self._on_btn_clicked(t))
-            self.layout.addWidget(btn)
+            self.horizontalLayout.addWidget(btn)
             self._buttons[tag] = btn
 
 
