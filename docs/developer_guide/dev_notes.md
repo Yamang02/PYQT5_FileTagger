@@ -14,6 +14,32 @@
 
 ---
 
+## 2025년 7월 11일
+
+### DRS 구현 완료 및 디버그 로그 제거 (DRS-20250711-001: 디렉토리 뷰에 파일 표시)
+- **DRS ID**: `DRS-20250711-001_display_files_in_directory_view.md`
+- **목표**: 디렉토리 뷰(좌측 트리 뷰)에 폴더와 함께 파일을 표시하여 사용성을 향상시키고, 워크스페이스(루트) 선택 기능을 추가하며, UI 레이아웃을 조정.
+- **구현 내용**:
+    - `widgets/directory_tree_widget.py` 수정:
+        - 디렉토리 뷰에 파일 표시 기능 추가 (`QFileSystemModel` 필터링 로직 변경).
+        - "디렉토리 뷰에 파일 표시" 체크박스 추가 및 `extensions_input` 필드 위치 조정.
+        - 워크스페이스(루트) 선택 기능 활성화.
+    - `main_window.py` 수정:
+        - `on_directory_selected` 함수 로직을 업데이트하여 디렉토리 트리에서 파일/디렉토리 선택 시 중앙 파일 목록 및 상세 정보가 올바르게 업데이트되도록 함.
+        - `_on_directory_tree_filter_options_changed` 함수를 추가하여 `directory_tree.filter_options_changed` 시그널을 처리.
+    - `widgets/file_list_widget.py` 수정:
+        - `index_from_path` 메서드를 추가하여 파일 경로로부터 `QModelIndex`를 얻을 수 있도록 함.
+- **디버그 로그 제거**: `widgets/file_list_widget.py`에 있던 디버그 로그 (`DEBUG: selectionChanged signal emitted...`)를 제거하여 코드 정리.
+- **검토 결과**: 기능 요구사항이 모두 구현되었으며, 성능 측면의 고려사항은 향후 최적화 단계에서 추가 검토 예정.
+
+### 동영상 섬네일 표시 오류 수정 및 개선점
+- **목표**: 동영상 섬네일 영역에 동영상이 표시되지 않는 오류 해결 및 관련 기능 개선점 도출.
+- **해결**: `widgets/file_detail_widget.py`에서 `video_page_layout.addStretch(1)`을 제거하여 `QVideoWidget`이 공간을 제대로 확보하도록 수정.
+- **개선점**:
+    - 동영상 재생 시 `QVideoWidget`이 충분한 공간을 확보하도록 크기 정책 명시적 설정 고려.
+    - 동영상 재생 컨트롤 (재생/일시정지, 정지, 볼륨, 진행률 슬라이더)의 UI/UX 개선.
+    - 동영상 로딩 속도 최적화 및 대용량 파일 처리 방안 마련.
+
 ## 2025년 7월 10일
 
 ### 미해결 이슈 해결 (이슈 5, 6, 7, 8)
@@ -112,7 +138,6 @@
     - **진단**: `widgets/tag_control_widget.py`의 `_on_batch_remove_tags_clicked` 메서드 호출 여부 및 `BatchRemoveTagsDialog` 생성 및 실행 로직 확인 필요.
 
 ---
-
 
 ### DRS 검토 결과 (일괄/멀티 태깅)
 - **DRS-20250704-001_Batch_Tagging_Feature.md (일괄 태깅 기능)**:
@@ -243,12 +268,12 @@
 
 ### File Information 표시 문제 발견
 - **문제**: 일부 파일에서 File Information이 표시되지 않는 현상 발생
-- **원인 분석**: 
+- **원인 분석**:
   - File Information은 DB 메타 정보가 아닌 실시간 파일 시스템 정보 (os.stat 사용)
   - 파일 접근 권한, 파일 존재 여부, 경로 문제 등으로 인해 TaggedFile 생성 시 FileNotFoundError 발생
   - 현재는 예외만 출력하고 UI에는 아무것도 표시하지 않음
 - **영향**: 사용자 경험 저하 (파일 정보가 보이지 않아 혼란)
-- **해결 방안**: 
+- **해결 방안**:
   - 파일 접근 오류 시 사용자에게 명확한 메시지 표시
   - 파일 정보를 가져올 수 없는 경우에도 기본 정보 표시
   - 권한 문제나 파일 시스템 문제에 대한 상세한 오류 처리

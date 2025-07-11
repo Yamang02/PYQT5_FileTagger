@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.actionSetWorkspace.triggered.connect(self.set_workspace)
         self.actionManageQuickTags.triggered.connect(self.open_custom_tag_dialog)
         self.directory_tree.tree_view.clicked.connect(self.on_directory_selected)
-        self.directory_tree.filter_options_changed.connect(self.on_directory_selected)
+        self.directory_tree.filter_options_changed.connect(self._on_directory_tree_filter_options_changed)
         self.file_list.list_view.selectionModel().selectionChanged.connect(self.on_file_selection_changed)
         self.directory_tree.tag_filter_changed.connect(self.file_list.set_tag_filter)
         self.directory_tree.global_file_search_requested.connect(self.on_global_file_search_requested)
@@ -109,25 +109,65 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "오류", f"작업 공간 설정 중 오류가 발생했습니다: {e}")
                 self.statusbar.showMessage("작업 공간 설정 실패", 3000)
 
-    def on_directory_selected(self, *args):
-        path = None
+    def on_directory_selected(self, index: QModelIndex):
+        # Get the actual file system path from the clicked index
+        file_path = self.directory_tree.model.filePath(self.directory_tree.proxy_model.mapToSource(index))
+
+        # Determine if the selected item is a directory or a file
+        is_dir = self.directory_tree.model.isDir(self.directory_tree.proxy_model.mapToSource(index))
+
         recursive = self.directory_tree.recursive_checkbox.isChecked()
         extensions_text = self.directory_tree.extensions_input.text().strip()
         file_extensions = [ext.strip() for ext in extensions_text.split(',') if ext.strip()]
-        if isinstance(args[0], QModelIndex):
-            index = args[0]
-            path = self.directory_tree.model.filePath(self.directory_tree.proxy_model.mapToSource(index))
-        else:
-            path = self.file_list.model.current_directory
-            if not path:
-                path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
-        if path:
-            self.file_list.set_path(path, recursive, file_extensions)
+
+        if is_dir:
+            # If a directory is selected, update the file list with its contents
+            self.file_list.set_path(file_path, recursive, file_extensions)
             self.file_detail.clear_preview()
-            self.tag_control.update_for_target(path, True)
-            self.statusbar.showMessage(f"'{path}' 디렉토리를 보고 있습니다.")
+            self.tag_control.update_for_target(file_path, True)
+            self.statusbar.showMessage(f"'{file_path}' 디렉토리를 보고 있습니다.")
         else:
-            self.statusbar.showMessage("디렉토리를 선택해주세요.")
+            # If a file is selected, update file detail and select it in the file list
+            self.file_detail.update_preview(file_path)
+            self.tag_control.update_for_target(file_path, False)
+            self.statusbar.showMessage(f"'{file_path}' 파일을 선택했습니다.")
+
+            # Select the file in the file_list
+            file_list_index = self.file_list.index_from_path(file_path)
+            if file_list_index.isValid():
+                self.file_list.list_view.selectionModel().select(
+                    file_list_index, QAbstractItemView.ClearAndSelect | QAbstractItemView.Rows
+                )
+            else:
+                # If the file is not in the current file_list view (e.g., due to filters),
+                # update the file_list to show the directory containing the file
+                parent_dir = os.path.dirname(file_path)
+                self.file_list.set_path(parent_dir, recursive, file_extensions)
+                # Try selecting again after updating the path
+                file_list_index = self.file_list.index_from_path(file_path)
+                if file_list_index.isValid():
+                    self.file_list.list_view.selectionModel().select(
+                        file_list_index, QAbstractItemView.ClearAndSelect | QAbstractItemView.Rows
+                    )
+
+    def _on_directory_tree_filter_options_changed(self, recursive: bool, file_extensions: list):
+        # Get the currently selected directory in the directory tree
+        # If no directory is selected, use the current file_list directory or default workspace
+        selected_index = self.directory_tree.tree_view.currentIndex()
+        if selected_index.isValid():
+            current_path = self.directory_tree.model.filePath(self.directory_tree.proxy_model.mapToSource(selected_index))
+            # If the selected item is a file, use its parent directory
+            if not self.directory_tree.model.isDir(self.directory_tree.proxy_model.mapToSource(selected_index)):
+                current_path = os.path.dirname(current_path)
+        else:
+            current_path = self.file_list.model.current_directory
+            if not current_path:
+                current_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
+
+        self.file_list.set_path(current_path, recursive, file_extensions)
+        self.file_detail.clear_preview() # Clear preview as the file list content might change
+        self.tag_control.clear_view() # Clear tag control as the file list content might change
+        self.statusbar.showMessage(f"필터 옵션 변경: 재귀={recursive}, 확장자={', '.join(file_extensions) if file_extensions else '모두'}")
 
     def on_file_selection_changed(self, selected: QModelIndex, deselected: QModelIndex):
         selected_indexes = self.file_list.list_view.selectionModel().selectedIndexes()

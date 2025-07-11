@@ -170,8 +170,7 @@ class FileListWidget(QWidget):
         layout.addWidget(self.list_view)
         self.setLayout(layout)
 
-        # 디버깅용 시그널 연결
-        self.list_view.selectionModel().selectionChanged.connect(lambda selected, deselected: print(f"DEBUG: selectionChanged signal emitted. Selected: {len(selected.indexes())}, Deselected: {len(deselected.indexes())}"))
+        
 
     def set_path(self, path, recursive=False, file_extensions=None):
         """지정된 경로의 파일 목록을 표시합니다."""
@@ -197,3 +196,17 @@ class FileListWidget(QWidget):
     def refresh_tags_for_current_files(self):
         """모델의 태그 정보를 새로고침하도록 요청합니다."""
         self.model.refresh_tags_for_current_files()
+
+    def index_from_path(self, file_path):
+        """주어진 파일 경로에 해당하는 QModelIndex를 반환합니다."""
+        # 현재 모델이 검색 모드인지 디렉토리 모드인지에 따라 적절한 파일 목록을 사용합니다.
+        if self.model._is_search_mode:
+            file_list = self.model.search_results
+        else:
+            file_list = self.model.filtered_files
+
+        try:
+            row = file_list.index(file_path)
+            return self.model.index(row, 0) # 첫 번째 컬럼의 인덱스 반환
+        except ValueError:
+            return QModelIndex() # 파일을 찾지 못하면 유효하지 않은 인덱스 반환
