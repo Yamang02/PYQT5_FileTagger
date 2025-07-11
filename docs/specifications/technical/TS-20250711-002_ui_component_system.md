@@ -439,3 +439,8 @@ def log_ui_event(event_type: str, details: dict):
 - **v1.0** (2025-07-11): 초기 버전 작성
 
 ---
+
+### [2025-07-12] UI 컴포넌트 및 태그 관리 시스템 변경점
+- TagControlWidget: 태그 저장 버튼 제거, 태그 입력/추가/삭제 즉시 저장 및 시그널 구조 설명 보강
+- FileDetailWidget: '모든 태그 삭제' 버튼 제거, 태그칩(x) 및 일괄삭제 다이얼로그만 사용
+- 태그 변경 시 TagControlWidget <-> FileDetailWidget 양방향 시그널 구조로 UI/데이터 동기화
