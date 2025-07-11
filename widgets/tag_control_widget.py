@@ -137,9 +137,17 @@ class TagControlWidget(QWidget):
             self.tagging_tab_widget.setCurrentIndex(1) # 일괄 태깅 탭으로 전환
 
             self.individual_target_label.setText("파일을 선택하세요.")
-            self.batch_target_label.setText(f"선택된 파일: {len(target)}개")
+            
+            # 선택된 파일들의 공통 태그 찾기
+            common_tags = self._get_common_tags_for_files(target)
+            common_tags_count = len(common_tags)
+            if common_tags_count > 0:
+                self.batch_target_label.setText(f"선택된 파일: {len(target)}개 (공통 태그: {common_tags_count}개)")
+            else:
+                self.batch_target_label.setText(f"선택된 파일: {len(target)}개 (공통 태그 없음)")
+            
             self.set_tags_for_mode('individual', [])
-            self.set_tags_for_mode('batch', []) # 일괄 태깅 탭의 태그는 초기화
+            self.set_tags_for_mode('batch', common_tags)
             self.set_enabled(True)
 
         elif isinstance(target, str):
@@ -186,6 +194,29 @@ class TagControlWidget(QWidget):
             self.batch_target_label.setText("선택된 디렉토리 없음")
             self.set_tags_for_mode('individual', [])
             self.set_tags_for_mode('batch', [])
+
+    def _get_common_tags_for_files(self, file_paths):
+        """
+        선택된 파일들의 공통 태그를 찾아 반환합니다.
+        
+        Args:
+            file_paths (list): 파일 경로 리스트
+            
+        Returns:
+            list: 모든 파일에 공통으로 있는 태그 리스트
+        """
+        if not file_paths:
+            return []
+        
+        # 첫 번째 파일의 태그를 기준으로 시작
+        common_tags = set(self.tag_manager.get_tags_for_file(file_paths[0]))
+        
+        # 나머지 파일들과 교집합 계산
+        for file_path in file_paths[1:]:
+            file_tags = set(self.tag_manager.get_tags_for_file(file_path))
+            common_tags = common_tags.intersection(file_tags)
+        
+        return list(common_tags)
 
     def set_tags_for_mode(self, mode, tags):
         if mode == 'individual':

@@ -1,5 +1,55 @@
 # 개발팀 내부 기록 (Development Notes)
 
+## 2025년 1월 13일
+
+### 일괄태깅 기능 개선 (공통 태그 표시)
+
+#### 문제점
+- 여러 파일을 선택하여 일괄태깅할 때 기존 파일들의 태그가 UI에 표시되지 않음
+- 사용자가 새 태그만 입력하면 기존 태그가 사라질 것으로 오해할 수 있음
+- 실제로는 `add_tags_to_files()` 메서드가 기존 태그에 추가하지만, UI에서 명확하지 않음
+
+#### 해결 방안
+1. **공통 태그 표시 기능 추가**
+   - `_get_common_tags_for_files()` 메서드 구현
+   - 선택된 파일들의 교집합 태그를 계산하여 표시
+   - 모든 파일에 공통으로 있는 태그만 표시
+
+2. **UI 개선**
+   - 일괄태깅 탭의 대상 라벨에 공통 태그 개수 표시
+   - "선택된 파일: 3개 (공통 태그: 2개)" 형태로 정보 제공
+   - 공통 태그가 없는 경우 "공통 태그 없음" 표시
+
+#### 구현 세부사항
+```python
+def _get_common_tags_for_files(self, file_paths):
+    """선택된 파일들의 공통 태그를 찾아 반환"""
+    if not file_paths:
+        return []
+    
+    # 첫 번째 파일의 태그를 기준으로 시작
+    common_tags = set(self.tag_manager.get_tags_for_file(file_paths[0]))
+    
+    # 나머지 파일들과 교집합 계산
+    for file_path in file_paths[1:]:
+        file_tags = set(self.tag_manager.get_tags_for_file(file_path))
+        common_tags = common_tags.intersection(file_tags)
+    
+    return list(common_tags)
+```
+
+#### 변경된 파일
+- `widgets/tag_control_widget.py`: 공통 태그 표시 기능 추가
+
+#### 테스트 결과
+- 기본 태그 관리 기능은 정상 동작
+- 일부 디렉토리 일괄태깅 테스트에서 `UpdateOne` 관련 오류 발생 (별도 수정 필요)
+
+#### 향후 개선사항
+1. 공통 태그가 아닌 개별 파일 태그도 표시할 수 있는 옵션 추가
+2. 태그 적용 시 "추가" vs "덮어쓰기" 모드 선택 기능
+3. 일괄태깅 시 미리보기 기능 추가
+
 ## 2025년 7월 12일
 
 ### 태그 관리/일괄삭제/동기화 UI/UX 개선 및 코드 정비
