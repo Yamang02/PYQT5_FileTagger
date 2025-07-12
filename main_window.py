@@ -3,7 +3,7 @@ import logging
 import config
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QMenu, QAbstractItemView, QVBoxLayout, QSpacerItem, QSizePolicy
 from PyQt5.uic import loadUi
-from PyQt5.QtCore import QDir, QModelIndex, QEvent
+from PyQt5.QtCore import QDir, QModelIndex, QEvent, QItemSelectionModel
 
 from widgets.directory_tree_widget import DirectoryTreeWidget
 from widgets.file_list_widget import FileListWidget
@@ -15,70 +15,31 @@ from core.custom_tag_manager import CustomTagManager
 from widgets.custom_tag_dialog import CustomTagDialog
 from widgets.batch_remove_tags_dialog import BatchRemoveTagsDialog
 from core.search_manager import SearchManager
+from core.ui.ui_setup_manager import UISetupManager
+from core.ui.signal_connection_manager import SignalConnectionManager
+from core.ui.data_loading_manager import DataLoadingManager
 
 logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        loadUi('ui/main_window.ui', self)
-
+        
         # --- 코어 로직 초기화 ---
         self.tag_manager = TagManager()
         self.custom_tag_manager = CustomTagManager()
         self.search_manager = SearchManager(self.tag_manager)
 
-        # --- 위젯 인스턴스 생성 ---
-        initial_workspace = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
-        self.directory_tree = DirectoryTreeWidget(initial_workspace)
-        self.file_list = FileListWidget(self.tag_manager)
-        self.file_detail = FileDetailWidget(self.tag_manager)
-        self.tag_control = TagControlWidget(self.tag_manager, self.custom_tag_manager)
-        self.search_widget = SearchWidget(self.tag_manager)
+        # --- 분리된 관리자 클래스 활용 ---
+        self.ui_setup = UISetupManager(self)
+        self.ui_setup.setup_ui()
 
-        # --- 메인 레이아웃 구조 리팩토링 ---
-        # 기존 centralwidget의 레이아웃 완전 삭제 후 QVBoxLayout 적용
-        central_layout = self.centralwidget.layout()
-        if central_layout is not None:
-            while central_layout.count():
-                item = central_layout.takeAt(0)
-                widget = item.widget()
-                if widget:
-                    widget.setParent(None)
-            import sip
-            sip.delete(central_layout)
-        vbox = QVBoxLayout()
-        vbox.setContentsMargins(0, 0, 0, 0)
-        vbox.setSpacing(0)
-        self.centralwidget.setLayout(vbox)
+        self.signal_manager = SignalConnectionManager(self)
+        self.signal_manager.connect_signals()
 
-        # --- 검색 툴바(툴바 대신 위젯으로 직접 추가) ---
-        vbox.addWidget(self.search_widget)
+        self.data_loader = DataLoadingManager(self)
+        self.data_loader.load_initial_data()
 
-        # --- 고급 검색 패널 추가 (기본 숨김) ---
-        self.advanced_panel_widget = self.search_widget.get_advanced_panel()
-        self.advanced_panel_widget.setVisible(False)
-        vbox.addWidget(self.advanced_panel_widget)
-
-        # --- 3열 레이아웃(mainSplitter) 구성 ---
-        self.mainSplitter.insertWidget(0, self.directory_tree)
-        self.mainSplitter.insertWidget(1, self.splitter)
-        self.mainSplitter.insertWidget(2, self.tag_control)
-        self.directoryTreeWidget.deleteLater()
-        self.tagControlWidget.deleteLater()
-        self.splitter.insertWidget(0, self.file_detail)
-        self.splitter.insertWidget(1, self.file_list)
-        self.fileDetailWidget.deleteLater()
-        self.fileListWidget.deleteLater()
-        vbox.addWidget(self.mainSplitter)
-        vbox.setStretchFactor(self.mainSplitter, 1)
-
-        # 초기 크기 설정
-        self.mainSplitter.setSizes([150, self.width() - 300, 150])
-        self.splitter.setSizes([self.height() // 2, self.height() // 2])
-
-        # --- 연결 설정 ---
-        self.setup_connections()
         self.statusbar.showMessage("준비 완료")
         self.show()
 
@@ -93,21 +54,12 @@ class MainWindow(QMainWindow):
                 self.splitter.setSizes([self.height() // 2, self.height() // 2])
         super().changeEvent(event)
 
+    # setup_connections 메서드는 더 이상 사용되지 않지만, 기존 함수를 참조하는 코드 호환을 위해 남겨둡니다.
     def setup_connections(self):
-        self.actionExit.triggered.connect(self.close)
-        self.actionSetWorkspace.triggered.connect(self.set_workspace)
-        self.actionManageQuickTags.triggered.connect(self.open_custom_tag_dialog)
-        self.directory_tree.tree_view.clicked.connect(self.on_directory_selected)
-        self.directory_tree.filter_options_changed.connect(self._on_directory_tree_filter_options_changed)
-        self.file_list.list_view.selectionModel().selectionChanged.connect(self.on_file_selection_changed)
-        self.tag_control.tags_updated.connect(self.on_tags_updated)
-        self.file_detail.file_tags_changed.connect(self.on_tags_updated)
-        self.directory_tree.directory_context_menu_requested.connect(self.on_directory_tree_context_menu)
-        
-        # --- 새로운 검색 위젯 시그널 연결 ---
-        self.search_widget.search_requested.connect(self.on_search_requested)
-        self.search_widget.search_cleared.connect(self.on_search_cleared)
-        self.search_widget.advanced_search_requested.connect(self.on_advanced_search_requested)
+        """호환성 유지용 래퍼: SignalConnectionManager가 시그널 연결을 담당합니다."""
+        if not hasattr(self, 'signal_manager'):
+            self.signal_manager = SignalConnectionManager(self)
+        self.signal_manager.connect_signals()
 
     def set_workspace(self):
         current_workspace = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
@@ -160,7 +112,7 @@ class MainWindow(QMainWindow):
             file_list_index = self.file_list.index_from_path(file_path)
             if file_list_index.isValid():
                 self.file_list.list_view.selectionModel().select(
-                    file_list_index, QAbstractItemView.ClearAndSelect | QAbstractItemView.Rows
+                    file_list_index, QItemSelectionModel.ClearAndSelect
                 )
             else:
                 # If the file is not in the current file_list view (e.g., due to filters),
@@ -171,7 +123,7 @@ class MainWindow(QMainWindow):
                 file_list_index = self.file_list.index_from_path(file_path)
                 if file_list_index.isValid():
                     self.file_list.list_view.selectionModel().select(
-                        file_list_index, QAbstractItemView.ClearAndSelect | QAbstractItemView.Rows
+                        file_list_index, QItemSelectionModel.ClearAndSelect
                     )
 
     def _on_directory_tree_filter_options_changed(self, recursive: bool, file_extensions: list):
