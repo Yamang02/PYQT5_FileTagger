@@ -1,6 +1,6 @@
 # 개발팀 내부 기록 (Development Notes)
 
-## 2025년 1월 13일
+## 2025년 7월 13일
 
 ### DRS-20250711-010 Phase 0 분석 완료 (아키텍처 리팩터링)
 
@@ -29,7 +29,7 @@
 - Phase 1-A: MainWindow 분리 (UISetupManager, SignalConnectionManager, DataLoadingManager)
 - 상세 분석 결과: `docs/developer_guide/architecture_refactoring/phase0_analysis_report.md`
 
-## 2025년 1월 13일
+## 2025년 7월 13일
 
 ### 일괄태깅 기능 개선 (공통 태그 표시)
 
