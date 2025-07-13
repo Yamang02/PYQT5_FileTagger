@@ -1,0 +1,7 @@
+refactor: Phase1-B TagRepository 분리 및 TagManager 리팩토링
+
+- core/repositories/tag_repository.py: 신규 생성, DB I/O 로직 담당
+- core/tag_manager.py: TagRepository를 사용하도록 리팩토링, 비즈니스 로직만 남김
+- main.py, main_window.py: MongoClient 생성 및 주입 로직 변경
+- tests/test_tag_manager.py: TagRepository를 모의(mock)하도록 테스트 코드 수정
+- config.py: MONGO_URI 설정 추가하여 시작 오류 해결

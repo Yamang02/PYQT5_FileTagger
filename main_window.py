@@ -22,11 +22,12 @@ from core.ui.data_loading_manager import DataLoadingManager
 logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, mongo_client):
         super().__init__()
         
         # --- 코어 로직 초기화 ---
-        self.tag_manager = TagManager()
+        self.mongo_client = mongo_client
+        self.tag_manager = TagManager(mongo_client)
         self.custom_tag_manager = CustomTagManager()
         self.search_manager = SearchManager(self.tag_manager)
 
