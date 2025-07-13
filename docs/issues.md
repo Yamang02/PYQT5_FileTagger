@@ -399,3 +399,27 @@
 - **해결 내용**: 2025-07-12 기준, 해당 버튼 및 관련 코드/시그널 완전 제거. 일괄삭제 다이얼로그/칩만 사용하도록 통일. UI/UX 혼란 해소.
 - **해결 일자**: 2025-07-12
 - **담당자**: 개발팀
+
+## [이슈] TagManager 일괄 태깅 메서드 테스트 실패 및 UpdateOne 오류 (2025-01-13)
+
+- **이슈 유형**: 버그/테스트 실패
+- **제출 팀**: 개발팀
+- **제목**: add_tags_to_directory 메서드 UpdateOne 오류 및 경로 구분자 문제
+- **설명**:
+    - **문제/요청 내용**: `tests/test_tag_manager.py` 및 `tests/test_batch_tagging_ui.py` 실행 시 6개 실패, 4개 에러 발생.
+        1. `UpdateOne` 객체 관련 TypeError (`argument of type 'UpdateOne' is not iterable`)
+        2. Windows 경로 구분자(`\\`)로 인한 경로 비교 실패
+        3. `test_batch_tagging_ui.py` 에서 `BatchTaggingPanel` 삭제로 인한 fixture 누락
+    - **재현 단계**: `pytest -q` 실행
+    - **현재 동작**: 테스트 실패, 결과 `success` False 반환
+    - **기대 동작**: 모든 단위 테스트 통과
+    - **영향**: CI 실패, 배포 차단
+    - **관련 파일/모듈**:
+        - `core/tag_manager.py`
+        - `tests/test_tag_manager.py`
+        - `tests/test_batch_tagging_ui.py`
+- **해결 상태**: [진행 중]
+- **담당자**: 개발팀
+- **우선순위**: Critical
+
+---

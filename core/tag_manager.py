@@ -568,7 +568,11 @@ class TagManager:
 
             # 벌크 업데이트 실행
             if bulk_operations:
-                result = self.collection.bulk_write(bulk_operations, ordered=False)
+                try:
+                    result = self.collection.bulk_write(bulk_operations, ordered=False)
+                except Exception as e:
+                    logger.error(f"[TagManager] bulk_write 실행 중 오류: {e}")
+                    return {"success": False, "error": f"bulk_write 실행 중 오류: {e}"}
                 
                 success_count = len(target_files) - len(error_files)
                 logger.debug(f"[TagManager] 일괄 태그 추가 완료: {success_count}개 성공, {len(error_files)}개 실패")
@@ -578,8 +582,8 @@ class TagManager:
                     "processed": len(target_files),
                     "successful": success_count,
                     "failed": len(error_files),
-                    "modified": result.modified_count,
-                    "upserted": result.upserted_count,
+                    "modified": getattr(result, 'modified_count', 0),
+                    "upserted": getattr(result, 'upserted_count', 0),
                     "errors": error_files
                 }
 

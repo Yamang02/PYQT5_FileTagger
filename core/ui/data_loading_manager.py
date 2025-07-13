@@ -70,7 +70,7 @@ class DataLoadingManager:
         if hasattr(self.main_window, 'custom_tag_manager'):
             try:
                 # 커스텀 태그 매니저에서 태그 로드
-                custom_tags = self.main_window.custom_tag_manager.load_custom_tags()
+                custom_tags = self.main_window.custom_tag_manager.load_custom_quick_tags()
                 
                 # 태그 컨트롤 위젯의 빠른 태그에 반영
                 if hasattr(self.main_window, 'tag_control'):

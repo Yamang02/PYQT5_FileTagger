@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from core.tag_manager import TagManager
 import config
 import os
+from core.path_utils import normalize_path
 
 # 테스트용 설정 오버라이드
 config.MONGO_DB_NAME = "test_db"
@@ -129,7 +130,8 @@ def test_get_files_by_tag(tag_manager):
     tag_manager.update_tags("/test/file2.txt", ["dev", "javascript"])
     tag_manager.update_tags("/test/file3.txt", ["docs", "python"])
     python_files = tag_manager.get_files_by_tag("python")
-    assert sorted(python_files) == sorted(["/test/file1.txt", "/test/file3.txt"])
+    expected = [normalize_path("/test/file1.txt"), normalize_path("/test/file3.txt")]
+    assert sorted(python_files) == sorted(expected)
     dev_files = tag_manager.get_files_by_tag("dev")
     assert sorted(dev_files) == sorted(["/test/file1.txt", "/test/file2.txt"])
     non_existent_files = tag_manager.get_files_by_tag("non_existent")
@@ -160,10 +162,10 @@ def test_add_tags_to_directory_non_recursive(tag_manager, test_directory):
     assert result["success"] is True
     assert result["processed"] == 3
     assert result["successful"] == 3
-    assert sorted(tag_manager.get_tags_for_file(os.path.join(test_directory, "file1.txt"))) == sorted(tags_to_add)
-    assert sorted(tag_manager.get_tags_for_file(os.path.join(test_directory, "image.jpg"))) == sorted(tags_to_add)
-    assert sorted(tag_manager.get_tags_for_file(os.path.join(test_directory, "document.pdf"))) == sorted(tags_to_add)
-    assert tag_manager.get_tags_for_file(os.path.join(test_directory, "subdir", "sub_file.txt")) == []
+    assert sorted(tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "file1.txt")))) == sorted(tags_to_add)
+    assert sorted(tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "image.jpg")))) == sorted(tags_to_add)
+    assert sorted(tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "document.pdf")))) == sorted(tags_to_add)
+    assert tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "subdir", "sub_file.txt"))) == []
 
 @pytest.mark.unit
 @pytest.mark.db
@@ -174,9 +176,9 @@ def test_add_tags_to_directory_recursive(tag_manager, test_directory):
     assert result["success"] is True
     assert result["processed"] == 5
     assert result["successful"] == 5
-    assert sorted(tag_manager.get_tags_for_file(os.path.join(test_directory, "file1.txt"))) == sorted(tags_to_add)
-    assert sorted(tag_manager.get_tags_for_file(os.path.join(test_directory, "subdir", "sub_file.txt"))) == sorted(tags_to_add)
-    assert sorted(tag_manager.get_tags_for_file(os.path.join(test_directory, "subdir", "sub_image.png"))) == sorted(tags_to_add)
+    assert sorted(tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "file1.txt")))) == sorted(tags_to_add)
+    assert sorted(tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "subdir", "sub_file.txt")))) == sorted(tags_to_add)
+    assert sorted(tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "subdir", "sub_image.png")))) == sorted(tags_to_add)
 
 @pytest.mark.unit
 @pytest.mark.db
@@ -187,10 +189,10 @@ def test_add_tags_to_directory_with_extension_filter(tag_manager, test_directory
     assert result["success"] is True
     assert result["processed"] == 2
     assert result["successful"] == 2
-    assert sorted(tag_manager.get_tags_for_file(os.path.join(test_directory, "image.jpg"))) == sorted(tags_to_add)
-    assert sorted(tag_manager.get_tags_for_file(os.path.join(test_directory, "subdir", "sub_image.png"))) == sorted(tags_to_add)
-    assert tag_manager.get_tags_for_file(os.path.join(test_directory, "file1.txt")) == []
-    assert tag_manager.get_tags_for_file(os.path.join(test_directory, "document.pdf")) == []
+    assert sorted(tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "image.jpg")))) == sorted(tags_to_add)
+    assert sorted(tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "subdir", "sub_image.png")))) == sorted(tags_to_add)
+    assert tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "file1.txt"))) == []
+    assert tag_manager.get_tags_for_file(normalize_path(os.path.join(test_directory, "document.pdf"))) == []
 
 @pytest.mark.unit
 @pytest.mark.db
