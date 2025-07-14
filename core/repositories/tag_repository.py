@@ -36,3 +36,20 @@ class TagRepository:
     def delete_file_entry(self, file_path: str) -> bool:
         result = self._collection.delete_one({"file_path": file_path})
         return result.deleted_count > 0
+
+    def find_files(self, file_paths: list[str]) -> dict:
+        """주어진 파일 경로 목록에 해당하는 문서들을 찾아 반환합니다.
+        반환 형식: {normalized_file_path: [tag1, tag2], ...}
+        """
+        docs = self._collection.find({"file_path": {"$in": file_paths}})
+        return {doc["file_path"]: doc.get("tags", []) for doc in docs}
+
+    def bulk_update_tags(self, operations: list) -> dict:
+        """주어진 bulk operations 리스트를 실행합니다.
+        operations는 pymongo.UpdateOne 인스턴스 리스트여야 합니다.
+        """
+        if not operations:
+            return {"modified": 0, "upserted": 0}
+        
+        result = self._collection.bulk_write(operations)
+        return {"modified": result.modified_count, "upserted": result.upserted_count}

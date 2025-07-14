@@ -30,7 +30,7 @@ class FileTableModel(QAbstractTableModel):
         self._is_search_mode = False # 디렉토리 선택 시 검색 모드 해제
         
         # TagManager의 헬퍼 메서드를 사용하여 파일 목록을 가져옵니다.
-        self.all_files = self.tag_manager._get_files_in_directory(directory_path, recursive, file_extensions)
+        self.all_files = self.tag_manager.get_files_in_directory(directory_path, recursive, file_extensions)
         self.all_files.sort(key=lambda x: os.path.basename(x).lower())
             
         self._apply_filter()
