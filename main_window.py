@@ -26,6 +26,7 @@ from core.adapters.tag_manager_adapter import TagManagerAdapter
 from viewmodels.tag_control_viewmodel import TagControlViewModel
 from viewmodels.file_detail_viewmodel import FileDetailViewModel
 from viewmodels.file_list_viewmodel import FileListViewModel
+from viewmodels.search_viewmodel import SearchViewModel
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +47,10 @@ class MainWindow(QMainWindow):
         self.search_manager = SearchManager(self.tag_manager) # SearchManager는 TagManagerAdapter를 사용하도록 변경
 
         # ViewModel 초기화
+        self.search_viewmodel = SearchViewModel(self.tag_service, self.search_manager)
         self.tag_control_viewmodel = TagControlViewModel(self.tag_service, self.event_bus)
         self.file_detail_viewmodel = FileDetailViewModel(self.tag_service, self.event_bus)
-        self.file_list_viewmodel = FileListViewModel(self.tag_service, self.event_bus)
+        self.file_list_viewmodel = FileListViewModel(self.tag_service, self.event_bus, self.search_viewmodel)
 
         # --- 분리된 관리자 클래스 활용 ---
         self.ui_setup = UISetupManager(self)
@@ -105,13 +107,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "오류", f"작업 공간 설정 중 오류가 발생했습니다: {e}")
                 self.statusbar.showMessage("작업 공간 설정 실패", 3000)
 
-    def on_directory_selected(self, index: QModelIndex):
-        # Get the actual file system path from the clicked index
-        file_path = self.directory_tree.model.filePath(self.directory_tree.proxy_model.mapToSource(index))
-
-        # Determine if the selected item is a directory or a file
-        is_dir = self.directory_tree.model.isDir(self.directory_tree.proxy_model.mapToSource(index))
-
+    def on_directory_selected(self, file_path: str, is_dir: bool):
         recursive = self.directory_tree.recursive_checkbox.isChecked()
         # extensions_input이 제거되었으므로 빈 리스트로 설정
         file_extensions = []
@@ -165,16 +161,7 @@ class MainWindow(QMainWindow):
         self.tag_control_viewmodel.update_for_target(None, False) # Clear tag control as the file list content might change
         self.statusbar.showMessage(f"필터 옵션 변경: 재귀={recursive}, 확장자={', '.join(file_extensions) if file_extensions else '모두'}")
 
-    def on_file_selection_changed(self, selected: QModelIndex, deselected: QModelIndex):
-        selected_indexes = self.file_list.list_view.selectionModel().selectedIndexes()
-        selected_file_paths = []
-        processed_rows = set()
-        for index in selected_indexes:
-            if index.row() not in processed_rows:
-                file_path = self.file_list.model.get_file_path(index)
-                if file_path:
-                    selected_file_paths.append(file_path)
-                processed_rows.add(index.row())
+    def on_file_selection_changed(self, selected_file_paths: list):
         if len(selected_file_paths) == 1:
             file_path = selected_file_paths[0]
             self.file_detail.update_preview(file_path)
@@ -189,80 +176,12 @@ class MainWindow(QMainWindow):
             self.tag_control_viewmodel.update_for_target(None, False)
             self.statusbar.showMessage("파일 선택이 해제되었습니다.")
 
-    def on_search_requested(self, search_conditions: dict):
-        self.statusbar.showMessage("검색 중...")
-        search_results = self.search_manager.search_files(search_conditions)
-        self.file_list_viewmodel.set_search_results(search_results)
-        # 검색 조건 요약 문자열 생성
-        summary = ""
-        if 'tags' in search_conditions:
-            tag_cond = search_conditions['tags']
-            tag_query = tag_cond.get('query', '').strip()
-            if tag_query:
-                summary = f"태그: '{tag_query}'"
-        elif 'filename' in search_conditions:
-            filename_cond = search_conditions['filename']
-            search_text = filename_cond.get('name', '').strip()
-            if search_text:
-                summary = f"파일명: '{search_text}'"
-        self.search_widget.update_search_results(len(search_results), summary)
-        self.statusbar.showMessage(f"검색 완료: {len(search_results)}개 파일")
+    
 
-    def on_search_cleared(self):
-        """검색 초기화 처리"""
-        workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
-        self.file_list_viewmodel.set_directory(workspace_path)
-        self.file_detail.clear_preview()
-        self.tag_control_viewmodel.update_for_target(None, False)
-        self.statusbar.showMessage("검색이 초기화되었습니다.")
+    
 
-    def on_advanced_search_requested(self, advanced_conditions: dict):
-        """고급 검색 패널 표시/숨김 처리"""
-        visible = advanced_conditions.get('visible', False)
-        if hasattr(self, 'advanced_panel_widget'):
-            self.advanced_panel_widget.setVisible(visible)
+    
 
-    def on_tags_updated(self):
-        """태그 업데이트 시 파일 목록의 태그 정보를 새로고침합니다."""
-        # 현재 선택된 디렉토리 경로 가져오기
-        selected_index = self.directory_tree.tree_view.currentIndex()
-        if selected_index.isValid():
-            current_path = self.directory_tree.model.filePath(self.directory_tree.proxy_model.mapToSource(selected_index))
-            # If the selected item is a file, use its parent directory
-            if not self.directory_tree.model.isDir(self.directory_tree.proxy_model.mapToSource(selected_index)):
-                current_path = os.path.dirname(current_path)
-        else:
-            current_path = self.file_list.model.current_directory
-            if not current_path:
-                current_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
+    
 
-        # 파일 목록의 태그 정보만 새로고침 (선택 상태 유지)
-        self.file_list_viewmodel.refresh_tags_for_current_files()
-        # TagControlWidget의 ViewModel에서 태그 목록을 새로고침하도록 요청
-        self.tag_control_viewmodel.update_completer_model()
-        self.tag_control_viewmodel.update_all_tags_list()
-
-    def open_custom_tag_dialog(self):
-        """커스텀 태그 관리 다이얼로그를 엽니다."""
-        dialog = CustomTagDialog(self.custom_tag_manager, self)
-        if dialog.exec_() == CustomTagDialog.Accepted:
-            # 커스텀 태그가 변경되었으므로 빠른 태그 위젯들을 새로고침
-            # 이 로직은 이제 TagControlWidget 내부에서 ViewModel을 통해 처리됩니다.
-            self.statusbar.showMessage("빠른 태그가 업데이트되었습니다.", 3000)
-
-    def on_directory_tree_context_menu(self, directory_path, global_pos):
-        """디렉토리 트리 컨텍스트 메뉴 처리"""
-        menu = QMenu(self)
-        batch_remove_action = menu.addAction("일괄 태그 제거...")
-        action = menu.exec_(global_pos)
-        
-        if action == batch_remove_action:
-            self._open_batch_remove_tags_dialog(directory_path)
-
-    def _open_batch_remove_tags_dialog(self, target_path):
-        """일괄 태그 제거 다이얼로그를 엽니다."""
-        # BatchRemoveTagsDialog에 TagManagerAdapter 인스턴스를 전달
-        dialog = BatchRemoveTagsDialog(self.tag_manager, target_path, True, self)
-        if dialog.exec_() == BatchRemoveTagsDialog.Accepted:
-            self.on_tags_updated()
-            self.statusbar.showMessage("일괄 태그 제거가 완료되었습니다.", 3000)
+    

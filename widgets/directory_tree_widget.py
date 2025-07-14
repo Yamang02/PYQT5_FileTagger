@@ -1,8 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QFileSystemModel, QLineEdit, QHBoxLayout, QCheckBox, QLabel, QSpacerItem, QSizePolicy
-from PyQt5.QtCore import QDir, QSortFilterProxyModel, Qt, pyqtSignal
+from PyQt5.QtCore import QDir, QSortFilterProxyModel, Qt, pyqtSignal, QModelIndex
 
 class DirectoryTreeWidget(QWidget):
     # 시그널 정의
+    batch_remove_tags_requested = pyqtSignal(str) # directory_path
+    directory_selected = pyqtSignal(str, bool) # path, is_dir
     filter_options_changed = pyqtSignal(bool, list) # 재귀 여부, 파일 확장자 리스트가 변경될 때 방출 (for file_list)
     directory_context_menu_requested = pyqtSignal(str, object) # 디렉토리 경로와 전역 위치를 전달
 
@@ -52,6 +54,7 @@ class DirectoryTreeWidget(QWidget):
         # 컨텍스트 메뉴 활성화
         self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_view.customContextMenuRequested.connect(self._on_tree_view_context_menu_requested)
+        self.tree_view.clicked.connect(self._on_directory_clicked)
 
         # 레이아웃에 트리 뷰 추가
         inner_layout.addWidget(self.tree_view)
@@ -83,8 +86,16 @@ class DirectoryTreeWidget(QWidget):
     def _on_tree_view_context_menu_requested(self, position):
         index = self.tree_view.indexAt(position)
         if index.isValid():
-            # 실제 파일 시스템 경로 가져오기
             file_path = self.model.filePath(self.proxy_model.mapToSource(index))
-            # DRS에 따라 디렉토리인 경우에만 컨텍스트 메뉴를 요청
             if self.model.isDir(self.proxy_model.mapToSource(index)):
-                self.directory_context_menu_requested.emit(file_path, self.tree_view.mapToGlobal(position))
+                menu = QMenu(self)
+                batch_remove_action = menu.addAction("일괄 태그 제거...")
+                action = menu.exec_(self.tree_view.mapToGlobal(position))
+                
+                if action == batch_remove_action:
+                    self.batch_remove_tags_requested.emit(file_path)
+
+    def _on_directory_clicked(self, index: QModelIndex):
+        file_path = self.model.filePath(self.proxy_model.mapToSource(index))
+        is_dir = self.model.isDir(self.proxy_model.mapToSource(index))
+        self.directory_selected.emit(file_path, is_dir)

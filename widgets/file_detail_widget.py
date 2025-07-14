@@ -3,7 +3,7 @@ import datetime
 import logging
 import fitz # type: ignore # PyMuPDF
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QSlider, QHBoxLayout, QToolButton, QStyle
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextBrowser, QSlider, QHBoxLayout, QToolButton, QStyle, QMessageBox
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
 from PyQt5.uic import loadUi
@@ -47,6 +47,16 @@ class FileDetailWidget(QWidget):
         self.media_player = None # QMediaPlayer 인스턴스 초기화
         self.setup_ui()
         self.connect_viewmodel_signals()
+
+    def connect_viewmodel_signals(self):
+        self.viewmodel.file_details_updated.connect(self.on_viewmodel_file_details_updated)
+        self.viewmodel.show_message.connect(lambda msg, duration: 
+     QMessageBox.information(self, "정보", msg) if duration == 0 else self
+     .parent().statusbar.showMessage(msg, duration))
+   
+    def on_viewmodel_file_details_updated(self, file_path: str, tags: list):
+           # ViewModel에서 받은 정보로 UI 업데이트
+           self._refresh_tag_chips(tags)
 
     def setup_ui(self):
         loadUi('ui/file_detail_content_widget.ui', self)
@@ -310,6 +320,3 @@ class FileDetailWidget(QWidget):
         minutes = int(seconds / 60)
         seconds %= 60
         return f"{minutes:02d}:{seconds:02d}"
-
-    # def connect_tag_control_signals(self, tag_control_widget):
-    #     tag_control_widget.file_tags_changed.connect(lambda: self.update_preview(self.current_file_path))

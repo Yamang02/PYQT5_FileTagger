@@ -1,24 +1,32 @@
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, 
-                             QPushButton, QLabel, QFrame, QSizePolicy, QSpacerItem, QCompleter)
+                             QPushButton, QLabel, QFrame, QSizePolicy, QSpacerItem, QCompleter, QMessageBox)
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QStringListModel
 from PyQt5.QtGui import QIcon, QFont
+
+from viewmodels.search_viewmodel import SearchViewModel # SearchViewModel 임포트
 
 class SearchWidget(QWidget):
     """
     통합 검색 툴바 위젯 (UI 개선 적용)
     """
-    search_requested = pyqtSignal(dict)  # 검색 요청 (검색 조건 딕셔너리)
-    search_cleared = pyqtSignal()        # 검색 초기화
+    # search_requested = pyqtSignal(dict)  # ViewModel에서 처리
+    # search_cleared = pyqtSignal()        # ViewModel에서 처리
     advanced_search_requested = pyqtSignal(dict)  # 고급 검색 요청
 
     MAX_HISTORY = 10  # 검색 히스토리 최대 개수
 
-    def __init__(self, tag_manager, parent=None):
+    def __init__(self, viewmodel: SearchViewModel, parent=None):
         super().__init__(parent)
-        self.tag_manager = tag_manager
+        self.viewmodel = viewmodel
         self.setup_ui()
         self.setup_connections()
+        self.connect_viewmodel_signals()
         self.setup_styles()
+
+    def connect_viewmodel_signals(self):
+        """ViewModel의 시그널을 위젯의 슬롯에 연결합니다."""
+        self.viewmodel.search_completed.connect(self.update_search_results)
+        self.viewmodel.search_cleared.connect(self.clear_search)
         self._debounce_timer = QTimer()
         self._debounce_timer.setSingleShot(True)
         self._debounce_timer.timeout.connect(self._on_debounce_timeout)
@@ -174,7 +182,7 @@ class SearchWidget(QWidget):
         """시그널-슬롯 연결"""
         # 검색 버튼 연결
         self.search_button.clicked.connect(self._on_search_requested)
-        self.clear_button.clicked.connect(self.clear_search)
+        self.clear_button.clicked.connect(self.viewmodel.clear_search)
         self.advanced_toggle.clicked.connect(self._toggle_advanced_panel)
         # 입력 필드 연결 (디바운싱 적용)
         self.filename_input.textChanged.connect(self._on_input_changed)
@@ -232,14 +240,13 @@ class SearchWidget(QWidget):
         search_conditions = self.get_search_conditions()
         if search_conditions:
             # self._add_to_history(search_conditions) # 히스토리 관련 코드 제거
-            self.search_requested.emit(search_conditions)
+            self.viewmodel.perform_search(search_conditions)
             
     def _toggle_advanced_panel(self):
         """고급 검색 패널 토글"""
         self._advanced_panel_visible = not self._advanced_panel_visible
         self.advanced_toggle.setText("▲" if self._advanced_panel_visible else "▼")
-        # 부모 위젯에서 패널 표시/숨김 처리
-        self.advanced_search_requested.emit({"visible": self._advanced_panel_visible})
+        self.show_advanced_panel(self._advanced_panel_visible)
         
     # self._search_history, MAX_HISTORY, _add_to_history, _on_history_requested, _history_summary 등 히스토리 관련 메서드/변수 전체 삭제
         
@@ -341,7 +348,6 @@ class SearchWidget(QWidget):
         self.not_tags_input.clear()
         self.result_count_label.setText("검색 결과")
         self.search_conditions_label.clear()
-        self.search_cleared.emit()
         
     def update_search_results(self, count: int, conditions_summary: str = ""):
         """검색 결과 업데이트"""
@@ -367,7 +373,7 @@ class SearchWidget(QWidget):
         self._update_tag_completer()
 
     def _update_tag_completer(self):
-        all_tags = self.tag_manager.get_all_tags() if self.tag_manager and hasattr(self.tag_manager, 'get_all_tags') else []
+        all_tags = all_tags = self.viewmodel.get_all_tags()
         text = self.tag_input.text().strip()
         if not text:
             sorted_tags = sorted(all_tags, key=lambda x: x)

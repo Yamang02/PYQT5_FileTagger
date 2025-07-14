@@ -30,30 +30,27 @@ class SignalConnectionManager:
         """메뉴 액션들의 시그널을 연결합니다."""
         self.main_window.actionExit.triggered.connect(self.main_window.close)
         self.main_window.actionSetWorkspace.triggered.connect(self.main_window.set_workspace)
-        self.main_window.actionManageQuickTags.triggered.connect(self.main_window.open_custom_tag_dialog)
+        self.main_window.actionManageQuickTags.triggered.connect(self.main_window.tag_control.open_custom_tag_dialog)
         
     def _connect_widget_signals(self):
         """위젯들의 시그널을 연결합니다."""
         # 디렉토리 트리 시그널
-        self.main_window.directory_tree.tree_view.clicked.connect(
+        self.main_window.directory_tree.directory_selected.connect(
             self.main_window.on_directory_selected
         )
         self.main_window.directory_tree.filter_options_changed.connect(
             self.main_window._on_directory_tree_filter_options_changed
         )
-        self.main_window.directory_tree.directory_context_menu_requested.connect(
-            self.main_window.on_directory_tree_context_menu
+        self.main_window.directory_tree.batch_remove_tags_requested.connect(
+            self.main_window.tag_control.open_batch_remove_tags_dialog
         )
         
         # 파일 리스트 시그널
-        self.main_window.file_list.list_view.selectionModel().selectionChanged.connect(
+        self.main_window.file_list.file_selection_changed.connect(
             self.main_window.on_file_selection_changed
         )
         
-        # 태그 컨트롤 시그널
-        self.main_window.tag_control_viewmodel.tags_updated.connect(
-            self.main_window.on_tags_updated
-        )
+        
         
         # 파일 상세 정보 시그널 (TagControlWidget에서 ViewModel로 로직 이동)
         # self.main_window.file_detail.file_tags_changed.connect(
@@ -62,15 +59,8 @@ class SignalConnectionManager:
         
     def _connect_search_signals(self):
         """검색 위젯의 시그널을 연결합니다."""
-        self.main_window.search_widget.search_requested.connect(
-            self.main_window.on_search_requested
-        )
-        self.main_window.search_widget.search_cleared.connect(
-            self.main_window.on_search_cleared
-        )
-        self.main_window.search_widget.advanced_search_requested.connect(
-            self.main_window.on_advanced_search_requested
-        )
+        
+        
         
     def disconnect_all_signals(self):
         """모든 시그널 연결을 해제합니다. (테스트나 정리 시 사용)"""

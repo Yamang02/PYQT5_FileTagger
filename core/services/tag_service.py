@@ -48,7 +48,10 @@ class TagService:
             )
         
         result = self._repository.bulk_update_tags(bulk_operations)
-        # TODO: Bulk operation 후 각 파일에 대한 이벤트 발행 로직 추가 고려
+        if result.get("modified", 0) > 0 or result.get("upserted", 0) > 0:
+            for file_path in file_paths:
+                for tag in tags_to_add:
+                    self._event_bus.publish_tag_added(file_path, tag)
         return {"success": True, "processed": len(file_paths), "successful": result.get("modified", 0) + result.get("upserted", 0)}
 
     def remove_tags_from_files(self, file_paths: List[str], tags_to_remove: List[str]) -> dict:
@@ -65,7 +68,10 @@ class TagService:
             )
 
         result = self._repository.bulk_update_tags(bulk_operations)
-        # TODO: Bulk operation 후 각 파일에 대한 이벤트 발행 로직 추가 고려
+        if result.get("modified", 0) > 0:
+            for file_path in file_paths:
+                for tag in tags_to_remove:
+                    self._event_bus.publish_tag_removed(file_path, tag)
         return {"success": True, "processed": len(file_paths), "successful": result.get("modified", 0) + result.get("upserted", 0)}
 
     def add_tags_to_directory(self, directory_path, tags, recursive=False, file_extensions=None):

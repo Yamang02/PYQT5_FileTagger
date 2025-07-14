@@ -11,10 +11,11 @@ class FileListViewModel(QObject):
     files_updated = pyqtSignal(list) # file_paths
     show_message = pyqtSignal(str, int) # message, duration
 
-    def __init__(self, tag_service: TagService, event_bus: EventBus):
+    def __init__(self, tag_service: TagService, event_bus: EventBus, search_viewmodel: 'SearchViewModel'):
         super().__init__()
         self._tag_service = tag_service
         self._event_bus = event_bus
+        self._search_viewmodel = search_viewmodel
 
         self._all_files: List[str] = [] # 필터링되지 않은 모든 파일 목록 (디렉토리 모드)
         self._filtered_files: List[str] = [] # 필터링된 파일 목록 (디렉토리 모드)
@@ -27,15 +28,19 @@ class FileListViewModel(QObject):
         self._event_bus.tag_added.connect(self._on_tag_changed)
         self._event_bus.tag_removed.connect(self._on_tag_changed)
 
+        # SearchViewModel 구독
+        self._search_viewmodel.search_results_ready.connect(self.set_search_results)
+
     def _on_tag_changed(self, event):
-        # 태그 변경 시 파일 목록 새로고침
-        if self._is_search_mode:
-            # 검색 모드에서는 검색 결과를 다시 로드
-            # TODO: SearchManager와 연동하여 검색 조건 유지하며 새로고침 필요
-            pass
-        else:
-            # 디렉토리 모드에서는 현재 디렉토리 기준으로 새로고침
-            self.set_directory(self._current_directory, self._recursive, self._file_extensions)
+        # 태그가 변경된 파일이 현재 목록에 있는지 확인
+        if event.file_path in self.get_current_display_files():
+            # 파일 목록을 다시 로드하는 대신, files_updated 시그널을 보내
+            # 모델이 특정 행의 태그를 다시 그리도록 유도
+            self.files_updated.emit(self.get_current_display_files())
+
+    def refresh_tags_for_current_files(self):
+        """현재 표시된 모든 파일의 태그 정보를 새로고침합니다."""
+        self.files_updated.emit(self.get_current_display_files())
 
     def set_directory(self, directory_path: str, recursive: bool = False, file_extensions: List[str] = None):
         self._current_directory = directory_path

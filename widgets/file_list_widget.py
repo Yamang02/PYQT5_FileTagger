@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableView, QHeaderView, QAbstractItemView
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, QVariant
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, QVariant, pyqtSignal
 import os
 from core.path_utils import normalize_path
 from viewmodels.file_list_viewmodel import FileListViewModel # FileListViewModel 임포트
@@ -97,6 +97,8 @@ class FileTableModel(QAbstractTableModel):
 
 
 class FileListWidget(QWidget):
+    file_selection_changed = pyqtSignal(list)
+
     def __init__(self, file_list_viewmodel: FileListViewModel, parent=None):
         super().__init__(parent)
         self.viewmodel = file_list_viewmodel
@@ -115,6 +117,8 @@ class FileListWidget(QWidget):
         # 다중 선택 허용
         self.list_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.list_view.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+        self.list_view.selectionModel().selectionChanged.connect(self._on_selection_changed)
 
         # 테이블 헤더 설정
         header = self.list_view.horizontalHeader()
@@ -168,4 +172,8 @@ class FileListWidget(QWidget):
             return self.model.index(row, 0) # 첫 번째 컬럼의 인덱스 반환
         except ValueError:
             return QModelIndex() # 파일을 찾지 못하면 유효하지 않은 인덱스 반환
+
+    def _on_selection_changed(self, selected, deselected):
+        selected_paths = self.get_selected_file_paths()
+        self.file_selection_changed.emit(selected_paths)
 

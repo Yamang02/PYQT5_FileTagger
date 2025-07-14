@@ -277,3 +277,15 @@ class TagControlWidget(QWidget):
         self.individual_target_label.setText("선택된 파일 없음")
         self.batch_target_label.setText("선택된 디렉토리 없음")
         self.set_enabled(False)
+
+    def open_custom_tag_dialog(self):
+        """커스텀 태그 관리 다이얼로그를 엽니다."""
+        dialog = CustomTagDialog(self.custom_tag_manager, self)
+        if dialog.exec_() == CustomTagDialog.Accepted:
+            self.tags_updated.emit()
+
+    def open_batch_remove_tags_dialog(self, directory_path):
+        """일괄 태그 제거 다이얼로그를 엽니다."""
+        dialog = BatchRemoveTagsDialog(self.viewmodel._tag_service, directory_path, self)
+        if dialog.exec_():
+            self.tags_updated.emit()

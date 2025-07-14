@@ -59,7 +59,7 @@ class UISetupManager:
             self.main_window.tag_control_viewmodel, 
             self.main_window.custom_tag_manager
         )
-        self.widgets['search_widget'] = SearchWidget(self.main_window.tag_manager)
+        self.widgets['search_widget'] = SearchWidget(self.main_window.search_viewmodel)
         
         # MainWindow에 위젯 참조 설정
         self.main_window.directory_tree = self.widgets['directory_tree']

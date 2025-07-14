@@ -26,3 +26,10 @@ class EventBus(QObject):
     
     def subscribe_tag_added(self, callback):
         self.tag_added.connect(callback)
+
+    def publish_tag_removed(self, file_path: str, tag: str):
+        event = TagRemovedEvent(file_path, tag, time.time())
+        self.tag_removed.emit(event)
+
+    def subscribe_tag_removed(self, callback):
+        self.tag_removed.connect(callback)
