@@ -51,14 +51,14 @@ class SignalConnectionManager:
         )
         
         # 태그 컨트롤 시그널
-        self.main_window.tag_control.tags_updated.connect(
+        self.main_window.tag_control_viewmodel.tags_updated.connect(
             self.main_window.on_tags_updated
         )
         
-        # 파일 상세 정보 시그널
-        self.main_window.file_detail.file_tags_changed.connect(
-            self.main_window.on_tags_updated
-        )
+        # 파일 상세 정보 시그널 (TagControlWidget에서 ViewModel로 로직 이동)
+        # self.main_window.file_detail.file_tags_changed.connect(
+        #     self.main_window.on_tags_updated
+        # )
         
     def _connect_search_signals(self):
         """검색 위젯의 시그널을 연결합니다."""

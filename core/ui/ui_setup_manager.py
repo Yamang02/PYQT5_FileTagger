@@ -56,7 +56,7 @@ class UISetupManager:
         self.widgets['file_list'] = FileListWidget(self.main_window.tag_manager)
         self.widgets['file_detail'] = FileDetailWidget(self.main_window.tag_manager)
         self.widgets['tag_control'] = TagControlWidget(
-            self.main_window.tag_manager, 
+            self.main_window.tag_control_viewmodel, 
             self.main_window.custom_tag_manager
         )
         self.widgets['search_widget'] = SearchWidget(self.main_window.tag_manager)
