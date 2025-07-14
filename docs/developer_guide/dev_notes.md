@@ -2,6 +2,47 @@
 
 ## 2025년 7월 14일
 
+### 버그 수정 및 기능 개선
+
+#### 배경
+- 이전 코드 수정으로 인해 발생한 여러 버그들을 해결하고, 기능 개선을 진행함.
+
+#### 해결된 버그 및 개선 사항
+1.  **파일 상세 영역 태그 실시간 연동 문제 해결**
+    - **문제**: 파일 상세 영역에서 태그 추가 시 UI가 실시간으로 반영되지 않음.
+    - **원인**: `FileDetailViewModel`이 `TagAddedEvent`를 구독하지 않아 태그 추가 이벤트를 처리하지 못했음.
+    - **해결**: `viewmodels/file_detail_viewmodel.py`에서 `_event_bus.tag_added` 시그널을 구독하고, 태그 추가 시 `update_for_file` 메서드를 호출하도록 수정.
+
+2.  **다중 파일 선택 시 일괄 태깅 탭 전환 문제 해결**
+    - **문제**: 다중 파일 선택 시 태그 컨트롤 위젯이 일괄 태깅 탭으로 전환되지 않고 개별 태깅 탭에 머무름.
+    - **원인**: `viewmodels/tag_control_viewmodel.py`의 `update_for_target` 메서드에서 다중 파일 선택(`target`이 `list` 타입) 시 `target_info_updated` 시그널에 `is_dir=False`를 전달하여 `TagControlWidget`이 개별 태깅 탭으로 전환되도록 지시했음.
+    - **해결**: `viewmodels/tag_control_viewmodel.py`의 `update_for_target` 메서드에서 다중 파일 선택 시 `target_info_updated` 시그널에 `is_dir=True`를 전달하여 `TagControlWidget`이 일괄 태깅 탭으로 올바르게 전환되도록 수정.
+
+3.  **일괄 태그 제거 다이얼로그 동작 문제 해결**
+    - **문제**: 디렉토리 트리 컨텍스트 메뉴에서 '일괄 태그 제거' 선택 시 다이얼로그가 열리지 않거나, 다이얼로그 내에서 태그 제거 후 UI가 갱신되지 않음.
+    - **원인**: 
+        - `widgets/directory_tree_widget.py`에 `QMenu` 클래스 임포트 누락으로 컨텍스트 메뉴 생성 시 `NameError` 발생.
+        - `BatchRemoveTagsDialog` 내에서 태그칩의 'X' 버튼 클릭 시 태그가 즉시 제거되지만, `widgets/tag_control_widget.py`의 `_on_batch_remove_tags_clicked` 메서드에서 `dialog.get_tags_to_remove()`를 호출하여 제거할 태그 목록을 다시 받으려 했고, 이 메서드가 항상 빈 리스트를 반환하여 실제 태그 제거 로직이 실행되지 않았음.
+    - **해결**: 
+        - `widgets/directory_tree_widget.py`에 `QMenu` 임포트 추가.
+        - `widgets/tag_control_widget.py`의 `_on_batch_remove_tags_clicked` 메서드에서 `dialog.exec_()` 호출 후 `self.tags_updated.emit()`를 직접 호출하여 다이얼로그 닫힘 시 UI를 강제로 갱신하도록 수정. `dialog.get_tags_to_remove()` 관련 로직 제거.
+
+4.  **일괄 태그 퀵태그 버튼 오동작 문제 해결**
+    - **문제**: 일괄 태깅 탭에서 퀵태그 버튼 클릭 시, 클릭한 태그 하나만 추가되는 것이 아니라 여러 태그가 일괄적으로 추가됨.
+    - **원인**: `widgets/quick_tags_widget.py`의 `_on_btn_clicked` 메서드에서 `tags_changed` 시그널을 방출할 때 클릭된 단일 태그가 아닌 `_selected_tags` 리스트 전체를 방출했음. 또한 `widgets/tag_control_widget.py`의 `on_batch_quick_tags_changed` 메서드가 `tags` 인자를 리스트로 가정하고 처리했음.
+    - **해결**: 
+        - `widgets/quick_tags_widget.py`의 `tags_changed` 시그널 정의를 `pyqtSignal(str)`로 변경하고, `_on_btn_clicked` 메서드에서 클릭된 단일 태그만 방출하도록 수정. `_selected_tags` 관련 로직 및 `btn.setChecked` 관련 로직 제거.
+        - `widgets/tag_control_widget.py`의 `on_batch_quick_tags_changed` 메서드에서 `tags` 인자를 `tag` (단일 태그)로 변경하고, `self.viewmodel.apply_batch_tags([tag], ...)`를 호출하여 ViewModel을 통해 태그 추가 로직을 수행하도록 수정.
+
+5.  **`NameError: name 'TagAddedEvent' is not defined` 해결**
+    - **문제**: `viewmodels/file_detail_viewmodel.py`에서 `TagAddedEvent`를 사용하지만 임포트되지 않아 `NameError` 발생.
+    - **해결**: `viewmodels/file_detail_viewmodel.py`에 `TagAddedEvent` 임포트 추가.
+
+#### 다음 단계
+- 추가적인 기능 테스트 및 안정성 확보.
+
+## 2025년 7월 14일
+
 ### DRS-20250711-010 Phase 1-A, 1-B, 1-C 완료 (아키텍처 리팩터링)
 
 #### 배경
@@ -332,7 +373,7 @@ def _get_common_tags_for_files(self, file_paths):
     - `core/tag_manager.py`에 `remove_tags_from_file`, `clear_all_tags_from_file`, `remove_tags_from_files` 메서드 추가.
     - `core/tag_manager.py`에 `get_files_in_directory` 공개 메서드 추가.
 - **커스텀 태그 저장/로드 로직 구현 완료**:
-    - `config.py`에 `CUSTOM_TAGS_FILE` 경로 추가.
+    - `config.요py`에 `CUSTOM_TAGS_FILE` 경로 추가.
     - `core/custom_tag_manager.py` 파일 생성 및 `CustomTagManager` 클래스 구현 (JSON 파일 기반).
 - **개별 태그 삭제 UI 구현 완료**:
     - `widgets/tag_chip.py`에 `tag_removed` 시그널 추가 및 `_on_delete_button_clicked` 메서드 구현.
@@ -667,8 +708,7 @@ def _get_common_tags_for_files(self, file_paths):
     - **오류 수정**:
         - `widgets/tag_control_widget.py`에서 `QStringListModel`의 잘못된 import 경로 (`PyQt5.QtWidgets` -> `PyQt5.QtCore`) 수정.
         - `widgets/file_detail_widget.py`에 `clear_preview()` 메서드 추가 및 `main_window.py`에서 호출하여 디렉토리 변경 시 파일 상세 정보 초기화.
-- **기대 효과**:
-    - 사용자에게 더 직관적이고 효율적인 작업 환경 제공.
+- **기대 효과**: 사용자에게 더 직관적이고 효율적인 작업 환경 제공.
     - 유연한 레이아웃 조절로 다양한 사용 환경에 대응.
     - 파일 정보와 태그 정보의 시각적 일관성 및 가독성 향상.
 - **다음 단계**: 일괄 태깅 다이얼로그 구현 또는 `QuickTagsWidget` 통합 등 기능 구현.
