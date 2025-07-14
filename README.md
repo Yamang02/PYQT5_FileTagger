@@ -15,6 +15,7 @@ FileTagger는 파일에 태그를 부여하고 관리할 수 있는 데스크탑
 ## 프로젝트 문서
 
 ### 📋 기능 명세서 (Feature Specifications)
+- **FS-20250711-001**: [파일 태그 추가 및 일괄 추가 기능](docs/specifications/FS-20250711-001_file_tag_addition_and_batch_addition.md)
 - **FS-20250711-002**: [파일 태그 수정/삭제 기능](docs/specifications/FS-20250711-002_file_tag_modification_deletion.md)
 - **FS-20250711-003**: [작업 공간 설정 기능](docs/specifications/FS-20250711-003_workspace_setting.md)
 - **FS-20250711-004**: [디렉토리 탐색 및 파일 목록 표시 기능](docs/specifications/FS-20250711-004_directory_exploration_file_listing.md)
@@ -43,7 +44,7 @@ FileTagger는 파일에 태그를 부여하고 관리할 수 있는 데스크탑
 - [프로젝트 개요](docs/portfolio/project_overview.md)
 - [개발 이슈](docs/issues.md)
 - [대화 로그](docs/conversation_log.md)
-- [테스트 리포트](docs/test_report_20250705.md)
+- [테스트 리포트](docs/qa/test_reports/test_report_20250705.md)
 
 ## 개발 환경 설정
 1. **Python 및 Conda 설치**
