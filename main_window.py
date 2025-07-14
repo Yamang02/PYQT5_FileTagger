@@ -24,6 +24,7 @@ from core.repositories.tag_repository import TagRepository
 from core.services.tag_service import TagService
 from core.adapters.tag_manager_adapter import TagManagerAdapter
 from viewmodels.tag_control_viewmodel import TagControlViewModel
+from viewmodels.file_detail_viewmodel import FileDetailViewModel
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ class MainWindow(QMainWindow):
 
         # ViewModel 초기화
         self.tag_control_viewmodel = TagControlViewModel(self.tag_service, self.event_bus)
+        self.file_detail_viewmodel = FileDetailViewModel(self.tag_service, self.event_bus)
 
         # --- 분리된 관리자 클래스 활용 ---
         self.ui_setup = UISetupManager(self)

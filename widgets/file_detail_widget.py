@@ -11,7 +11,7 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 
 from widgets.tag_chip import TagChip
-from core.adapters.tag_manager_adapter import TagManagerAdapter # TagManagerAdapter 임포트
+from viewmodels.file_detail_viewmodel import FileDetailViewModel # FileDetailViewModel 임포트
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +33,20 @@ class ClickableSlider(QSlider):
 class FileDetailWidget(QWidget):
     PDF_EXTENSIONS = ['.pdf']
     MAX_PDF_PAGES_TO_PREVIEW = 3 # 미리보기할 최대 PDF 페이지 수
-    file_tags_changed = pyqtSignal()
+    # file_tags_changed = pyqtSignal() # ViewModel에서 처리
 
     IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
     VIDEO_EXTENSIONS = ['.mp4', '.avi', '.mkv', '.mov', '.webm'] # 추가된 비디오 확장자
     TEXT_EXTENSIONS = ['.txt', '.md', '.py', '.js', '.html', '.css']
     # MAX_VIDEO_SIZE_MB = 50 # Base64 인코딩 시 필요했으므로 제거
 
-    def __init__(self, tag_manager_adapter: TagManagerAdapter, parent=None):
+    def __init__(self, viewmodel: FileDetailViewModel, parent=None):
         super().__init__(parent)
-        self.tag_manager = tag_manager_adapter # TagManagerAdapter 인스턴스 사용
+        self.viewmodel = viewmodel # FileDetailViewModel 인스턴스 사용
         self.current_file_path = None
         self.media_player = None # QMediaPlayer 인스턴스 초기화
         self.setup_ui()
+        self.connect_viewmodel_signals()
 
     def setup_ui(self):
         loadUi('ui/file_detail_content_widget.ui', self)
@@ -163,8 +164,7 @@ class FileDetailWidget(QWidget):
                 self.preview_stacked_widget.setCurrentWidget(self.unsupported_preview_page)
 
             self._update_metadata(file_path)
-            tags = self.tag_manager.get_tags_for_file(file_path)
-            self._refresh_tag_chips(tags)
+            self.viewmodel.update_for_file(file_path) # ViewModel에 파일 업데이트 요청
 
         except Exception as e:
             logger.error(f"Error updating preview for {file_path}: {e}")
@@ -258,11 +258,7 @@ class FileDetailWidget(QWidget):
                 item.widget().deleteLater()
 
     def _on_tag_chip_removed(self, tag_text):
-        if self.current_file_path:
-            success = self.tag_manager.remove_tags_from_file(self.current_file_path, [tag_text])
-            if success:
-                self.update_preview(self.current_file_path)
-                self.file_tags_changed.emit()
+        self.viewmodel.remove_tag_from_file(tag_text)
 
     def toggle_play_pause(self):
         if self.media_player.state() == QMediaPlayer.PlayingState:
@@ -315,5 +311,5 @@ class FileDetailWidget(QWidget):
         seconds %= 60
         return f"{minutes:02d}:{seconds:02d}"
 
-    def connect_tag_control_signals(self, tag_control_widget):
-        tag_control_widget.file_tags_changed.connect(lambda: self.update_preview(self.current_file_path))
+    # def connect_tag_control_signals(self, tag_control_widget):
+    #     tag_control_widget.file_tags_changed.connect(lambda: self.update_preview(self.current_file_path))

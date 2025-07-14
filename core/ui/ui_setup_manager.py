@@ -54,7 +54,7 @@ class UISetupManager:
         # 위젯 인스턴스 생성
         self.widgets['directory_tree'] = DirectoryTreeWidget(initial_workspace)
         self.widgets['file_list'] = FileListWidget(self.main_window.tag_manager)
-        self.widgets['file_detail'] = FileDetailWidget(self.main_window.tag_manager)
+        self.widgets['file_detail'] = FileDetailWidget(self.main_window.file_detail_viewmodel)
         self.widgets['tag_control'] = TagControlWidget(
             self.main_window.tag_control_viewmodel, 
             self.main_window.custom_tag_manager
