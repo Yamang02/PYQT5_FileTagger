@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 class TagControlWidget(QWidget):
     tags_updated = pyqtSignal()
 
-    def __init__(self, tag_manager, custom_tag_manager: CustomTagManager, parent=None):
+    def __init__(self, tag_manager_adapter, custom_tag_manager: CustomTagManager, parent=None):
         super().__init__(parent)
-        self.tag_manager = tag_manager
+        self.tag_manager = tag_manager_adapter # TagManagerAdapter 인스턴스 사용
         self.custom_tag_manager = custom_tag_manager
         self.current_target_path = None # 현재 선택된 파일 또는 디렉토리 경로 (단일 파일/디렉토리)
         self.current_target_paths: list[str] = [] # 현재 선택된 파일 목록 (다중 파일)

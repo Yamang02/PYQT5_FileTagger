@@ -11,7 +11,7 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 
 from widgets.tag_chip import TagChip
-from core.tag_manager import TagManager
+from core.adapters.tag_manager_adapter import TagManagerAdapter # TagManagerAdapter 임포트
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +40,9 @@ class FileDetailWidget(QWidget):
     TEXT_EXTENSIONS = ['.txt', '.md', '.py', '.js', '.html', '.css']
     # MAX_VIDEO_SIZE_MB = 50 # Base64 인코딩 시 필요했으므로 제거
 
-    def __init__(self, tag_manager: TagManager, parent=None):
+    def __init__(self, tag_manager_adapter: TagManagerAdapter, parent=None):
         super().__init__(parent)
-        self.tag_manager = tag_manager
+        self.tag_manager = tag_manager_adapter # TagManagerAdapter 인스턴스 사용
         self.current_file_path = None
         self.media_player = None # QMediaPlayer 인스턴스 초기화
         self.setup_ui()

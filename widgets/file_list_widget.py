@@ -10,9 +10,9 @@ class FileTableModel(QAbstractTableModel):
     DRS 요구사항: 파일명, 상대 경로, 현재 적용된 태그를 표시
     """
     
-    def __init__(self, tag_manager, parent=None):
+    def __init__(self, tag_manager_adapter, parent=None):
         super().__init__(parent)
-        self.tag_manager = tag_manager
+        self.tag_manager = tag_manager_adapter
         self.all_files = [] # 필터링되지 않은 모든 파일 목록 (디렉토리 모드)
         self.filtered_files = [] # 필터링된 파일 목록 (디렉토리 모드)
         self.search_results = [] # 검색 결과 파일 목록 (검색 모드)

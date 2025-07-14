@@ -1,8 +1,8 @@
-from core.tag_manager import TagManager
+from core.adapters.tag_manager_adapter import TagManagerAdapter
 import os
 
 class SearchManager:
-    def __init__(self, tag_manager: TagManager):
+    def __init__(self, tag_manager: TagManagerAdapter):
         self.tag_manager = tag_manager
 
     def search_files(self, conditions: dict) -> list:

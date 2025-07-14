@@ -10,7 +10,6 @@ from widgets.file_list_widget import FileListWidget
 from widgets.file_detail_widget import FileDetailWidget
 from widgets.tag_control_widget import TagControlWidget
 from widgets.search_widget import SearchWidget
-from core.tag_manager import TagManager
 from core.custom_tag_manager import CustomTagManager
 from widgets.custom_tag_dialog import CustomTagDialog
 from widgets.batch_remove_tags_dialog import BatchRemoveTagsDialog
@@ -18,6 +17,12 @@ from core.search_manager import SearchManager
 from core.ui.ui_setup_manager import UISetupManager
 from core.ui.signal_connection_manager import SignalConnectionManager
 from core.ui.data_loading_manager import DataLoadingManager
+
+# 새로 추가된 모듈 임포트
+from core.events import EventBus
+from core.repositories.tag_repository import TagRepository
+from core.services.tag_service import TagService
+from core.adapters.tag_manager_adapter import TagManagerAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +32,15 @@ class MainWindow(QMainWindow):
         
         # --- 코어 로직 초기화 ---
         self.mongo_client = mongo_client
-        self.tag_manager = TagManager(mongo_client)
+        
+        # 새로운 아키텍처 컴포넌트 초기화
+        self.event_bus = EventBus()
+        self.tag_repository = TagRepository(mongo_client)
+        self.tag_service = TagService(self.tag_repository, self.event_bus)
+        self.tag_manager = TagManagerAdapter(self.tag_service) # TagManagerAdapter 사용
+        
         self.custom_tag_manager = CustomTagManager()
-        self.search_manager = SearchManager(self.tag_manager)
+        self.search_manager = SearchManager(self.tag_manager) # SearchManager는 TagManagerAdapter를 사용하도록 변경
 
         # --- 분리된 관리자 클래스 활용 ---
         self.ui_setup = UISetupManager(self)
@@ -240,6 +251,7 @@ class MainWindow(QMainWindow):
 
     def _open_batch_remove_tags_dialog(self, target_path):
         """일괄 태그 제거 다이얼로그를 엽니다."""
+        # BatchRemoveTagsDialog에 TagManagerAdapter 인스턴스를 전달
         dialog = BatchRemoveTagsDialog(self.tag_manager, target_path, True, self)
         if dialog.exec_() == BatchRemoveTagsDialog.Accepted:
             self.on_tags_updated()
