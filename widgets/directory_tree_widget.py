@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QFileSystemModel, QLineEdit, QHBoxLayout, QCheckBox, QLabel, QSpacerItem, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QFileSystemModel, QLineEdit, QHBoxLayout, QCheckBox, QLabel, QSpacerItem, QSizePolicy, QMenu
 from PyQt5.QtCore import QDir, QSortFilterProxyModel, Qt, pyqtSignal, QModelIndex
 
 class DirectoryTreeWidget(QWidget):

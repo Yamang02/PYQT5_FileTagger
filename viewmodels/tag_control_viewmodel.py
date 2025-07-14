@@ -44,7 +44,7 @@ class TagControlViewModel(QObject):
 
         if isinstance(target, list):
             self._current_target_paths = target
-            self.target_info_updated.emit(f"선택된 파일: {len(target)}개", False)
+            self.target_info_updated.emit(f"선택된 파일: {len(target)}개", True)
             self.enable_ui.emit(True)
             self.update_tags_for_current_target()
 

@@ -2,7 +2,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from typing import List
 
 from core.services.tag_service import TagService
-from core.events import EventBus, TagRemovedEvent
+from core.events import EventBus, TagAddedEvent, TagRemovedEvent
 
 class FileDetailViewModel(QObject):
     # UI 업데이트를 위한 시그널
@@ -17,6 +17,12 @@ class FileDetailViewModel(QObject):
 
         # EventBus 구독
         self._event_bus.tag_removed.connect(self._on_tag_removed)
+        self._event_bus.tag_added.connect(self._on_tag_added)
+
+    def _on_tag_added(self, event: TagAddedEvent):
+        # 현재 파일과 관련된 태그 변경 시 UI 업데이트
+        if event.file_path == self._current_file_path:
+            self.update_for_file(self._current_file_path)
 
     def _on_tag_removed(self, event: TagRemovedEvent):
         # 현재 파일과 관련된 태그 변경 시 UI 업데이트

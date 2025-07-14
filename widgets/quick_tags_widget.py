@@ -10,7 +10,7 @@ class QuickTagsWidget(QWidget):
     """
 
     tag_toggled = pyqtSignal(str, bool)  # (tag_name, is_added) 시그널
-    tags_changed = pyqtSignal(list)
+    tags_changed = pyqtSignal(str)
 
     def __init__(self, custom_tag_manager: CustomTagManager, parent=None):
         super().__init__(parent)
@@ -48,14 +48,7 @@ class QuickTagsWidget(QWidget):
 
 
     def _on_btn_clicked(self, tag):
-        if tag not in self._selected_tags:
-            self._selected_tags.append(tag)
-        self.tags_changed.emit(self._selected_tags)
-
-    def set_selected_tags(self, tags):
-        self._selected_tags = list(tags)
-        for tag, btn in self._buttons.items():
-            btn.setChecked(tag in self._selected_tags)
+        self.tags_changed.emit(tag)
 
     def set_enabled(self, enabled: bool):
         """위젯 전체 활성/비활성 상태를 설정합니다."""
@@ -90,17 +83,4 @@ class QuickTagsWidget(QWidget):
                         background-color: #e0e0e0;
                         border: 1px solid #999;
                     }
-                    QPushButton:checked {
-                        background-color: #2196f3;
-                        color: white;
-                        border: 1px solid #1976d2;
-                    }
-                    QPushButton:checked:hover {
-                        background-color: #1976d2;
-                    }
                 """)
-
-    def clear_selection(self):
-        self._selected_tags = []
-        for btn in self._buttons.values():
-            btn.setChecked(False)

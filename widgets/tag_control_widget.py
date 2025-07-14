@@ -74,7 +74,7 @@ class TagControlWidget(QWidget):
         self.viewmodel.tags_updated.connect(self.on_viewmodel_tags_updated)
         self.viewmodel.target_info_updated.connect(self.on_viewmodel_target_info_updated)
         self.viewmodel.enable_ui.connect(self.set_enabled)
-        self.viewmodel.show_message.connect(lambda msg, duration: QMessageBox.information(self, "정보", msg) if duration == 0 else self.parent().statusbar.showMessage(msg, duration))
+        self.viewmodel.show_message.connect(lambda msg, duration: QMessageBox.information(self, "정보", msg) if duration == 0 else self.window().statusbar.showMessage(msg, duration))
 
     def setup_completer(self):
         self.completer_model = QStringListModel()
@@ -223,20 +223,15 @@ class TagControlWidget(QWidget):
             if item and item.widget():
                 item.widget().setEnabled(enabled)
 
-    def on_individual_quick_tags_changed(self, tags):
+    def on_individual_quick_tags_changed(self, tag):
         # 빠른 태그 변경 시 개별 태깅 탭의 태그 목록 업데이트
         # ViewModel의 add_tag_to_individual을 호출하도록 변경
-        for tag in tags:
-            self.viewmodel.add_tag_to_individual(tag)
+        self.viewmodel.add_tag_to_individual(tag)
 
-    def on_batch_quick_tags_changed(self, tags):
+    def on_batch_quick_tags_changed(self, tag):
         # 빠른 태그 변경 시 일괄 태깅 탭의 태그 목록 업데이트
-        # ViewModel의 get_current_batch_tags를 통해 태그 목록을 가져와 업데이트
-        batch_tags = self.viewmodel.get_current_batch_tags()
-        for tag in tags:
-            if tag not in batch_tags:
-                batch_tags.append(tag)
-        self._refresh_chip_layout(batch_tags, self.batch_chip_layout, self.batch_tag_input)
+        # ViewModel의 apply_batch_tags를 호출하도록 변경
+        self.viewmodel.apply_batch_tags([tag], self.batch_options.recursive_checkbox.isChecked(), self.batch_options._get_file_extensions())
 
     def _on_batch_remove_tags_clicked(self):
         current_target_path = self.viewmodel.get_current_target_path()
@@ -250,27 +245,7 @@ class TagControlWidget(QWidget):
         target = current_target_paths if current_target_paths else current_target_path
         dialog = BatchRemoveTagsDialog(self.viewmodel._tag_service, target, self) # ViewModel의 tag_service 전달
         if dialog.exec_():
-            tags_to_remove = dialog.get_tags_to_remove()
-            if not tags_to_remove:
-                return
-
-            target_files = []
-            if current_target_paths: # 다중 파일 선택
-                target_files = current_target_paths
-            elif current_target_path and is_current_target_dir: # 단일 디렉토리 선택
-                target_files = self.viewmodel._tag_service.get_files_in_directory(current_target_path, recursive=True, file_extensions=None)
-            
-            if not target_files:
-                QMessageBox.information(self, "정보", "선택된 대상 내에 태그를 제거할 파일이 없습니다.")
-                return
-
-            result = self.viewmodel._tag_service.remove_tags_from_files(target_files, tags_to_remove)
-            if result and result.get("success"):
-                QMessageBox.information(self, "일괄 태그 제거 완료", f"{result.get('successful', 0)}개 항목에서 태그가 성공적으로 제거되었습니다.")
-                self.tags_updated.emit() # UI 업데이트
-            else:
-                error_msg = result.get("error") if result else "알 수 없는 오류"
-                QMessageBox.critical(self, "일괄 태그 제거 실패", f"오류: {error_msg}")
+            self.tags_updated.emit() # UI 업데이트
 
     def clear_view(self):
         self.viewmodel.update_for_target(None, False)

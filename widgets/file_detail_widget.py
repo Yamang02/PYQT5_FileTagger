@@ -52,7 +52,7 @@ class FileDetailWidget(QWidget):
         self.viewmodel.file_details_updated.connect(self.on_viewmodel_file_details_updated)
         self.viewmodel.show_message.connect(lambda msg, duration: 
      QMessageBox.information(self, "정보", msg) if duration == 0 else self
-     .parent().statusbar.showMessage(msg, duration))
+                 .window().statusbar.showMessage(msg, duration))
    
     def on_viewmodel_file_details_updated(self, file_path: str, tags: list):
            # ViewModel에서 받은 정보로 UI 업데이트
