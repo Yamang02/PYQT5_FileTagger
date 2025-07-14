@@ -1,5 +1,38 @@
 # 개발팀 내부 기록 (Development Notes)
 
+## 2025년 7월 14일
+
+### DRS-20250711-010 Phase 1-A, 1-B, 1-C 완료 (아키텍처 리팩터링)
+
+#### 배경
+- PM에서 Clean Architecture + MVVM 도입을 위한 DRS-20250711-010 승인
+- Phase 1 아키텍처 리팩터링의 1-A, 1-B, 1-C 단계 완료 확인
+
+#### Phase 1-A: MainWindow 분리 우선
+- **목표**: MainWindow의 책임 분리 및 Adapter 패턴 도입
+- **진행 상황**:
+    - `main_window.py`에서 `UISetupManager`, `SignalConnectionManager`, `DataLoadingManager`를 사용하여 UI 설정, 시그널 연결, 초기 데이터 로딩 로직 분리 완료.
+    - `core/ui/ui_setup_manager.py`, `core/ui/signal_connection_manager.py`, `core/ui/data_loading_manager.py` 파일들이 DRS에 명시된 역할을 수행하며 존재함.
+    - `core/adapters/tag_manager_adapter.py` 파일이 존재하며 `TagService`를 사용하는 어댑터 역할을 수행함.
+- **결론**: 완료
+
+#### Phase 1-B: Service/Repository 계층 구축
+- **목표**: 비즈니스 로직과 데이터 접근 로직 분리
+- **진행 상황**:
+    - `core/services/tag_service.py` 파일이 존재하며 `TagRepository`와 `EventBus`를 주입받아 비즈니스 로직을 수행함.
+    - `core/repositories/tag_repository.py` 파일이 존재하며 `MongoClient`를 주입받아 MongoDB I/O 작업을 수행함.
+- **결론**: 완료
+
+#### Phase 1-C: ViewModel 구축 및 위젯 리팩터링
+- **목표**: UI와 비즈니스 로직 간의 중재자 역할 수행 및 위젯의 ViewModel 사용 전환
+- **진행 상황**:
+    - `viewmodels/tag_control_viewmodel.py` 파일이 존재하며 `TagService`와 `EventBus`를 주입받아 UI와 비즈니스 로직 사이의 중재자 역할을 수행함.
+    - `widgets/tag_control_widget.py`가 `TagControlViewModel`을 주입받아 사용하고 있으며, ViewModel의 시그널을 구독하고 ViewModel의 메서드를 호출하여 UI와 비즈니스 로직을 분리함.
+- **결론**: 완료
+
+#### 다음 단계
+- DRS-20250711-010의 다음 Phase 진행 (Phase 2-6) 또는 추가적인 리팩터링 및 기능 개발.
+
 ## 2025년 7월 13일
 
 ### DRS-20250711-010 Phase 0 분석 완료 (아키텍처 리팩터링)
