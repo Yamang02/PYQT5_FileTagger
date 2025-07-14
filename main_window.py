@@ -152,7 +152,7 @@ class MainWindow(QMainWindow):
             if not self.directory_tree.model.isDir(self.directory_tree.proxy_model.mapToSource(selected_index)):
                 current_path = os.path.dirname(current_path)
         else:
-            current_path = self.file_list.model.current_directory
+            current_path = self.file_list.model.viewmodel.get_current_directory()
             if not current_path:
                 current_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
 

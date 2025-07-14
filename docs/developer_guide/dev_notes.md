@@ -2,6 +2,49 @@
 
 ## 2025년 7월 14일
 
+### ViewModel 계층 테스트 코드 작성
+
+#### 배경
+- DRS에 명시된 테스트 커버리지 목표(ViewModel 계층 70%) 달성을 위해 ViewModel 계층 테스트 코드 작성.
+
+#### 구현 내용
+- `tests/viewmodels/test_tag_control_viewmodel.py` 파일 생성 및 `TagControlViewModel`에 대한 테스트 케이스 작성.
+- `tests/viewmodels/test_file_detail_viewmodel.py` 파일 생성 및 `FileDetailViewModel`에 대한 테스트 케이스 작성.
+- `pytest`와 `unittest.mock`을 사용하여 `TagService`와 `EventBus`를 모의(mock) 객체로 대체하여 ViewModel의 로직만을 테스트.
+- Mock 객체가 올바른 타입의 값을 반환하도록 `return_value` 및 `side_effect` 설정.
+
+#### 테스트 결과
+- 모든 테스트 케이스 성공적으로 통과.
+- `TagControlViewModel`과 `FileDetailViewModel`의 핵심 로직이 올바르게 구현되었음을 확인.
+
+#### 다음 단계
+- 추가적인 기능 테스트 및 안정성 확보.
+
+## 2025년 7월 14일
+
+### FS 기반 TagService 테스트 코드 작성
+
+#### 배경
+- DRS에 명시된 테스트 커버리지 목표(Service 계층 50%) 달성을 위해 FS 기반의 `TagService` 테스트 코드 작성.
+
+#### 구현 내용
+- `tests/services/test_tag_service.py` 파일 생성.
+- `pytest`와 `unittest.mock`을 사용하여 `TagRepository`와 `EventBus`를 모의(mock) 객체로 대체하여 `TagService`의 로직만을 테스트.
+- `TagService`의 `add_tags_to_directory` 및 `get_files_in_directory` 메서드에 대한 테스트 케이스 작성.
+    - 비재귀 및 재귀 모드에서의 디렉토리 내 파일 추가/조회 테스트.
+    - 특정 확장자 필터링 테스트.
+    - 파일이 없는 경우의 처리 테스트.
+- `TagService`의 `add_tag_to_file`, `remove_tag_from_file`, `get_tags_for_file`, `get_all_tags`, `get_files_by_tags`, `delete_file_entry`, `add_tags_to_files`, `remove_tags_from_files` 메서드에 대한 테스트 케이스 추가.
+
+#### 테스트 결과
+- 모든 테스트 케이스 성공적으로 통과.
+- `TagService`의 FS 기반 태그 추가 및 조회 로직이 올바르게 구현되었음을 확인.
+
+#### 다음 단계
+- ViewModel 계층 테스트 코드 작성 및 커버리지 확대.
+
+## 2025년 7월 14일
+
 ### 버그 수정 및 기능 개선
 
 #### 배경

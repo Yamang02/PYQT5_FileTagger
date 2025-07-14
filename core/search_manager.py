@@ -15,7 +15,7 @@ class SearchManager:
             tag_cond = conditions['tags']
             tag_query = tag_cond.get('query', '').strip()
             if tag_query:
-                return self.tag_manager.get_files_by_tag(tag_query)
+                return self.tag_manager.get_files_by_tags([tag_query])
 
         # 2. 파일명/확장자 기반 검색
         if 'filename' in conditions:

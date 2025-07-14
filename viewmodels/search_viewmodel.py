@@ -30,3 +30,18 @@ class SearchViewModel(QObject):
 
     def get_all_tags(self) -> List[str]:
         return self._tag_service.get_all_tags()
+
+    def _generate_summary(self, search_conditions: Dict) -> str:
+        summary_parts = []
+        if search_conditions.get("filename"):
+            summary_parts.append(f"파일명: '{search_conditions['filename']}'")
+        if search_conditions.get("tags"):
+            tag_query = search_conditions['tags'].get('query')
+            if tag_query:
+                summary_parts.append(f"태그: '{tag_query}'")
+        if search_conditions.get("extensions"):
+            summary_parts.append(f"확장자: {', '.join(search_conditions['extensions'])}")
+        
+        if not summary_parts:
+            return "모든 파일"
+        return ", ".join(summary_parts)

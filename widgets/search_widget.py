@@ -359,6 +359,7 @@ class SearchWidget(QWidget):
         """고급 검색 패널 표시/숨김"""
         self._advanced_panel_visible = show
         self.advanced_toggle.setText("▲" if show else "▼")
+        self.advanced_panel.setVisible(show)
         
     def get_advanced_panel(self):
         """고급 검색 패널 반환"""
@@ -373,7 +374,7 @@ class SearchWidget(QWidget):
         self._update_tag_completer()
 
     def _update_tag_completer(self):
-        all_tags = all_tags = self.viewmodel.get_all_tags()
+        all_tags = self.viewmodel.get_all_tags()
         text = self.tag_input.text().strip()
         if not text:
             sorted_tags = sorted(all_tags, key=lambda x: x)
