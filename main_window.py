@@ -25,6 +25,7 @@ from core.services.tag_service import TagService
 from core.adapters.tag_manager_adapter import TagManagerAdapter
 from viewmodels.tag_control_viewmodel import TagControlViewModel
 from viewmodels.file_detail_viewmodel import FileDetailViewModel
+from viewmodels.file_list_viewmodel import FileListViewModel
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ class MainWindow(QMainWindow):
         # ViewModel 초기화
         self.tag_control_viewmodel = TagControlViewModel(self.tag_service, self.event_bus)
         self.file_detail_viewmodel = FileDetailViewModel(self.tag_service, self.event_bus)
+        self.file_list_viewmodel = FileListViewModel(self.tag_service, self.event_bus)
 
         # --- 분리된 관리자 클래스 활용 ---
         self.ui_setup = UISetupManager(self)
@@ -95,7 +97,7 @@ class MainWindow(QMainWindow):
                             f.write(line)
                 config.DEFAULT_WORKSPACE_PATH = new_workspace
                 self.directory_tree.set_root_path(new_workspace)
-                self.file_list.set_path(new_workspace)
+                self.file_list_viewmodel.set_directory(new_workspace)
                 self.file_detail.clear_preview()
                 self.tag_control_viewmodel.update_for_target(None, False)
                 self.statusbar.showMessage(f"작업 공간이 '{new_workspace}'로 설정되었습니다.", 5000)
@@ -116,7 +118,7 @@ class MainWindow(QMainWindow):
 
         if is_dir:
             # If a directory is selected, update the file list with its contents
-            self.file_list.set_path(file_path, recursive, file_extensions)
+            self.file_list_viewmodel.set_directory(file_path, recursive, file_extensions)
             self.file_detail.clear_preview()
             self.tag_control_viewmodel.update_for_target(file_path, True)
             self.statusbar.showMessage(f"'{file_path}' 디렉토리를 보고 있습니다.")
@@ -136,7 +138,7 @@ class MainWindow(QMainWindow):
                 # If the file is not in the current file_list view (e.g., due to filters),
                 # update the file_list to show the directory containing the file
                 parent_dir = os.path.dirname(file_path)
-                self.file_list.set_path(parent_dir, recursive, file_extensions)
+                self.file_list_viewmodel.set_directory(parent_dir, recursive, file_extensions)
                 # Try selecting again after updating the path
                 file_list_index = self.file_list.index_from_path(file_path)
                 if file_list_index.isValid():
@@ -158,7 +160,7 @@ class MainWindow(QMainWindow):
             if not current_path:
                 current_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
 
-        self.file_list.set_path(current_path, recursive, file_extensions)
+        self.file_list_viewmodel.set_directory(current_path, recursive, file_extensions)
         self.file_detail.clear_preview() # Clear preview as the file list content might change
         self.tag_control_viewmodel.update_for_target(None, False) # Clear tag control as the file list content might change
         self.statusbar.showMessage(f"필터 옵션 변경: 재귀={recursive}, 확장자={', '.join(file_extensions) if file_extensions else '모두'}")
@@ -190,7 +192,7 @@ class MainWindow(QMainWindow):
     def on_search_requested(self, search_conditions: dict):
         self.statusbar.showMessage("검색 중...")
         search_results = self.search_manager.search_files(search_conditions)
-        self.file_list.set_search_results(search_results)
+        self.file_list_viewmodel.set_search_results(search_results)
         # 검색 조건 요약 문자열 생성
         summary = ""
         if 'tags' in search_conditions:
@@ -209,7 +211,7 @@ class MainWindow(QMainWindow):
     def on_search_cleared(self):
         """검색 초기화 처리"""
         workspace_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
-        self.file_list.set_path(workspace_path)
+        self.file_list_viewmodel.set_directory(workspace_path)
         self.file_detail.clear_preview()
         self.tag_control_viewmodel.update_for_target(None, False)
         self.statusbar.showMessage("검색이 초기화되었습니다.")
@@ -235,7 +237,7 @@ class MainWindow(QMainWindow):
                 current_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
 
         # 파일 목록의 태그 정보만 새로고침 (선택 상태 유지)
-        self.file_list.refresh_tags_for_current_files()
+        self.file_list_viewmodel.refresh_tags_for_current_files()
         # TagControlWidget의 ViewModel에서 태그 목록을 새로고침하도록 요청
         self.tag_control_viewmodel.update_completer_model()
         self.tag_control_viewmodel.update_all_tags_list()
