@@ -14,6 +14,9 @@ class QuickTagsWidget(QWidget):
 
     def __init__(self, custom_tag_manager: CustomTagManager, parent=None):
         super().__init__(parent)
+        # Material Design 스타일 적용
+        self.setObjectName("quickTagsPanel")
+        
         uic.loadUi('ui/quick_tags_widget.ui', self)
         self.horizontalLayout.setAlignment(Qt.AlignmentFlag.AlignLeft)  # 왼쪽 정렬 명시
         self.custom_tag_manager = custom_tag_manager

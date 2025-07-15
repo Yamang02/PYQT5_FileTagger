@@ -28,7 +28,13 @@ class TagControlWidget(QWidget):
         self.update_all_tags_list() # 모든 태그 목록 초기화
 
     def setup_ui(self):
+        # Material Design 스타일 적용
+        self.setObjectName("tagControlPanel")
+        
         loadUi('ui/tag_control_widget.ui', self)
+        
+        # 폰트 위계 시스템 적용
+        self._apply_font_hierarchy()
 
         # QuickTagsWidget 인스턴스 생성 및 배치
         self.individual_quick_tags = QuickTagsWidget(self.custom_tag_manager, self)
@@ -264,3 +270,15 @@ class TagControlWidget(QWidget):
         dialog = BatchRemoveTagsDialog(self.viewmodel._tag_service, directory_path, self)
         if dialog.exec_():
             self.tags_updated.emit()
+            
+    def _apply_font_hierarchy(self):
+        """폰트 위계 시스템을 적용합니다."""
+        # Level 1 (타이틀) - 위젯 그룹의 제목
+        self.all_tags_label.setProperty("class", "level1-title")
+        
+        # Level 2 (부제목/중요 정보) - 선택된 파일/디렉토리 경로
+        self.individual_target_label.setProperty("class", "level2-subtitle")
+        self.batch_target_label.setProperty("class", "level2-subtitle")
+        
+        # Level 4 (보조 텍스트) - 플레이스홀더 텍스트는 QLineEdit에서 처리
+        # 버튼 텍스트는 기본 텍스트 크기 유지

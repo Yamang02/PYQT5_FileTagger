@@ -21,7 +21,6 @@ class SearchWidget(QWidget):
         self.setup_ui()
         self.setup_connections()
         self.connect_viewmodel_signals()
-        self.setup_styles()
 
     def connect_viewmodel_signals(self):
         """ViewModel의 시그널을 위젯의 슬롯에 연결합니다."""
@@ -34,6 +33,9 @@ class SearchWidget(QWidget):
         # self._search_history = []  # 검색 조건 히스토리 리스트
 
     def setup_ui(self):
+        # Material Design 스타일 적용
+        self.setObjectName("searchPanel")
+        
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(16, 8, 16, 8)
         main_layout.setSpacing(12)
@@ -73,17 +75,20 @@ class SearchWidget(QWidget):
         button_layout.setSpacing(4)
         button_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.search_button = QPushButton("🔍")
+        self.search_button = QPushButton()
+        self.search_button.setIcon(QIcon("assets/icons/search.svg"))
         self.search_button.setFixedSize(32, 32)
         self.search_button.setToolTip("검색 실행 (Enter)")
         button_layout.addWidget(self.search_button)
 
-        self.clear_button = QPushButton("✕")
+        self.clear_button = QPushButton()
+        self.clear_button.setIcon(QIcon("assets/icons/close.svg"))
         self.clear_button.setFixedSize(32, 32)
         self.clear_button.setToolTip("검색 초기화")
         button_layout.addWidget(self.clear_button)
 
-        self.advanced_toggle = QPushButton("▼")
+        self.advanced_toggle = QPushButton()
+        self.advanced_toggle.setIcon(QIcon("assets/icons/expand_more.svg"))
         self.advanced_toggle.setFixedSize(32, 32)
         self.advanced_toggle.setToolTip("고급 검색 패널 토글")
         button_layout.addWidget(self.advanced_toggle)
@@ -95,7 +100,6 @@ class SearchWidget(QWidget):
         self.search_conditions_label.setMinimumHeight(32)
         self.search_conditions_label.setFixedWidth(300)
         self.search_conditions_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        self.search_conditions_label.setStyleSheet("color: #666; font-size: 11px; padding-right: 8px;")
         main_layout.addWidget(self.search_conditions_label)
 
         # 검색 결과 레이블 (고정폭, 우측 정렬)
@@ -103,10 +107,12 @@ class SearchWidget(QWidget):
         self.result_count_label.setMinimumHeight(32)
         self.result_count_label.setFixedWidth(120)
         self.result_count_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        self.result_count_label.setStyleSheet("font-weight: bold; color: #333; padding-right: 8px;")
         main_layout.addWidget(self.result_count_label)
 
         self.setup_advanced_panel()
+        
+        # 폰트 위계 시스템 적용
+        self._apply_font_hierarchy()
 
     def _show_tag_tooltip(self, event):
         QLineEdit.focusInEvent(self.tag_input, event)
@@ -117,7 +123,7 @@ class SearchWidget(QWidget):
         self.advanced_panel = QFrame()
         self.advanced_panel.setFrameStyle(QFrame.StyledPanel)
         self.advanced_panel.setVisible(False)
-        self.advanced_panel.setMaximumHeight(160)  # 기존 120 → 160
+        self.advanced_panel.setMaximumHeight(160)
         advanced_layout = QHBoxLayout(self.advanced_panel)
         advanced_layout.setContentsMargins(16, 8, 16, 8)
         advanced_layout.setSpacing(20)  # 기존 16 → 20
@@ -192,39 +198,7 @@ class SearchWidget(QWidget):
         self.filename_input.returnPressed.connect(self._on_search_requested)
         self.tag_input.returnPressed.connect(self._on_search_requested)
         
-    def setup_styles(self):
-        """스타일 설정"""
-        # 검색 툴바 스타일
-        self.setStyleSheet("""
-            QFrame {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 4px;
-            }
-            QLineEdit {
-                border: 1px solid #ced4da;
-                border-radius: 4px;
-                padding: 4px 8px;
-                background-color: white;
-            }
-            QLineEdit:focus {
-                border-color: #0078d4;
-                outline: none;
-            }
-            QPushButton {
-                border: 1px solid #ced4da;
-                border-radius: 4px;
-                background-color: white;
-                padding: 4px;
-            }
-            QPushButton:hover {
-                background-color: #e3f2fd;
-                border-color: #0078d4;
-            }
-            QPushButton:pressed {
-                background-color: #bbdefb;
-            }
-        """)
+    
         
     def _on_input_changed(self):
         """입력 변경 시 디바운싱 적용"""
@@ -245,7 +219,10 @@ class SearchWidget(QWidget):
     def _toggle_advanced_panel(self):
         """고급 검색 패널 토글"""
         self._advanced_panel_visible = not self._advanced_panel_visible
-        self.advanced_toggle.setText("▲" if self._advanced_panel_visible else "▼")
+        if self._advanced_panel_visible:
+            self.advanced_toggle.setIcon(QIcon("assets/icons/expand_less.svg"))
+        else:
+            self.advanced_toggle.setIcon(QIcon("assets/icons/expand_more.svg"))
         self.show_advanced_panel(self._advanced_panel_visible)
         
     # self._search_history, MAX_HISTORY, _add_to_history, _on_history_requested, _history_summary 등 히스토리 관련 메서드/변수 전체 삭제
@@ -381,4 +358,12 @@ class SearchWidget(QWidget):
             self._tag_completer_model.setStringList(sorted_tags[:5])
         else:
             filtered = [tag for tag in all_tags if text.lower() in tag.lower()]
-            self._tag_completer_model.setStringList(filtered) 
+            self._tag_completer_model.setStringList(filtered)
+            
+    def _apply_font_hierarchy(self):
+        """폰트 위계 시스템을 적용합니다."""
+        # Level 2 (부제목/중요 정보) - 검색 조건 및 결과 요약
+        self.search_conditions_label.setProperty("class", "level2-subtitle")
+        self.result_count_label.setProperty("class", "level2-subtitle")
+        
+        # Level 4 (보조 텍스트) - 플레이스홀더 텍스트는 QLineEdit에서 처리 

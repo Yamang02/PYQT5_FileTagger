@@ -59,6 +59,9 @@ class FileDetailWidget(QWidget):
            self._refresh_tag_chips(tags)
 
     def setup_ui(self):
+        # Material Design 스타일 적용
+        self.setObjectName("fileDetailPanel")
+        
         loadUi('ui/file_detail_content_widget.ui', self)
 
         self.image_preview_label = QLabel("이미지 미리보기")
@@ -86,12 +89,16 @@ class FileDetailWidget(QWidget):
         # 비디오 컨트롤 추가
         self.play_button = QToolButton()
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.play_button.setProperty("class", "video-control")
+        
         self.stop_button = QToolButton()
         self.stop_button.setIcon(self.style().standardIcon(QStyle.SP_MediaStop))
+        self.stop_button.setProperty("class", "video-control")
 
         # 볼륨 버튼 (음소거 아이콘)
         self.volume_button = QToolButton()
         self.volume_button.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
+        self.volume_button.setProperty("class", "video-control")
 
         # 볼륨 슬라이더 (세로, 초기 숨김)
         self.volume_slider = QSlider(Qt.Vertical, self.video_preview_page) # video_preview_page의 자식으로 설정

@@ -1,5 +1,60 @@
 # 개발팀 내부 기록 (Development Notes)
 
+아래는 라인 넘버 없이 정리된 Markdown 형식 문서입니다:
+
+---
+
+## 2025년 7월 15일 - 개발팀
+
+### UI 위젯 래핑으로 인한 AttributeError 반복 발생 및 아키텍처 개선
+
+**배경:**
+
+* DRS-20250715-001 (UI 디자인 개선) 작업 중 `UISetupManager`에서 위젯에 그림자 효과를 적용하기 위해 `QFrame`으로 래핑하는 과정에서 `MainWindow` 및 `SignalConnectionManager`에서 해당 위젯의 속성(메서드, 시그널)에 접근할 때 `AttributeError`가 반복적으로 발생.
+* 예시 오류: `'QFrame' object has no attribute 'setup_styles'`, `'QFrame' object has no attribute 'get_advanced_panel'`, `'QFrame' object has no attribute 'directory_selected'`, `'QFrame' object has no attribute 'filter_options_changed'`, `'QFrame' object has no attribute 'batch_remove_tags_requested'`, `'MainWindow' object has no attribute 'open_batch_remove_tags_dialog'`.
+
+**문제 원인:**
+
+* `UISetupManager`에서 위젯을 `QFrame`으로 래핑한 후, `MainWindow`의 속성들이 실제 위젯 인스턴스가 아닌 래핑된 `QFrame` 인스턴스를 참조하게 됨.
+* 기존 코드에서는 `MainWindow`의 속성을 통해 실제 위젯의 메서드나 시그널에 직접 접근하려고 시도했기 때문에 `AttributeError` 발생.
+
+**해결 과정:**
+
+1. **초기 임시 해결 시도:**
+   `widget.layout().itemAt(0).widget()`과 같이 래핑된 `QFrame` 내부의 실제 위젯에 접근하는 방식으로 오류를 해결.
+
+2. **PM과의 논의 및 아키텍처 개선 결정:**
+   반복되는 `AttributeError` 문제의 근본적인 해결을 위해 PM에게 이슈를 등록하고 아키텍처 개선 방안을 논의.
+
+3. **PM의 피드백 반영:**
+
+   * `UISetupManager`의 `_create_widgets` 메서드에서 위젯을 생성하고 래핑한 후, `self.widgets` 딕셔너리에는 **실제 위젯 인스턴스**를 저장하도록 변경.
+   * `MainWindow`의 위젯 참조(`self.main_window.directory_tree` 등)도 **실제 위젯 인스턴스**를 가리키도록 변경.
+   * `_setup_splitter_layout`에서는 래핑된 `QFrame`을 스플리터에 추가하도록 유지.
+   * `MainWindow` 및 `SignalConnectionManager`에서 위젯에 접근할 때는 `self.ui_setup.get_widget('widget_name')`을 통해 **실제 위젯 인스턴스**를 가져와 사용하도록 수정.
+
+**적용된 코드 변경:**
+
+* `core/ui/ui_setup_manager.py`: `_create_widgets` 및 `_setup_splitter_layout` 메서드 수정
+* `main_window.py`: `set_workspace`, `on_directory_selected`, `_on_directory_tree_filter_options_changed`, `on_file_selection_changed` 메서드 내 위젯 접근 방식 변경
+* `widgets/search_widget.py`: `__init__` 메서드에서 `setup_styles()` 호출 제거, `setup_ui` 및 `_toggle_advanced_panel`에서 아이콘 사용으로 변경, 인라인 QSS 제거
+* `widgets/tag_chip.py`: 인라인 QSS 제거, `ui/tag_chip.ui`에서 삭제 버튼에 아이콘 적용
+* `core/ui/signal_connection_manager.py`: `_connect_menu_actions`, `_connect_widget_signals`, `disconnect_all_signals` 메서드 내 위젯 접근 방식 변경
+
+**결론:**
+
+* `QFrame` 래핑으로 인한 `AttributeError` 문제가 해결되었으며, 위젯 접근 방식이 `self.ui_setup.get_widget('widget_name')`으로 통일되어 코드의 일관성과 유지보수성이 향상됨.
+* 아이콘이 정상적으로 표시되는 것을 확인.
+
+**관련 이슈:**
+
+* `[이슈] UI 위젯 래핑으로 인한 AttributeError 반복 발생 및 아키텍처 개선 필요 (2025-07-15)`
+
+**다음 단계:**
+
+* 멀티모달 에이전트에서 이어서 진행하며, 추가적인 UI/UX 개선 및 기능 구현.
+
+
 ## 2025년 7월 14일
 
 ### ViewModel 계층 테스트 코드 작성

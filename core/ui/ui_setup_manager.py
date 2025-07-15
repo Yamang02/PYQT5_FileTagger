@@ -6,7 +6,8 @@ UI 설정 관리자 - MainWindow의 UI 설정 로직을 분리
 """
 
 import os
-from PyQt5.QtWidgets import QVBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QVBoxLayout, QSizePolicy, QFrame, QGraphicsDropShadowEffect
+from PyQt5.QtGui import QColor
 from PyQt5.QtCore import QDir
 from PyQt5.uic import loadUi
 import config
@@ -42,31 +43,69 @@ class UISetupManager:
         """UI 파일을 로드합니다."""
         loadUi('ui/main_window.ui', self.main_window)
         
+    def _create_card_widget(self, widget, object_name=None):
+        """
+        위젯을 QFrame으로 래핑하고 그림자 효과를 적용합니다.
+        """
+        card_frame = QFrame()
+        card_frame.setObjectName("card") # QSS 타겟팅을 위한 objectName
+        if object_name:
+            card_frame.setObjectName(object_name + "_card") # 특정 위젯을 위한 고유 objectName
+
+        # QVBoxLayout을 사용하여 위젯을 QFrame 안에 배치
+        layout = QVBoxLayout(card_frame)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(widget)
+
+        # 그림자 효과 적용
+        shadow = QGraphicsDropShadowEffect(card_frame)
+        shadow.setBlurRadius(15)
+        shadow.setXOffset(0)
+        shadow.setYOffset(2)
+        shadow.setColor(QColor("#d0d0d0")) # DRS에 명시된 색상
+        card_frame.setGraphicsEffect(shadow)
+
+        return card_frame
+
     def _create_widgets(self):
-        """필요한 위젯 인스턴스들을 생성합니다."""
+        """필요한 위젯 인스턴스들을 생성하고 카드 효과를 적용합니다."""
         # 초기 작업공간 설정
         initial_workspace = (
-            config.DEFAULT_WORKSPACE_PATH 
-            if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) 
+            config.DEFAULT_WORKSPACE_PATH
+            if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH)
             else QDir.homePath()
         )
-        
+
         # 위젯 인스턴스 생성
-        self.widgets['directory_tree'] = DirectoryTreeWidget(initial_workspace)
-        self.widgets['file_list'] = FileListWidget(self.main_window.file_list_viewmodel)
-        self.widgets['file_detail'] = FileDetailWidget(self.main_window.file_detail_viewmodel)
-        self.widgets['tag_control'] = TagControlWidget(
-            self.main_window.tag_control_viewmodel, 
+        directory_tree_widget = DirectoryTreeWidget(initial_workspace)
+        file_list_widget = FileListWidget(self.main_window.file_list_viewmodel)
+        file_detail_widget = FileDetailWidget(self.main_window.file_detail_viewmodel)
+        tag_control_widget = TagControlWidget(
+            self.main_window.tag_control_viewmodel,
             self.main_window.custom_tag_manager
         )
-        self.widgets['search_widget'] = SearchWidget(self.main_window.search_viewmodel)
-        
-        # MainWindow에 위젯 참조 설정
-        self.main_window.directory_tree = self.widgets['directory_tree']
-        self.main_window.file_list = self.widgets['file_list']
-        self.main_window.file_detail = self.widgets['file_detail']
-        self.main_window.tag_control = self.widgets['tag_control']
-        self.main_window.search_widget = self.widgets['search_widget']
+        search_widget = SearchWidget(self.main_window.search_viewmodel)
+
+        # 각 위젯에 카드 효과 적용 (래핑된 QFrame은 별도로 저장)
+        self.main_window.directory_tree_frame = self._create_card_widget(directory_tree_widget, "directoryTree")
+        self.main_window.file_list_frame = self._create_card_widget(file_list_widget, "fileList")
+        self.main_window.file_detail_frame = self._create_card_widget(file_detail_widget, "fileDetail")
+        self.main_window.tag_control_frame = self._create_card_widget(tag_control_widget, "tagControl")
+        self.main_window.search_widget_frame = self._create_card_widget(search_widget, "search")
+
+        # self.widgets 딕셔너리에는 실제 위젯 인스턴스를 저장
+        self.widgets['directory_tree'] = directory_tree_widget
+        self.widgets['file_list'] = file_list_widget
+        self.widgets['file_detail'] = file_detail_widget
+        self.widgets['tag_control'] = tag_control_widget
+        self.widgets['search_widget'] = search_widget
+
+        # MainWindow에 실제 위젯 참조 설정
+        self.main_window.directory_tree = directory_tree_widget
+        self.main_window.file_list = file_list_widget
+        self.main_window.file_detail = file_detail_widget
+        self.main_window.tag_control = tag_control_widget
+        self.main_window.search_widget = search_widget
         
     def _setup_layout(self):
         """메인 레이아웃을 설정합니다."""
@@ -109,17 +148,17 @@ class UISetupManager:
     def _setup_splitter_layout(self):
         """스플리터 레이아웃을 설정합니다."""
         # 3열 레이아웃(mainSplitter) 구성
-        self.main_window.mainSplitter.insertWidget(0, self.widgets['directory_tree'])
+        self.main_window.mainSplitter.insertWidget(0, self.main_window.directory_tree_frame)
         self.main_window.mainSplitter.insertWidget(1, self.main_window.splitter)
-        self.main_window.mainSplitter.insertWidget(2, self.widgets['tag_control'])
-        
+        self.main_window.mainSplitter.insertWidget(2, self.main_window.tag_control_frame)
+
         # 기존 placeholder 위젯 삭제
         self.main_window.directoryTreeWidget.deleteLater()
         self.main_window.tagControlWidget.deleteLater()
-        
+
         # 중앙 스플리터 구성
-        self.main_window.splitter.insertWidget(0, self.widgets['file_detail'])
-        self.main_window.splitter.insertWidget(1, self.widgets['file_list'])
+        self.main_window.splitter.insertWidget(0, self.main_window.file_detail_frame)
+        self.main_window.splitter.insertWidget(1, self.main_window.file_list_frame)
         
         # 기존 placeholder 위젯 삭제
         self.main_window.fileDetailWidget.deleteLater()

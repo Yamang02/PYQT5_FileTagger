@@ -21,30 +21,7 @@ class TagChip(QFrame):
         self.tag_label.setText(self.tag_text)
         self.delete_button.clicked.connect(self._on_delete_button_clicked)
 
-        # 스타일시트 적용
-        self.setStyleSheet("""
-            QFrame {
-                background-color: #e3f2fd;
-                border: 1px solid #2196f3;
-                border-radius: 12px;
-                padding: 2px;
-            }
-            QFrame:hover {
-                background-color: #bbdefb;
-            }
-            QPushButton {
-                border-radius: 8px;
-                background-color: #90caf9;
-                color: white;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #42a5f5;
-            }
-            QPushButton:pressed {
-                background-color: #1e88e5;
-            }
-        """)
+        
 
     def mousePressEvent(self, event):
         """마우스 클릭 이벤트를 처리하여 clicked 시그널을 발생시킵니다."""

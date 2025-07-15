@@ -98,9 +98,9 @@ class MainWindow(QMainWindow):
                         else:
                             f.write(line)
                 config.DEFAULT_WORKSPACE_PATH = new_workspace
-                self.directory_tree.set_root_path(new_workspace)
+                self.ui_setup.get_widget('directory_tree').set_root_path(new_workspace)
                 self.file_list_viewmodel.set_directory(new_workspace)
-                self.file_detail.clear_preview()
+                self.ui_setup.get_widget('file_detail').clear_preview()
                 self.tag_control_viewmodel.update_for_target(None, False)
                 self.statusbar.showMessage(f"작업 공간이 '{new_workspace}'로 설정되었습니다.", 5000)
             except Exception as e:
@@ -108,26 +108,26 @@ class MainWindow(QMainWindow):
                 self.statusbar.showMessage("작업 공간 설정 실패", 3000)
 
     def on_directory_selected(self, file_path: str, is_dir: bool):
-        recursive = self.directory_tree.recursive_checkbox.isChecked()
+        recursive = self.ui_setup.get_widget('directory_tree').recursive_checkbox.isChecked()
         # extensions_input이 제거되었으므로 빈 리스트로 설정
         file_extensions = []
 
         if is_dir:
             # If a directory is selected, update the file list with its contents
             self.file_list_viewmodel.set_directory(file_path, recursive, file_extensions)
-            self.file_detail.clear_preview()
+            self.ui_setup.get_widget('file_detail').clear_preview()
             self.tag_control_viewmodel.update_for_target(file_path, True)
             self.statusbar.showMessage(f"'{file_path}' 디렉토리를 보고 있습니다.")
         else:
             # If a file is selected, update file detail and select it in the file list
-            self.file_detail.update_preview(file_path)
-            self.tag_control.update_for_target(file_path, False)
+            self.ui_setup.get_widget('file_detail').update_preview(file_path)
+            self.ui_setup.get_widget('tag_control').update_for_target(file_path, False)
             self.statusbar.showMessage(f"'{file_path}' 파일을 선택했습니다.")
 
             # Select the file in the file_list
-            file_list_index = self.file_list.index_from_path(file_path)
+            file_list_index = self.ui_setup.get_widget('file_list').index_from_path(file_path)
             if file_list_index.isValid():
-                self.file_list.list_view.selectionModel().select(
+                self.ui_setup.get_widget('file_list').list_view.selectionModel().select(
                     file_list_index, QItemSelectionModel.ClearAndSelect
                 )
             else:
@@ -136,43 +136,43 @@ class MainWindow(QMainWindow):
                 parent_dir = os.path.dirname(file_path)
                 self.file_list_viewmodel.set_directory(parent_dir, recursive, file_extensions)
                 # Try selecting again after updating the path
-                file_list_index = self.file_list.index_from_path(file_path)
+                file_list_index = self.ui_setup.get_widget('file_list').index_from_path(file_path)
                 if file_list_index.isValid():
-                    self.file_list.list_view.selectionModel().select(
+                    self.ui_setup.get_widget('file_list').list_view.selectionModel().select(
                         file_list_index, QItemSelectionModel.ClearAndSelect
                     )
 
     def _on_directory_tree_filter_options_changed(self, recursive: bool, file_extensions: list):
         # Get the currently selected directory in the directory tree
         # If no directory is selected, use the current file_list directory or default workspace
-        selected_index = self.directory_tree.tree_view.currentIndex()
+        selected_index = self.ui_setup.get_widget('directory_tree').tree_view.currentIndex()
         if selected_index.isValid():
-            current_path = self.directory_tree.model.filePath(self.directory_tree.proxy_model.mapToSource(selected_index))
+            current_path = self.ui_setup.get_widget('directory_tree').model.filePath(self.ui_setup.get_widget('directory_tree').proxy_model.mapToSource(selected_index))
             # If the selected item is a file, use its parent directory
-            if not self.directory_tree.model.isDir(self.directory_tree.proxy_model.mapToSource(selected_index)):
+            if not self.ui_setup.get_widget('directory_tree').model.isDir(self.ui_setup.get_widget('directory_tree').proxy_model.mapToSource(selected_index)):
                 current_path = os.path.dirname(current_path)
         else:
-            current_path = self.file_list.model.viewmodel.get_current_directory()
+            current_path = self.ui_setup.get_widget('file_list').model.viewmodel.get_current_directory()
             if not current_path:
                 current_path = config.DEFAULT_WORKSPACE_PATH if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else QDir.homePath()
 
         self.file_list_viewmodel.set_directory(current_path, recursive, file_extensions)
-        self.file_detail.clear_preview() # Clear preview as the file list content might change
+        self.ui_setup.get_widget('file_detail').clear_preview() # Clear preview as the file list content might change
         self.tag_control_viewmodel.update_for_target(None, False) # Clear tag control as the file list content might change
         self.statusbar.showMessage(f"필터 옵션 변경: 재귀={recursive}, 확장자={', '.join(file_extensions) if file_extensions else '모두'}")
 
     def on_file_selection_changed(self, selected_file_paths: list):
         if len(selected_file_paths) == 1:
             file_path = selected_file_paths[0]
-            self.file_detail.update_preview(file_path)
+            self.ui_setup.get_widget('file_detail').update_preview(file_path)
             self.tag_control_viewmodel.update_for_target(file_path, False)
             self.statusbar.showMessage(f"'{file_path}' 파일을 선택했습니다.")
         elif len(selected_file_paths) > 1:
-            self.file_detail.clear_preview()
+            self.ui_setup.get_widget('file_detail').clear_preview()
             self.tag_control_viewmodel.update_for_target(selected_file_paths, False)
             self.statusbar.showMessage(f"{len(selected_file_paths)}개 파일을 선택했습니다.")
         else:
-            self.file_detail.clear_preview()
+            self.ui_setup.get_widget('file_detail').clear_preview()
             self.tag_control_viewmodel.update_for_target(None, False)
             self.statusbar.showMessage("파일 선택이 해제되었습니다.")
 

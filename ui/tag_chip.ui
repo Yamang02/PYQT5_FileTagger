@@ -56,8 +56,17 @@
        <height>16</height>
       </size>
      </property>
-     <property name="text">
-      <string>X</string>
+     <property name="icon">
+      <iconset>
+       <normaloff>assets/icons/close.svg</normaloff>
+       <normalon>assets/icons/close.svg</normalon>
+       <disabledoff>assets/icons/close.svg</disabledoff>
+       <disabledon>assets/icons/close.svg</disabledon>
+       <activeoff>assets/icons/close.svg</activeoff>
+       <activeon>assets/icons/close.svg</activeon>
+       <selectedoff>assets/icons/close.svg</selectedoff>
+       <selectedon>assets/icons/close.svg</selectedon>
+      </iconset>
      </property>
     </widget>
    </item>

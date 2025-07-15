@@ -30,19 +30,19 @@ class SignalConnectionManager:
         """메뉴 액션들의 시그널을 연결합니다."""
         self.main_window.actionExit.triggered.connect(self.main_window.close)
         self.main_window.actionSetWorkspace.triggered.connect(self.main_window.set_workspace)
-        self.main_window.actionManageQuickTags.triggered.connect(self.main_window.tag_control.open_custom_tag_dialog)
+        self.main_window.actionManageQuickTags.triggered.connect(self.main_window.ui_setup.get_widget('tag_control').open_custom_tag_dialog)
         
     def _connect_widget_signals(self):
         """위젯들의 시그널을 연결합니다."""
         # 디렉토리 트리 시그널
-        self.main_window.directory_tree.directory_selected.connect(
+        self.main_window.ui_setup.get_widget('directory_tree').directory_selected.connect(
             self.main_window.on_directory_selected
         )
-        self.main_window.directory_tree.filter_options_changed.connect(
+        self.main_window.ui_setup.get_widget('directory_tree').filter_options_changed.connect(
             self.main_window._on_directory_tree_filter_options_changed
         )
-        self.main_window.directory_tree.batch_remove_tags_requested.connect(
-            self.main_window.tag_control.open_batch_remove_tags_dialog
+        self.main_window.ui_setup.get_widget('directory_tree').batch_remove_tags_requested.connect(
+            self.main_window.ui_setup.get_widget('tag_control').open_batch_remove_tags_dialog
         )
         
         # 파일 리스트 시그널
@@ -71,18 +71,18 @@ class SignalConnectionManager:
             self.main_window.actionManageQuickTags.triggered.disconnect()
             
             # 위젯 시그널 해제
-            self.main_window.directory_tree.tree_view.clicked.disconnect()
-            self.main_window.directory_tree.filter_options_changed.disconnect()
-            self.main_window.directory_tree.directory_context_menu_requested.disconnect()
+            self.main_window.ui_setup.get_widget('directory_tree').tree_view.clicked.disconnect()
+            self.main_window.ui_setup.get_widget('directory_tree').filter_options_changed.disconnect()
+            self.main_window.ui_setup.get_widget('directory_tree').directory_context_menu_requested.disconnect()
             
-            self.main_window.file_list.list_view.selectionModel().selectionChanged.disconnect()
-            self.main_window.tag_control.tags_updated.disconnect()
-            self.main_window.file_detail.file_tags_changed.disconnect()
+            self.main_window.ui_setup.get_widget('file_list').list_view.selectionModel().selectionChanged.disconnect()
+            self.main_window.ui_setup.get_widget('tag_control').tags_updated.disconnect()
+            self.main_window.ui_setup.get_widget('file_detail').file_tags_changed.disconnect()
             
             # 검색 시그널 해제
-            self.main_window.search_widget.search_requested.disconnect()
-            self.main_window.search_widget.search_cleared.disconnect()
-            self.main_window.search_widget.advanced_search_requested.disconnect()
+            self.main_window.ui_setup.get_widget('search_widget').search_requested.disconnect()
+            self.main_window.ui_setup.get_widget('search_widget').search_cleared.disconnect()
+            self.main_window.ui_setup.get_widget('search_widget').advanced_search_requested.disconnect()
             
         except Exception as e:
             # 시그널 해제 실패는 로그만 남기고 계속 진행
