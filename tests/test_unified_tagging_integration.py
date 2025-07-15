@@ -11,8 +11,8 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 
 
+from core import TagManager
 from core.tag_ui_state_manager import TagUIStateManager
-from core.tag_manager import TagManager
 
 
 @pytest.fixture

@@ -54,6 +54,17 @@ class TagManagerAdapter:
     def add_tags_to_files(self, file_paths: List[str], tags_to_add: List[str]) -> dict:
         return self._tag_service.add_tags_to_files(file_paths, tags_to_add)
 
+    def remove_tags_from_file(self, file_path: str, tags_to_remove: List[str]):
+        """단일 파일에서 태그들을 제거합니다."""
+        return self._tag_service.remove_tags_from_files([file_path], tags_to_remove)
+
+    def clear_all_tags_from_file(self, file_path: str):
+        """파일의 모든 태그를 제거합니다."""
+        current_tags = self._tag_service.get_tags_for_file(file_path)
+        if current_tags:
+            return self._tag_service.remove_tags_from_files([file_path], current_tags)
+        return {"success": True, "processed": 1, "successful": 0}
+
     def add_tags_to_directory(self, directory_path, tags, recursive=False, file_extensions=None):
         return self._tag_service.add_tags_to_directory(directory_path, tags, recursive, file_extensions)
 

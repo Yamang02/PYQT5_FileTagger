@@ -33,6 +33,7 @@ def mock_tag_service():
     mock_service.add_tags_to_files.return_value = {"success": True, "processed": 0, "successful": 0}
     mock_service.add_tags_to_directory.return_value = {"success": True, "processed": 0, "successful": 0}
     mock_service.get_files_in_directory.return_value = []
+    mock_service.remove_tags_from_files.return_value = {"success": True, "processed": 0, "successful": 0}
     return mock_service
 
 @pytest.fixture
@@ -49,7 +50,20 @@ def mock_custom_tag_manager():
 def main_window(qapp, mock_mongo_client, mock_tag_service, mock_event_bus, mock_custom_tag_manager):
     with patch('core.services.tag_service.TagService', return_value=mock_tag_service), \
          patch('core.events.EventBus', return_value=mock_event_bus), \
-         patch('core.custom_tag_manager.CustomTagManager', return_value=mock_custom_tag_manager):
+         patch('core.custom_tag_manager.CustomTagManager', return_value=mock_custom_tag_manager), \
+         patch('viewmodels.tag_control_viewmodel.TagControlViewModel') as MockTagControlViewModel:
+        
+        # TagControlViewModel mock 설정
+        mock_viewmodel = MockTagControlViewModel.return_value
+        mock_viewmodel.get_all_tags.return_value = ["tagA", "tagB", "tagC"]
+        mock_viewmodel.get_tags_for_file.return_value = []
+        mock_viewmodel.add_tag_to_individual.return_value = True
+        mock_viewmodel.remove_tag_from_individual.return_value = True
+        mock_viewmodel.apply_batch_tags.return_value = True
+        mock_viewmodel.get_current_batch_tags.return_value = []
+        mock_viewmodel.get_current_target_path.return_value = ""
+        mock_viewmodel.get_current_target_paths.return_value = []
+        mock_viewmodel.is_current_target_dir.return_value = False
         
         window = MainWindow(mock_mongo_client)
         window.show()

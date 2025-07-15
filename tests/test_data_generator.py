@@ -6,7 +6,7 @@
 
 import os
 import sys
-from core.tag_manager import TagManager
+from core import TagManager
 
 
 def generate_test_tags():
