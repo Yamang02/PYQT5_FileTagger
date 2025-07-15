@@ -33,70 +33,72 @@ graph LR
         FDW[FileDetailWidget]
         TC[TagChip]
     end
+
+    subgraph ViewModelLayer["ViewModel Layer"]
+        TCVM[TagControlViewModel]
+        FDVM[FileDetailViewModel]
+    end
     
-    subgraph BusinessLayer["Business Layer"]
-        TM[TagManager]
+    subgraph ServiceLayer["Service Layer"]
+        TS[TagService]
+        EB[EventBus]
         CTM[CustomTagManager]
     end
     
+    subgraph RepositoryLayer["Repository Layer"]
+        TR[TagRepository]
+    end
+
     subgraph DataLayer["Data Layer"]
         MDB[(MongoDB)]
         CTJ[custom_tags.json]
     end
     
-    UILayer <--> BusinessLayer
-    BusinessLayer <--> DataLayer
+    UILayer <--> ViewModelLayer
+    ViewModelLayer <--> ServiceLayer
+    ServiceLayer <--> RepositoryLayer
+    RepositoryLayer <--> DataLayer
     
     style UILayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    style BusinessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style ViewModelLayer fill:#e0f7fa,stroke:#00796b,stroke-width:2px
+    style ServiceLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style RepositoryLayer fill:#ede7f6,stroke:#5e35b1,stroke-width:2px
     style DataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
 ```
 
 #### 2.2. 컴포넌트 관계
 
-- **UI Layer**: 사용자 인터페이스 컴포넌트들
-  - `TagControlWidget`: 태그 입력 및 관리 UI
-  - `FileDetailWidget`: 파일별 태그 표시
-  - `TagChip`: 개별 태그 표시 및 삭제
-  - `QuickTagsWidget`: 빠른 태그 선택
-
-- **Business Layer**: 비즈니스 로직 처리
-  - `TagManager`: MongoDB 기반 태그 CRUD 작업
-  - `CustomTagManager`: 사용자 정의 태그 영속성 관리
-
-- **Data Layer**: 데이터 저장소
-  - MongoDB: 파일-태그 매핑 데이터
-  - JSON 파일: 사용자 정의 태그 목록
+- **UI Layer**: 사용자 인터페이스 컴포넌트. 사용자의 입력을 받고 정보를 표시합니다.
+  - `TagControlWidget`, `FileDetailWidget`, `TagChip`, `QuickTagsWidget`
+- **ViewModel Layer**: UI의 상태와 동작을 관리합니다. UI와 서비스 계층을 분리합니다.
+  - `TagControlViewModel`, `FileDetailViewModel`
+- **Service Layer**: 핵심 비즈니스 로직을 처리하고, 여러 리포지토리를 조합하여 기능을 구현합니다.
+  - `TagService`: 태그 관련 핵심 로직(CRUD, 일괄 처리)을 담당합니다.
+  - `EventBus`: 컴포넌트 간의 느슨한 결합을 위한 이벤트 발행/구독 시스템입니다.
+  - `CustomTagManager`: `custom_tags.json` 파일에 대한 읽기/쓰기 로직을 담당합니다.
+- **Repository Layer**: 데이터베이스와의 상호작용을 추상화합니다.
+  - `TagRepository`: MongoDB `tagged_files` 컬렉션에 대한 CRUD 작업을 직접 수행합니다.
+- **Data Layer**: 실제 데이터가 저장되는 곳입니다.
+  - `MongoDB`: 파일-태그 매핑 데이터를 저장합니다.
+  - `custom_tags.json`: 사용자 정의 빠른 태그 목록을 저장합니다.
 
 #### 2.3. 데이터 흐름
 
 ```mermaid
 flowchart TD
-    A[UI 요청] --> B{요청 타입}
-    
-    B -->|태그 조회| C[TagManager.get_tags_for_file]
-    C --> D[MongoDB 조회]
-    D --> E[태그 목록 반환]
-    E --> F[UI 업데이트]
-    
-    B -->|태그 추가| G[TagManager.add_tags_to_file]
-    G --> H[MongoDB 업데이트]
-    H --> I[UI 새로고침]
-    
-    B -->|태그 삭제| J[TagManager.remove_tags_from_file]
-    J --> K[MongoDB 업데이트]
-    K --> L[UI 업데이트]
-    
-    B -->|일괄 처리| M[TagManager.bulk_operation]
-    M --> N[Bulk Write 실행]
-    N --> O[결과 반환]
-    O --> P[UI 피드백]
+    A[UI 요청 (e.g., 태그 추가 클릭)] --> B[ViewModel]
+    B --> C[TagService.add_tag_to_file]
+    C --> D[TagRepository.add_tag]
+    D --> E[MongoDB 업데이트]
+    E --> F{성공/실패}
+    F -->|성공| G[TagService]
+    G --> H[EventBus.publish_tag_added]
+    H --> I[모든 구독자 (ViewModel)에게 전파]
+    I --> J[ViewModel이 UI 업데이트 시그널 발생]
+    J --> K[UI 업데이트]
     
     style A fill:#e1f5fe
-    style F fill:#c8e6c9
-    style I fill:#c8e6c9
-    style L fill:#c8e6c9
-    style P fill:#c8e6c9
+    style K fill:#c8e6c9
 ```
 
 ### 3. 상세 설계 (Detailed Design)
@@ -105,50 +107,56 @@ flowchart TD
 
 ```mermaid
 classDiagram
-    class TagManager {
-        -client: MongoClient
-        -db: Database
+    class TagService {
+        -repository: TagRepository
+        -event_bus: EventBus
+        +add_tag_to_file(file_path: str, tag: str) bool
+        +remove_tag_from_file(file_path: str, tag: str) bool
+        +add_tags_to_files(file_paths: list, tags: list) dict
+        +remove_tags_from_files(file_paths: list, tags: list) dict
+        +get_tags_for_file(file_path: str) list
+        +get_all_tags() list
+    }
+
+    class TagRepository {
         -collection: Collection
-        +connect() bool
-        +get_tags_for_file(file_path: str) list[str]
-        +update_tags(file_path: str, tags: list[str]) bool
-        +add_tags_to_file(file_path: str, tags: list[str]) bool
-        +remove_tags_from_file(file_path: str, tags_to_remove: list[str]) bool
-        +add_tags_to_files(file_paths: list[str], tags: list[str]) dict
-        +remove_tags_from_files(file_paths: list[str], tags_to_remove: list[str]) dict
-        +get_all_tags() list[str]
-        -_ensure_connection()
-        -_normalize_path(file_path: str) str
+        +add_tag(file_path: str, tag: str) bool
+        +remove_tag(file_path: str, tag: str) bool
+        +get_tags_for_file(file_path: str) list
+        +get_all_tags() list
+        +bulk_update_tags(operations: list) dict
     }
     
     class CustomTagManager {
         -file_path: str
         +load_custom_quick_tags() list[str]
         +save_custom_quick_tags(tags: list[str]) bool
-        -_validate_tags(tags: list[str]) bool
     }
-    
-    class TagManagerError {
-        +message: str
-        +__init__(message: str)
+
+    class EventBus {
+        +tag_added: pyqtSignal
+        +tag_removed: pyqtSignal
+        +publish_tag_added(file_path: str, tag: str)
+        +publish_tag_removed(file_path: str, tag: str)
     }
-    
-    TagManager --> TagManagerError : raises
-    TagManager --> CustomTagManager : uses
+
+    TagService "1" *-- "1" TagRepository
+    TagService "1" *-- "1" EventBus
 ```
 
 #### 3.2. 데이터 모델
 
-**MongoDB 스키마**
+**MongoDB 스키마 (tagged_files 컬렉션)**
 ```javascript
-// tags 컬렉션
+// 실제 구현에서는 MongoDB가 자동 생성하는 _id를 사용합니다.
 {
-  "_id": "normalized_file_path",  // 파일 경로 (정규화됨)
-  "tags": ["tag1", "tag2", "tag3"],  // 태그 배열
-  "created_at": ISODate("2025-07-11T..."),
-  "updated_at": ISODate("2025-07-11T...")
+  "_id": ObjectId("..."),
+  "file_path": "C:\path\to\normalized\file.txt", // 정규화된 파일 경로 (인덱싱 필요)
+  "tags": ["tag1", "tag2", "tag3"] // 태그 배열
 }
 ```
+*   **`file_path`**: `core.path_utils.normalize_path` 함수를 통해 정규화된 파일의 전체 경로입니다. 이 필드에 고유 인덱스(unique index)를 생성하여 중복 입력을 방지하고 조회 성능을 향상시킵니다.
+*   **`tags`**: 해당 파일에 연결된 태그 문자열의 배열입니다.
 
 **JSON 파일 구조 (custom_tags.json)**
 ```json
@@ -161,82 +169,98 @@ classDiagram
 
 #### 3.3. 인터페이스 설계
 
-**시그널-슬롯 연결**
+**ViewModel 시그널**
 ```python
-# TagControlWidget 시그널
-tags_updated = pyqtSignal()
+# TagControlViewModel 시그널
+tags_updated = pyqtSignal(list)
+target_info_updated = pyqtSignal(str, bool)
+show_message = pyqtSignal(str, int)
 
-# FileDetailWidget 시그널
-file_tags_changed = pyqtSignal()
+# FileDetailViewModel 시그널
+file_details_updated = pyqtSignal(str, list)
+```
 
-# TagChip 시그널
-tag_removed = pyqtSignal(str)  # 태그명
+**EventBus 이벤트**
+```python
+# EventBus에서 발행하는 이벤트 (데이터 클래스 활용)
+@dataclass
+class TagAddedEvent:
+    file_path: str
+    tag: str
+
+@dataclass  
+class TagRemovedEvent:
+    file_path: str
+    tag: str
 ```
 
 ### 4. 구현 세부사항 (Implementation Details)
 
 #### 4.1. 핵심 알고리즘
 
-**파일 경로 정규화 알고리즘**
+**파일 경로 정규화 (`core/path_utils.py`)**
 ```python
-def normalize_path(file_path: str) -> str:
-    # 1. 절대 경로로 변환
-    # 2. 경로 구분자 통일 (Windows: \, Unix: /)
-    # 3. 중복 구분자 제거
-    # 4. 대소문자 처리 (Windows는 대소문자 무시)
-    return normalized_path
+def normalize_path(path: str) -> str:
+    # os.path.normpath를 사용하여 운영체제에 맞는 경로 구분자로 정규화
+    normalized = os.path.normpath(path)
+    # Windows 환경을 가정하고 모든 슬래시를 역슬래시로 변환
+    if os.sep == '\\':
+        normalized = normalized.replace('/', '\\')
+    return normalized
 ```
 
-**일괄 태그 처리 알고리즘**
+**일괄 태그 처리 (`TagService` 및 `TagRepository`)**
 ```python
-def bulk_tag_operation(file_paths: list, tags: list, operation: str):
-    # 1. 파일 경로 정규화
-    normalized_paths = [normalize_path(p) for p in file_paths]
-    
-    # 2. 기존 태그 조회 (한 번에)
-    existing_docs = collection.find({"_id": {"$in": normalized_paths}})
-    
-    # 3. Bulk Write 작업 준비
+# TagService
+def add_tags_to_files(self, file_paths: list, tags_to_add: list) -> dict:
     bulk_operations = []
-    for file_path in normalized_paths:
-        existing_tags = get_existing_tags(file_path)
-        new_tags = calculate_new_tags(existing_tags, tags, operation)
-        bulk_operations.append(UpdateOne(...))
-    
-    # 4. 일괄 실행
-    result = collection.bulk_write(bulk_operations)
+    for file_path in file_paths:
+        # ... 기존 태그와 새 태그를 병합하는 로직 ...
+        bulk_operations.append(
+            UpdateOne({"file_path": normalized_path}, {"$set": {"tags": new_tags}}, upsert=True)
+        )
+    return self._repository.bulk_update_tags(bulk_operations)
+
+# TagRepository
+def bulk_update_tags(self, operations: list) -> dict:
+    if not operations:
+        return {"modified": 0, "upserted": 0}
+    result = self._collection.bulk_write(operations)
+    return {"modified": result.modified_count, "upserted": result.upserted_count}
 ```
 
 #### 4.2. 성능 고려사항
 
-- **인덱싱**: `_id` 필드에 기본 인덱스 사용
-- **Bulk Write**: 일괄 태그 처리 시 `bulk_write` 사용으로 성능 최적화
-- **연결 풀링**: MongoDB 연결 재사용
-- **메모리 관리**: 대용량 파일 목록 처리 시 청크 단위 처리
+- **인덱싱**: `file_path` 필드에 고유 인덱스를 생성하여 조회 및 업데이트 성능을 최적화합니다.
+- **Bulk Write**: 일괄 태그 추가/삭제 시 `bulk_write`를 사용하여 MongoDB와의 통신 횟수를 최소화합니다.
+- **연결 관리**: `pymongo` 드라이버의 내장 커넥션 풀링을 활용합니다.
 
 #### 4.3. 메모리 관리
 
-- **태그 캐싱**: 자주 사용되는 태그 목록 메모리 캐싱
-- **연결 관리**: MongoDB 연결 상태 모니터링 및 자동 재연결
-- **가비지 컬렉션**: 불필요한 객체 참조 해제
+- **데이터 로딩**: 대용량 데이터 조회 시 필요한 만큼만 DB에서 가져오도록 쿼리를 최적화합니다. (현재는 모든 태그를 가져오는 방식 위주)
+- **가비지 컬렉션**: Python의 자동 가비지 컬렉션에 의존합니다.
 
 #### 4.4. 동시성 처리
 
-- **단일 스레드**: PyQt5 메인 스레드에서 모든 DB 작업 처리
-- **비동기 처리**: 향후 대용량 처리 시 백그라운드 스레드 고려
+- **단일 스레드**: 현재 모든 DB 작업은 PyQt5의 메인 UI 스레드에서 동기적으로 처리됩니다.
+- **향후 개선**: 대용량 파일 처리나 네트워크 지연이 발생할 수 있는 작업을 위해 `QThread`를 사용한 비동기 처리 도입을 고려해야 합니다.
 
 #### 4.5. 에러 처리
 
+- 현재 구현은 `try-except` 블록을 사용하여 예외를 잡고 `logging`을 통해 오류를 기록하는 방식을 사용합니다.
+- 사용자에게 피드백이 필요한 경우(예: DB 연결 실패), ViewModel의 `show_message` 시그널을 통해 상태 표시줄이나 다이얼로그에 메시지를 표시할 수 있습니다.
+- 명시적인 커스텀 예외 클래스(`TagManagerError`)는 사용하지 않습니다.
 ```python
-def _ensure_connection(self):
+# 예시: TagService
+def add_tag_to_file(self, file_path: str, tag: str) -> bool:
     try:
-        if not self.client:
-            self.connect()
-        # 연결 상태 확인
-        self.client.admin.command("ping")
+        result = self._repository.add_tag(file_path, tag)
+        if result:
+            self._event_bus.publish_tag_added(file_path, tag)
+        return result
     except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        raise TagManagerError(f"Database connection failed: {e}")
+        logger.error(f"Error adding tag to {file_path}: {e}")
+        return False
 ```
 
 ### 5. 외부 의존성 (External Dependencies)

@@ -24,200 +24,167 @@ UI 컴포넌트 시스템은 FileTagger 애플리케이션의 사용자 인터�
 
 ### 2. 시스템 아키텍처 (System Architecture)
 
-#### 2.1. 전체 구조
+#### 2.1. 아키텍처 패턴: MVVM (Model-View-ViewModel)
 
-```mermaid
-graph TB
-    subgraph MainWindow["MainWindow"]
-        subgraph TopRow["상단 위젯 영역"]
-            DTW[DirectoryTreeWidget]
-            FLW[FileListWidget]
-            FDW[FileDetailWidget]
-        end
-        
-        subgraph MiddleRow["중간 위젯 영역"]
-            TCW[TagControlWidget]
-        end
-        
-        subgraph BottomRow["하단 위젯 영역"]
-            QTW[QuickTagsWidget]
-        end
-    end
-    
-    style MainWindow fill:#f9f9f9,stroke:#333,stroke-width:2px
-    style TopRow fill:#e1f5fe,stroke:#01579b,stroke-width:1px
-    style MiddleRow fill:#f3e5f5,stroke:#4a148c,stroke-width:1px
-    style BottomRow fill:#e8f5e8,stroke:#1b5e20,stroke-width:1px
-```
+FileTagger는 UI 코드와 비즈니스 로직을 분리하기 위해 MVVM 아키텍처 패턴을 채택했습니다. 이 패턴은 코드의 테스트 용이성, 재사용성, 유지보수성을 향상시킵니다.
+
+- **Model**: 애플리케이션의 데이터와 비즈니스 로직을 포함합니다. (`TagService`, `TagRepository`, `SearchManager` 등)
+- **View**: 사용자 인터페이스(UI)를 담당합니다. (`MainWindow`, `FileListWidget`, `FileDetailWidget` 등 `.ui` 파일과 연결된 위젯 클래스)
+- **ViewModel**: View와 Model 사이의 중재자 역할을 합니다. View의 상태를 관리하고, Model의 데이터를 View가 표시하기 좋은 형태로 가공하며, View의 요청을 Model에 전달합니다. (`FileListViewModel`, `FileDetailViewModel`, `TagControlViewModel`, `SearchViewModel`)
 
 #### 2.2. 컴포넌트 계층 구조
 
-- **Level 1**: MainWindow (메인 애플리케이션 윈도우)
-- **Level 2**: 주요 위젯 컴포넌트들
-  - DirectoryTreeWidget (디렉토리 트리)
-  - FileListWidget (파일 목록)
-  - FileDetailWidget (파일 상세 정보)
-  - TagControlWidget (태그 제어)
-  - QuickTagsWidget (빠른 태그)
-- **Level 3**: 서브 컴포넌트들
-  - TagChip (개별 태그 표시)
-  - CustomTagDialog (사용자 정의 태그 다이얼로그)
-  - BatchRemoveTagsDialog (일괄 태그 제거 다이얼로그)
+```mermaid
+graph TB
+    subgraph View ["View (UI Widgets)"]
+        MW[MainWindow]
+        DTW[DirectoryTreeWidget]
+        FLW[FileListWidget]
+        FDW[FileDetailWidget]
+        TCW[TagControlWidget]
+    end
 
-#### 2.3. 컴포넌트 간 통신
+    subgraph ViewModel ["ViewModel"]
+        FLVM[FileListViewModel]
+        FDVM[FileDetailViewModel]
+        TCVM[TagControlViewModel]
+        SVM[SearchViewModel]
+    end
+
+    subgraph Model ["Model (Services, Repositories)"]
+        TS[TagService]
+        SM[SearchManager]
+        TR[TagRepository]
+        EB[EventBus]
+    end
+
+    View -- "데이터 바인딩/시그널" --> ViewModel
+    ViewModel -- "데이터 요청/조작" --> Model
+    Model -- "이벤트 발행" --> EB
+    EB -- "이벤트 전파" --> ViewModel
+
+    style View fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style ViewModel fill:#e0f7fa,stroke:#00796b,stroke-width:2px
+    style Model fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+```
+
+#### 2.3. 컴포넌트 간 통신 (ViewModel 중심)
+
+모든 통신은 ViewModel을 중심으로 이루어집니다. View는 사용자의 입력을 ViewModel에 전달하고, ViewModel은 비즈니스 로직 처리를 Model(Service)에 위임합니다. 데이터가 변경되면, Model은 `EventBus`를 통해 이벤트를 발행하고, 이를 구독하는 ViewModel이 자신의 상태를 업데이트한 후, 다시 View에 시그널을 보내 UI를 갱신합니다.
 
 ```mermaid
 sequenceDiagram
-    participant DTW as DirectoryTreeWidget
-    participant FLW as FileListWidget
-    participant FDW as FileDetailWidget
-    participant TCW as TagControlWidget
-    participant QTW as QuickTagsWidget
-    
-    DTW->>FLW: file_selected(directory_path)
-    Note over DTW,FLW: 디렉토리 선택 시
-    
-    FLW->>FDW: file_selection_changed(file_list)
-    Note over FLW,FDW: 파일 선택 변경 시
-    
-    FDW->>TCW: tags_updated(tags)
-    Note over FDW,TCW: 태그 업데이트 시
-    
-    TCW->>QTW: tag_added(tag)
-    Note over TCW,QTW: 새 태그 추가 시
-    
-    Note over DTW,QTW: 시그널-슬롯 기반 비동기 통신
+    participant View as View (e.g., FileListWidget)
+    participant ViewModel as ViewModel (e.g., FileListViewModel)
+    participant Model as Model (e.g., TagService)
+    participant EventBus as EventBus
+
+    View->>ViewModel: 사용자 입력 전달 (e.g., set_directory(path))
+    ViewModel->>Model: 데이터 요청 (e.g., get_files_in_directory(path))
+    Model-->>ViewModel: 요청 결과 반환
+    ViewModel->>ViewModel: 내부 상태 업데이트
+    ViewModel-->>View: UI 업데이트 시그널 발생 (e.g., files_updated)
+    View->>View: UI 갱신
+
+    Note right of Model: 태그 변경 발생 시
+    Model->>EventBus: 이벤트 발행 (e.g., publish_tag_added)
+    EventBus->>ViewModel: 이벤트 구독자에게 전파
+    ViewModel->>ViewModel: 이벤트에 따라 상태 업데이트
+    ViewModel-->>View: UI 업데이트 시그널 발생
 ```
 
 ### 3. 상세 설계 (Detailed Design)
 
-#### 3.1. 클래스 설계
+#### 3.1. 클래스 설계 (주요 위젯 및 ViewModel)
 
 ```mermaid
 classDiagram
-    class MainWindow {
-        -directory_tree: DirectoryTreeWidget
-        -file_list: FileListWidget
-        -file_detail: FileDetailWidget
-        -tag_control: TagControlWidget
-        -quick_tags: QuickTagsWidget
-        +setup_ui()
-        +setup_connections()
-        +on_directory_selected(path: str)
-        +on_file_selection_changed(files: list)
-    }
-    
-    class DirectoryTreeWidget {
-        -tree_view: QTreeView
-        -file_system_model: QFileSystemModel
-        +file_selected: pyqtSignal(str)
-        +setup_ui()
-        +on_directory_selected(index: QModelIndex)
-        +set_workspace(path: str)
-    }
-    
     class FileListWidget {
-        -list_view: QListView
-        -file_model: QStringListModel
+        -list_view: QTableView
+        -model: FileTableModel
         +file_selection_changed: pyqtSignal(list)
-        +setup_ui()
-        +load_directory(path: str)
-        +on_selection_changed()
-        +get_selected_files() list[str]
+        +set_path(path: str)
     }
-    
+
+    class FileListViewModel {
+        -tag_service: TagService
+        -event_bus: EventBus
+        -search_viewmodel: SearchViewModel
+        +files_updated: pyqtSignal(list)
+        +set_directory(directory_path: str)
+        +set_tag_filter(tag_text: str)
+        +get_current_display_files() list
+    }
+
+    class FileTableModel {
+        -viewmodel: FileListViewModel
+        +rowCount() int
+        +columnCount() int
+        +data(index, role) QVariant
+        +headerData(...) QVariant
+    }
+
     class FileDetailWidget {
-        -preview_label: QLabel
-        -metadata_label: QLabel
-        -tag_chips_layout: QHBoxLayout
-        +file_tags_changed: pyqtSignal(list)
-        +setup_ui()
-        +update_file(file_path: str)
-        +update_preview(pixmap: QPixmap)
-        +update_metadata(metadata: dict)
+        -viewmodel: FileDetailViewModel
+        +update_preview(file_path: str)
     }
-    
-    class TagControlWidget {
-        -tag_input: QLineEdit
-        -add_button: QPushButton
-        -tags_layout: QVBoxLayout
-        +tags_updated: pyqtSignal(list)
-        +tag_added: pyqtSignal(str)
-        +tag_removed: pyqtSignal(str)
-        +setup_ui()
-        +add_tag(tag: str)
-        +remove_tag(tag: str)
-        +update_tags(tags: list[str])
+
+    class FileDetailViewModel {
+        -tag_service: TagService
+        -event_bus: EventBus
+        +file_details_updated: pyqtSignal(str, list)
+        +update_for_file(file_path: str)
+        +remove_tag_from_file(tag_text: str)
     }
-    
-    class QuickTagsWidget {
-        -tags_buttons: list[QPushButton]
-        +quick_tag_selected: pyqtSignal(str)
-        +setup_ui()
-        +load_quick_tags(tags: list[str])
-        +on_tag_button_clicked()
-    }
-    
-    MainWindow --> DirectoryTreeWidget : contains
-    MainWindow --> FileListWidget : contains
-    MainWindow --> FileDetailWidget : contains
-    MainWindow --> TagControlWidget : contains
-    MainWindow --> QuickTagsWidget : contains
-    
-    DirectoryTreeWidget --> FileListWidget : file_selected
-    FileListWidget --> FileDetailWidget : file_selection_changed
-    FileDetailWidget --> TagControlWidget : file_tags_changed
+
+    FileListWidget "1" *-- "1" FileTableModel
+    FileTableModel "1" *-- "1" FileListViewModel
+    FileListWidget --|> QWidget
+    FileDetailWidget --|> QWidget
+    FileListWidget ..> FileListViewModel : (시그널 연결)
+    FileDetailWidget ..> FileDetailViewModel : (시그널 연결)
 ```
 
-#### 3.2. 데이터 모델
+#### 3.2. 데이터 모델 (View-Specific Model)
 
-**파일 시스템 모델**
+**파일 테이블 모델 (`widgets/file_list_widget.py`)**
+- `QListView`와 `QStringListModel` 대신, `QTableView`와 커스텀 `QAbstractTableModel`(`FileTableModel`)을 사용하여 파일명, 상대 경로, 태그를 다중 컬럼으로 표시합니다. 이는 더 풍부한 정보를 제공하며 명세서의 초기 설계보다 발전된 형태입니다.
 ```python
-class FileSystemModel(QFileSystemModel):
-    def __init__(self):
-        super().__init__()
-        self.setFilter(QDir.AllEntries | QDir.NoDotAndDotDot)
-        self.setNameFilters(["*.jpg", "*.png", "*.pdf", "*.txt", "*.mp4"])
+class FileTableModel(QAbstractTableModel):
+    def __init__(self, file_list_viewmodel: FileListViewModel, parent=None):
+        super().__init__(parent)
+        self.viewmodel = file_list_viewmodel
+
+    def data(self, index, role=Qt.DisplayRole):
+        # ViewModel로부터 현재 표시할 파일 목록과 태그 정보를 가져와 반환
+        file_path = self.viewmodel.get_current_display_files()[index.row()]
+        if role == Qt.DisplayRole:
+            if index.column() == 0: return os.path.basename(file_path)
+            if index.column() == 1: return os.path.relpath(file_path, ...)
+            if index.column() == 2: return ", ".join(self.viewmodel.get_tags_for_file(file_path))
+        # ...
 ```
 
-**태그 데이터 모델**
-```python
-class TagModel(QStringListModel):
-    def __init__(self, tags=None):
-        super().__init__()
-        if tags:
-            self.setStringList(tags)
-    
-    def add_tag(self, tag):
-        current_tags = self.stringList()
-        if tag not in current_tags:
-            current_tags.append(tag)
-            self.setStringList(current_tags)
-```
+**태그 자동완성 모델 (`widgets/tag_control_widget.py`)**
+- `QLineEdit`의 자동완성 기능에 `QStringListModel`을 사용하여 모든 태그 목록을 제공합니다. 이 모델은 `TagControlViewModel`을 통해 주기적으로 업데이트됩니다.
 
-#### 3.3. 인터페이스 설계
+#### 3.3. 인터페이스 설계 (주요 시그널)
 
-**시그널 정의**
-```python
-# DirectoryTreeWidget 시그널
-file_selected = pyqtSignal(str)  # 디렉토리 경로
+**View -> ViewModel**
+- `DirectoryTreeWidget.directory_selected(str, bool)`: 사용자가 디렉토리나 파일을 클릭했음을 알림.
+- `FileListWidget.file_selection_changed(list)`: 파일 목록에서 선택된 파일이 변경되었음을 알림.
+- `SearchWidget`: `perform_search(dict)`를 통해 검색을 요청.
+- `TagControlWidget`: `add_tag_from_input(str)`, `apply_batch_tags()` 등을 통해 태그 변경을 요청.
 
-# FileListWidget 시그널
-file_selection_changed = pyqtSignal(list)  # 파일 경로 목록
-directory_changed = pyqtSignal(str)  # 디렉토리 경로
+**ViewModel -> View**
+- `FileListViewModel.files_updated(list)`: 파일 목록을 갱신하도록 `FileListWidget`에 알림.
+- `FileDetailViewModel.file_details_updated(str, list)`: 파일 상세 정보(미리보기, 태그 칩)를 갱신하도록 `FileDetailWidget`에 알림.
+- `TagControlViewModel.tags_updated(list)`: 현재 대상의 태그 목록이 변경되었음을 `TagControlWidget`에 알림.
+- `SearchViewModel.search_completed(int, str)`: 검색이 완료되었음을 `SearchWidget`에 알리고 결과 요약을 전달.
 
-# FileDetailWidget 시그널
-file_tags_changed = pyqtSignal(list)  # 태그 목록
-file_metadata_updated = pyqtSignal(dict)  # 메타데이터
-
-# TagControlWidget 시그널
-tags_updated = pyqtSignal(list)  # 업데이트된 태그 목록
-tag_added = pyqtSignal(str)  # 추가된 태그
-tag_removed = pyqtSignal(str)  # 제거된 태그
-
-# QuickTagsWidget 시그널
-quick_tag_selected = pyqtSignal(str)  # 선택된 빠른 태그
-```
+**Model -> EventBus -> ViewModel**
+- `EventBus.tag_added(TagAddedEvent)`: 태그가 추가되었음을 모든 구독자(ViewModel)에게 알림.
+- `EventBus.tag_removed(TagRemovedEvent)`: 태그가 제거되었음을 모든 구독자(ViewModel)에게 알림.
 
 ### 4. 구현 세부사항 (Implementation Details)
 
