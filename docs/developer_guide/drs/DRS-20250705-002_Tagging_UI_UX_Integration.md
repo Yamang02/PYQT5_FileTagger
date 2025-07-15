@@ -1,4 +1,12 @@
-# 개발 요청 명세 (Development Request Specification)
+---
+status: Approved
+---
+## 개발 요청 명세 (Development Request Specification)
+
+*   **문서 ID**: `DRS-20250705-002`
+*   **작성일**: `2025년 7월 5일`
+*   **작성자**: `Gemini (기획팀)`
+*   **관련 기능/모듈**: `태깅 기능, UI/UX`
 
 ## DRS-20250705-002_Tagging_UI_UX_Integration
 

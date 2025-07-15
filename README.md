@@ -15,14 +15,14 @@ FileTagger는 파일에 태그를 부여하고 관리할 수 있는 데스크탑
 ## 프로젝트 문서
 
 ### 📋 기능 명세서 (Feature Specifications)
-- **FS-20250711-001**: [파일 태그 추가 및 일괄 추가 기능](docs/specifications/FS-20250711-001_file_tag_addition_and_batch_addition.md)
-- **FS-20250711-002**: [파일 태그 수정/삭제 기능](docs/specifications/FS-20250711-002_file_tag_modification_deletion.md)
-- **FS-20250711-003**: [작업 공간 설정 기능](docs/specifications/FS-20250711-003_workspace_setting.md)
-- **FS-20250711-004**: [디렉토리 탐색 및 파일 목록 표시 기능](docs/specifications/FS-20250711-004_directory_exploration_file_listing.md)
-- **FS-20250711-005**: [파일 상세 정보 및 태그 제어 기능](docs/specifications/FS-20250711-005_file_detail_preview_tag_control.md)
-- **FS-20250711-006**: [전역 파일 검색 기능](docs/specifications/FS-20250711-006_global_file_search.md)
-- **FS-20250711-007**: [사용자 정의 태그 관리 기능](docs/specifications/FS-20250711-007_custom_tag_management.md)
-- **FS-20250711-008**: [일괄 태그 제거 기능](docs/specifications/FS-20250711-008_batch_tag_removal.md)
+- **FS-20250711-001**: [파일 태그 추가 및 일괄 추가 기능](docs/specifications/feature/FS-20250711-001_file_tag_addition_and_batch_addition.md)
+- **FS-20250711-002**: [파일 태그 수정/삭제 기능](docs/specifications/feature/FS-20250711-002_file_tag_modification_deletion.md)
+- **FS-20250711-003**: [작업 공간 설정 기능](docs/specifications/feature/FS-20250711-003_workspace_setting.md)
+- **FS-20250711-004**: [디렉토리 탐색 및 파일 목록 표시 기능](docs/specifications/feature/FS-20250711-004_directory_exploration_file_listing.md)
+- **FS-20250711-005**: [파일 상세 정보 및 태그 제어 기능](docs/specifications/feature/FS-20250711-005_file_detail_preview_tag_control.md)
+- **FS-20250711-006**: [전역 파일 검색 기능](docs/specifications/feature/FS-20250711-006_global_file_search.md)
+- **FS-20250711-007**: [사용자 정의 태그 관리 기능](docs/specifications/feature/FS-20250711-007_custom_tag_management.md)
+- **FS-20250711-008**: [일괄 태그 제거 기능](docs/specifications/feature/FS-20250711-008_batch_tag_removal.md)
 
 ### 🔧 기술 스펙 정의서 (Technical Specifications)
 - **TS-20250711-001**: [태그 관리 시스템](docs/specifications/technical/TS-20250711-001_tag_management_system.md)
@@ -33,7 +33,7 @@ FileTagger는 파일에 태그를 부여하고 관리할 수 있는 데스크탑
 - [코딩 컨벤션](docs/developer_guide/coding_conventions.md)
 - [태깅 기능 상세 명세](docs/developer_guide/tagging_feature_spec.md)
 - [UI 위젯 및 시그널 참조](docs/developer_guide/ui_widgets_signals_reference.md)
-- [개발 요청 명세](docs/developer_guide/development_request_spec.md)
+- [개발 요청 명세](docs/templates/development_request_spec_template.md)
 - [개발 노트](docs/developer_guide/dev_notes.md)
 - [에러 처리 가이드](docs/developer_guide/errors.md)
 
@@ -42,9 +42,9 @@ FileTagger는 파일에 태그를 부여하고 관리할 수 있는 데스크탑
 
 ### 📊 프로젝트 관리
 - [프로젝트 개요](docs/portfolio/project_overview.md)
-- [개발 이슈](docs/issues.md)
-- [대화 로그](docs/conversation_log.md)
-- [테스트 리포트](docs/qa/test_reports/test_report_20250705.md)
+- [개발 이슈](docs/issues.md) (docs/templates/issue_entry_template.md 템플릿 활용)
+- [대화 로그](docs/conversation_log.md) (docs/templates/conversation_log_entry_template.md 템플릿 활용)
+- [테스트 리포트](docs/qa/test_reports/test_report_20250705.md) (docs/templates/test_report_template.md 템플릿 활용)
 
 ## 개발 환경 설정
 1. **Python 및 Conda 설치**

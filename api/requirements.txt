@@ -1,5 +1,0 @@
-# 이 파일은 API 서버가 필요로 하는 Python 라이브러리를 명시합니다.
-# 예:
-# fastapi
-# uvicorn
-# pymongo

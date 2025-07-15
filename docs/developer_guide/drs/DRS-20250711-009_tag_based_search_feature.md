@@ -1,9 +1,12 @@
-# 개발 요청 명세 (Development Request Specification)
+---
+status: Approved
+---
+## 개발 요청 명세 (Development Request Specification)
 
 *   **문서 ID**: `DRS-20250711-009`
 *   **작성일**: `2025년 7월 11일`
-*   **작성자**: `기획팀 (PM)`
-*   **관련 기능/모듈**: `태그 기반 검색 기능, 파일 목록 필터링, 검색 UI`
+*   **작성자**: `Gemini (기획팀)`
+*   **관련 기능/모듈**: `태그 검색`
 *   **관련 이슈**: `docs/issues.md에 새로운 이슈로 등록 예정`
 
 ---

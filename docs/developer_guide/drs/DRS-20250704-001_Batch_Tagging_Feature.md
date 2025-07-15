@@ -1,3 +1,6 @@
+---
+status: Approved
+---
 ## 개발 요청 명세 (Development Request Specification)
 
 *   **문서 ID**: `DRS-20250704-001`

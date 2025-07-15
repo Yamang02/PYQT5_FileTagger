@@ -1,3 +1,6 @@
+---
+status: Approved
+---
 # 기술 스펙 정의서 (Technical Specification)
 
 *   **문서 ID**: `TS-20250711-003`

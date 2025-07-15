@@ -1,3 +1,6 @@
+---
+status: Approved
+---
 # 기능 명세 (Feature Specification)
 
 *   **문서 ID**: `FS-20250711-001`

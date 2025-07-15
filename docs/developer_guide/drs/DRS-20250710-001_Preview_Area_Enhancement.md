@@ -1,3 +1,6 @@
+---
+status: Approved
+---
 # 개발 요청 명세 (DRS)
 
 ## 문서 ID: DRS-20250710-001
