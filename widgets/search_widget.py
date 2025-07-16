@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, 
                              QPushButton, QLabel, QFrame, QSizePolicy, QSpacerItem, QCompleter, QMessageBox)
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QStringListModel
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QStringListModel, QSize
 from PyQt5.QtGui import QIcon, QFont
 
 from viewmodels.search_viewmodel import SearchViewModel # SearchViewModel 임포트
@@ -43,21 +43,21 @@ class SearchWidget(QWidget):
         # 파일명 입력 (20%)
         self.filename_input = QLineEdit()
         self.filename_input.setPlaceholderText("파일명 검색...")
-        self.filename_input.setMinimumHeight(32)
+        self.filename_input.setFixedHeight(36)  # 고정 높이로 설정
         self.filename_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         main_layout.addWidget(self.filename_input, 2)
 
         # 확장자 입력 (고정폭)
         self.extensions_input = QLineEdit()
         self.extensions_input.setPlaceholderText(".jpg, .png")
-        self.extensions_input.setMinimumHeight(32)
+        self.extensions_input.setFixedHeight(36)  # 고정 높이로 설정
         self.extensions_input.setFixedWidth(100)
         main_layout.addWidget(self.extensions_input)
 
         # 태그 입력 (30%)
         self.tag_input = QLineEdit()
         self.tag_input.setPlaceholderText("태그 검색 (예: 중요,문서|긴급)")
-        self.tag_input.setMinimumHeight(32)
+        self.tag_input.setFixedHeight(36)  # 고정 높이로 설정
         self.tag_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.tag_input.setToolTip("쉼표(,)는 AND, 파이프(|)는 OR, 별표(*)는 NOT 조건입니다.")
         main_layout.addWidget(self.tag_input, 3)
@@ -70,41 +70,51 @@ class SearchWidget(QWidget):
         self.tag_input.focusInEvent = self._on_tag_input_focus
         self.tag_input.textChanged.connect(self._on_tag_input_text_changed)
 
-        # 아이콘 버튼 (태그 입력란 바로 오른쪽, 순서: 검색, 삭제, 고급검색)
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(4)
+        # 아이콘 버튼들을 별도 컨테이너에 배치하여 정렬 개선
+        button_container = QWidget()
+        button_layout = QHBoxLayout(button_container)
         button_layout.setContentsMargins(0, 0, 0, 0)
-
+        button_layout.setSpacing(4)
+        
         self.search_button = QPushButton()
         self.search_button.setIcon(QIcon("assets/icons/search.svg"))
-        self.search_button.setFixedSize(32, 32)
+        self.search_button.setIconSize(QSize(16, 16))  # 아이콘 크기 조정
+        self.search_button.setFixedSize(36, 36)  # 입력 필드와 동일한 높이로 설정
+        self.search_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # 크기 정책 명시
         self.search_button.setToolTip("검색 실행 (Enter)")
+        self.search_button.setProperty("class", "icon-button")  # QSS 클래스 적용
         button_layout.addWidget(self.search_button)
 
         self.clear_button = QPushButton()
         self.clear_button.setIcon(QIcon("assets/icons/close.svg"))
-        self.clear_button.setFixedSize(32, 32)
+        self.clear_button.setIconSize(QSize(16, 16))  # 아이콘 크기 조정
+        self.clear_button.setFixedSize(36, 36)  # 입력 필드와 동일한 높이로 설정
+        self.clear_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # 크기 정책 명시
         self.clear_button.setToolTip("검색 초기화")
+        self.clear_button.setProperty("class", "icon-button")  # QSS 클래스 적용
         button_layout.addWidget(self.clear_button)
 
         self.advanced_toggle = QPushButton()
         self.advanced_toggle.setIcon(QIcon("assets/icons/expand_more.svg"))
-        self.advanced_toggle.setFixedSize(32, 32)
+        self.advanced_toggle.setIconSize(QSize(16, 16))  # 아이콘 크기 조정
+        self.advanced_toggle.setFixedSize(36, 36)  # 입력 필드와 동일한 높이로 설정
+        self.advanced_toggle.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # 크기 정책 명시
         self.advanced_toggle.setToolTip("고급 검색 패널 토글")
+        self.advanced_toggle.setProperty("class", "icon-button")  # QSS 클래스 적용
         button_layout.addWidget(self.advanced_toggle)
-
-        main_layout.addLayout(button_layout)
+        
+        main_layout.addWidget(button_container)
 
         # 검색 조건 레이블 (고정폭, 우측 정렬)
         self.search_conditions_label = QLabel("")
-        self.search_conditions_label.setMinimumHeight(32)
+        self.search_conditions_label.setFixedHeight(36)  # 입력 필드와 동일한 높이
         self.search_conditions_label.setFixedWidth(300)
         self.search_conditions_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         main_layout.addWidget(self.search_conditions_label)
 
         # 검색 결과 레이블 (고정폭, 우측 정렬)
         self.result_count_label = QLabel("검색 결과")
-        self.result_count_label.setMinimumHeight(32)
+        self.result_count_label.setFixedHeight(36)  # 입력 필드와 동일한 높이
         self.result_count_label.setFixedWidth(120)
         self.result_count_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
         main_layout.addWidget(self.result_count_label)
@@ -123,63 +133,87 @@ class SearchWidget(QWidget):
         self.advanced_panel = QFrame()
         self.advanced_panel.setFrameStyle(QFrame.StyledPanel)
         self.advanced_panel.setVisible(False)
-        self.advanced_panel.setMaximumHeight(160)
-        advanced_layout = QHBoxLayout(self.advanced_panel)
-        advanced_layout.setContentsMargins(16, 8, 16, 8)
-        advanced_layout.setSpacing(20)  # 기존 16 → 20
+        # 고급 검색 패널 높이를 늘려서 모든 요소가 제대로 표시되도록 수정
+        self.advanced_panel.setMinimumHeight(200)
+        self.advanced_panel.setMaximumHeight(250)
         
-        # 파일명 고급 검색 영역 (왼쪽 20%)
+        advanced_layout = QHBoxLayout(self.advanced_panel)
+        advanced_layout.setContentsMargins(16, 16, 16, 16)  # 여백 증가
+        advanced_layout.setSpacing(24)  # 간격 증가
+        
+        # 파일명 고급 검색 영역 (왼쪽 50%)
         filename_advanced_layout = QVBoxLayout()
-        filename_advanced_layout.addWidget(QLabel("파일명 고급 검색"))
+        filename_advanced_layout.setSpacing(12)  # 간격 설정
+        
+        filename_title = QLabel("파일명 고급 검색")
+        # 하드코딩된 스타일 제거 - 전역 QSS 사용
+        filename_advanced_layout.addWidget(filename_title)
         
         # 정확한 파일명
         self.exact_filename_input = QLineEdit()
         self.exact_filename_input.setPlaceholderText("정확한 파일명")
-        self.exact_filename_input.setMinimumHeight(40)
+        self.exact_filename_input.setMinimumHeight(36)
+        # 하드코딩된 스타일 제거 - 전역 QSS 사용
         filename_advanced_layout.addWidget(self.exact_filename_input)
         
         # 부분 일치
         self.partial_filename_input = QLineEdit()
         self.partial_filename_input.setPlaceholderText("파일명에 포함된 텍스트")
-        self.partial_filename_input.setMinimumHeight(40)
+        self.partial_filename_input.setMinimumHeight(36)
+        # 하드코딩된 스타일 제거 - 전역 QSS 사용
         filename_advanced_layout.addWidget(self.partial_filename_input)
         
         # 정규식 체크박스
         from PyQt5.QtWidgets import QCheckBox
         self.regex_checkbox = QCheckBox("정규식 사용")
+        # 하드코딩된 스타일 제거 - 전역 QSS 사용
         filename_advanced_layout.addWidget(self.regex_checkbox)
         
-        advanced_layout.addLayout(filename_advanced_layout, 20)
+        # 남은 공간을 채우기 위한 스페이서 추가
+        filename_advanced_layout.addStretch()
+        
+        advanced_layout.addLayout(filename_advanced_layout, 50)
         
         # 구분선
         separator = QFrame()
         separator.setFrameShape(QFrame.VLine)
         separator.setFrameShadow(QFrame.Sunken)
+        # 하드코딩된 스타일 제거 - 전역 QSS 사용
         advanced_layout.addWidget(separator)
         
-        # 태그 고급 검색 영역 (오른쪽 80%)
+        # 태그 고급 검색 영역 (오른쪽 50%)
         tag_advanced_layout = QVBoxLayout()
-        tag_advanced_layout.addWidget(QLabel("태그 고급 검색"))
+        tag_advanced_layout.setSpacing(12)  # 간격 설정
+        
+        tag_title = QLabel("태그 고급 검색")
+        # 하드코딩된 스타일 제거 - 전역 QSS 사용
+        tag_advanced_layout.addWidget(tag_title)
         
         # AND 검색
         self.and_tags_input = QLineEdit()
         self.and_tags_input.setPlaceholderText("AND 조건 태그들 (쉼표로 구분)")
-        self.and_tags_input.setMinimumHeight(40)
+        self.and_tags_input.setMinimumHeight(36)
+        # 하드코딩된 스타일 제거 - 전역 QSS 사용
         tag_advanced_layout.addWidget(self.and_tags_input)
         
         # OR 검색
         self.or_tags_input = QLineEdit()
         self.or_tags_input.setPlaceholderText("OR 조건 태그들 (파이프로 구분)")
-        self.or_tags_input.setMinimumHeight(40)
+        self.or_tags_input.setMinimumHeight(36)
+        # 하드코딩된 스타일 제거 - 전역 QSS 사용
         tag_advanced_layout.addWidget(self.or_tags_input)
         
         # NOT 검색
         self.not_tags_input = QLineEdit()
         self.not_tags_input.setPlaceholderText("제외할 태그들 (별표로 시작)")
-        self.not_tags_input.setMinimumHeight(40)
+        self.not_tags_input.setMinimumHeight(36)
+        # 하드코딩된 스타일 제거 - 전역 QSS 사용
         tag_advanced_layout.addWidget(self.not_tags_input)
         
-        advanced_layout.addLayout(tag_advanced_layout, 80)
+        # 남은 공간을 채우기 위한 스페이서 추가
+        tag_advanced_layout.addStretch()
+        
+        advanced_layout.addLayout(tag_advanced_layout, 50)
         
         # 고급 검색 패널을 메인 레이아웃에 추가
         # (SearchWidget의 부모 위젯에서 관리)
@@ -219,10 +253,15 @@ class SearchWidget(QWidget):
     def _toggle_advanced_panel(self):
         """고급 검색 패널 토글"""
         self._advanced_panel_visible = not self._advanced_panel_visible
+        
+        # 아이콘 변경 전에 기존 아이콘을 명시적으로 제거
+        self.advanced_toggle.setIcon(QIcon())
+        
         if self._advanced_panel_visible:
             self.advanced_toggle.setIcon(QIcon("assets/icons/expand_less.svg"))
         else:
             self.advanced_toggle.setIcon(QIcon("assets/icons/expand_more.svg"))
+            
         self.show_advanced_panel(self._advanced_panel_visible)
         
     # self._search_history, MAX_HISTORY, _add_to_history, _on_history_requested, _history_summary 등 히스토리 관련 메서드/변수 전체 삭제
@@ -329,13 +368,56 @@ class SearchWidget(QWidget):
     def update_search_results(self, count: int, conditions_summary: str = ""):
         """검색 결과 업데이트"""
         self.result_count_label.setText(f"{count}개 검색됨")
+        
+        # 사용자가 입력한 검색값들만 조건표시창에 표시하도록 수정
         if conditions_summary:
-            self.search_conditions_label.setText(conditions_summary)
+            # 실제 입력된 값들만 추출하여 표시
+            display_conditions = []
+            
+            # 파일명 검색 조건
+            filename = self.filename_input.text().strip()
+            extensions = self.extensions_input.text().strip()
+            if filename:
+                display_conditions.append(f"파일명: '{filename}'")
+            if extensions:
+                display_conditions.append(f"확장자: {extensions}")
+                
+            # 태그 검색 조건
+            tag_query = self.tag_input.text().strip()
+            if tag_query:
+                display_conditions.append(f"태그: '{tag_query}'")
+                
+            # 고급 검색 조건
+            if self._advanced_panel_visible:
+                exact_filename = self.exact_filename_input.text().strip()
+                partial_filename = self.partial_filename_input.text().strip()
+                and_tags = self.and_tags_input.text().strip()
+                or_tags = self.or_tags_input.text().strip()
+                not_tags = self.not_tags_input.text().strip()
+                
+                if exact_filename:
+                    display_conditions.append(f"정확한 파일명: '{exact_filename}'")
+                if partial_filename:
+                    display_conditions.append(f"부분 파일명: '{partial_filename}'")
+                if and_tags:
+                    display_conditions.append(f"AND 태그: {and_tags}")
+                if or_tags:
+                    display_conditions.append(f"OR 태그: {or_tags}")
+                if not_tags:
+                    display_conditions.append(f"제외 태그: {not_tags}")
+                    
+            # 조건들을 쉼표로 구분하여 표시
+            if display_conditions:
+                self.search_conditions_label.setText(" | ".join(display_conditions))
+            else:
+                self.search_conditions_label.clear()
+        else:
+            self.search_conditions_label.clear()
             
     def show_advanced_panel(self, show: bool):
         """고급 검색 패널 표시/숨김"""
         self._advanced_panel_visible = show
-        self.advanced_toggle.setText("▲" if show else "▼")
+        # 텍스트 설정 제거 - 아이콘만 사용
         self.advanced_panel.setVisible(show)
         
     def get_advanced_panel(self):

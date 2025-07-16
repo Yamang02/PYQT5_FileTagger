@@ -54,18 +54,61 @@ class FileDetailWidget(QWidget):
      QMessageBox.information(self, "정보", msg) if duration == 0 else self
                  .window().statusbar.showMessage(msg, duration))
    
+    def resizeEvent(self, event):
+        """창 크기 변경 시 레이아웃을 강제로 업데이트합니다."""
+        super().resizeEvent(event)
+        # 레이아웃 강제 업데이트
+        self.update()
+        self.repaint()
+        # 현재 표시 중인 위젯의 레이아웃도 업데이트
+        if hasattr(self, 'preview_stacked_widget'):
+            current_widget = self.preview_stacked_widget.currentWidget()
+            if current_widget:
+                current_widget.update()
+                current_widget.repaint()
+   
     def on_viewmodel_file_details_updated(self, file_path: str, tags: list):
-           # ViewModel에서 받은 정보로 UI 업데이트
-           self._refresh_tag_chips(tags)
+        """ViewModel에서 받은 정보로 UI 업데이트"""
+        try:
+            logger.info(f"태그 정보 업데이트: {file_path}, 태그 수: {len(tags)}")
+            self._refresh_tag_chips(tags)
+        except Exception as e:
+            logger.error(f"태그 정보 업데이트 실패: {file_path}, 오류: {e}")
+            self._clear_tag_chips()
 
     def setup_ui(self):
         # Material Design 스타일 적용
         self.setObjectName("fileDetailPanel")
         
         loadUi('ui/file_detail_content_widget.ui', self)
+        
+        # 태그 영역에 제목 추가
+        self.tag_title_label = QLabel("파일 태그")
+        self.tag_title_label.setStyleSheet("font-weight: bold; font-size: 10pt; color: #1a1a1a; margin-bottom: 8px;")
+        self.tag_title_label.setAlignment(Qt.AlignLeft)
+        
+        # 태그 제목을 스크롤 영역 위에 추가
+        tag_section_layout = QVBoxLayout()
+        tag_section_layout.addWidget(self.tag_title_label)
+        tag_section_layout.addWidget(self.tag_chip_scroll_area)
+        
+        # 기존 right_splitter의 태그 영역을 새로운 레이아웃으로 교체
+        self.right_splitter.replaceWidget(1, QWidget())
+        tag_widget = QWidget()
+        tag_widget.setLayout(tag_section_layout)
+        self.right_splitter.insertWidget(1, tag_widget)
+        
+        # 스크롤 영역 크기 정책 조정
+        self.tag_chip_scroll_area.setMinimumHeight(100)
+        self.tag_chip_scroll_area.setMaximumHeight(200)
 
         self.image_preview_label = QLabel("이미지 미리보기")
         self.image_preview_label.setAlignment(Qt.AlignCenter)
+        # 이미지 미리보기 라벨 크기 고정
+        self.image_preview_label.setMinimumSize(300, 300)
+        self.image_preview_label.setScaledContents(False)  # 라벨 크기에 맞춰 스케일링 방지
+        # 배경색 설정으로 레이아웃 경계 명확화
+        self.image_preview_label.setStyleSheet("background-color: #f8f9fa; border: 1px solid #e9ecef;")
         self.image_preview_page.setLayout(QVBoxLayout())
         self.image_preview_page.layout().addWidget(self.image_preview_label)
 
@@ -77,6 +120,11 @@ class FileDetailWidget(QWidget):
         # PDF 미리보기 페이지 설정
         self.pdf_preview_label = QLabel("PDF 미리보기")
         self.pdf_preview_label.setAlignment(Qt.AlignCenter)
+        # PDF 미리보기 라벨 크기 고정
+        self.pdf_preview_label.setMinimumSize(300, 300)
+        self.pdf_preview_label.setScaledContents(False)
+        # 배경색 설정으로 레이아웃 경계 명확화
+        self.pdf_preview_label.setStyleSheet("background-color: #f8f9fa; border: 1px solid #e9ecef;")
         self.pdf_preview_page.setLayout(QVBoxLayout())
         self.pdf_preview_page.layout().addWidget(self.pdf_preview_label)
 
@@ -137,31 +185,45 @@ class FileDetailWidget(QWidget):
         self.media_player.stateChanged.connect(self.update_play_button_icon) # 재생 상태 변경 시 아이콘 업데이트
 
     def update_preview(self, file_path):
+        """파일 미리보기를 업데이트합니다."""
+        # 이전 파일과 다른 경우에만 완전 초기화
+        if self.current_file_path != file_path:
+            self.clear_preview()
+        
         self.current_file_path = file_path
-        self.clear_preview()
 
         if not file_path or not os.path.isfile(file_path):
             self.preview_stacked_widget.setCurrentWidget(self.unsupported_preview_page)
+            self.metadata_browser.clear()
+            self._clear_tag_chips()
             return
-
 
         try:
             file_ext = os.path.splitext(file_path)[1].lower()
+
+            # 메타데이터를 먼저 업데이트하여 즉시 표시
+            self._update_metadata(file_path)
+            
+            # ViewModel에 파일 업데이트 요청 (비동기로 태그 정보 로드)
+            self.viewmodel.update_for_file(file_path)
 
             if file_ext in self.IMAGE_EXTENSIONS:
                 self.preview_stacked_widget.setCurrentWidget(self.image_preview_page)
                 pixmap = QPixmap(file_path)
                 if not pixmap.isNull():
-                    scaled_pixmap = pixmap.scaled(self.image_preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    # 고정된 크기(280x280)로 스케일링하여 레이아웃 변화 방지
+                    scaled_pixmap = pixmap.scaled(280, 280, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                     self.image_preview_label.setPixmap(scaled_pixmap)
                 else:
                     self.image_preview_label.setText("이미지 로드 실패")
             
             elif file_ext in self.VIDEO_EXTENSIONS:
                 self.preview_stacked_widget.setCurrentWidget(self.video_preview_page)
+                # 비디오 플레이어 상태 완전 초기화
                 if self.media_player.state() == QMediaPlayer.PlayingState:
                     self.media_player.stop()
                 self.media_player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
+                # 비디오 로드 후 재생
                 self.media_player.play()
             elif file_ext in self.TEXT_EXTENSIONS:
                 self.preview_stacked_widget.setCurrentWidget(self.text_preview_page)
@@ -180,45 +242,115 @@ class FileDetailWidget(QWidget):
             else:
                 self.preview_stacked_widget.setCurrentWidget(self.unsupported_preview_page)
 
-            self._update_metadata(file_path)
-            self.viewmodel.update_for_file(file_path) # ViewModel에 파일 업데이트 요청
-
         except Exception as e:
             logger.error(f"Error updating preview for {file_path}: {e}")
             self.clear_preview()
             self.preview_stacked_widget.setCurrentWidget(self.unsupported_preview_page)
+        
+        # 레이아웃 강제 업데이트로 렌더링 오류 방지
+        self._force_layout_update()
+
+    def _force_layout_update(self):
+        """레이아웃을 강제로 업데이트하여 렌더링 오류를 방지합니다."""
+        try:
+            # 현재 위젯과 모든 자식 위젯의 레이아웃 업데이트
+            self.updateGeometry()
+            self.update()
+            
+            # 스택 위젯과 현재 페이지 업데이트
+            if hasattr(self, 'preview_stacked_widget'):
+                self.preview_stacked_widget.updateGeometry()
+                self.preview_stacked_widget.update()
+                
+                current_widget = self.preview_stacked_widget.currentWidget()
+                if current_widget:
+                    current_widget.updateGeometry()
+                    current_widget.update()
+            
+            # 메타데이터 브라우저 업데이트
+            if hasattr(self, 'metadata_browser'):
+                self.metadata_browser.updateGeometry()
+                self.metadata_browser.update()
+            
+            # 태그 스크롤 영역 업데이트
+            if hasattr(self, 'tag_chip_scroll_area'):
+                self.tag_chip_scroll_area.updateGeometry()
+                self.tag_chip_scroll_area.update()
+                
+        except Exception as e:
+            logger.warning(f"레이아웃 강제 업데이트 중 오류: {e}")
 
     def _update_metadata(self, file_path):
-        file_info = f"<b>파일 이름:</b> {os.path.basename(file_path)}<br>"
-        file_info += f"<b>경로:</b> {file_path}<br>"
+        """파일 메타데이터를 업데이트합니다."""
         try:
+            file_info = f"<b>파일 이름:</b> {os.path.basename(file_path)}<br>"
+            file_info += f"<b>경로:</b> {file_path}<br>"
+            
             file_size = os.path.getsize(file_path)
             file_info += f"<b>크기:</b> {file_size / (1024*1024):.2f} MB<br>"
+            
             mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
             file_info += f"<b>수정일:</b> {mod_time.strftime('%Y-%m-%d %H:%M:%S')}<br>"
+            
+            # 파일 확장자 정보 추가
+            file_ext = os.path.splitext(file_path)[1].lower()
+            file_info += f"<b>형식:</b> {file_ext}<br>"
+            
+            self.metadata_browser.setHtml(file_info)
+            logger.info(f"메타데이터 업데이트 완료: {file_path}")
+            
         except Exception as e:
-            file_info += f"<b>정보 로드 오류:</b> {e}<br>"
-        self.metadata_browser.setHtml(file_info)
+            error_info = f"<b>파일 이름:</b> {os.path.basename(file_path)}<br>"
+            error_info += f"<b>경로:</b> {file_path}<br>"
+            error_info += f"<b>정보 로드 오류:</b> {e}<br>"
+            self.metadata_browser.setHtml(error_info)
+            logger.error(f"메타데이터 업데이트 실패: {file_path}, 오류: {e}")
 
     def clear_preview(self):
-        # 비디오 플레이어 정지 및 미디어 해제
-        if self.media_player and self.media_player.state() == QMediaPlayer.PlayingState:
-            self.media_player.stop()
+        """모든 미리보기 요소를 완전히 초기화합니다."""
+        # 비디오 플레이어 완전 정지 및 초기화
         if self.media_player:
+            if self.media_player.state() == QMediaPlayer.PlayingState:
+                self.media_player.stop()
             self.media_player.setMedia(QMediaContent())
+            # 비디오 플레이어 상태 초기화
+            self.position_slider.setRange(0, 0)
+            self.position_slider.setValue(0)
+            self.current_time_label.setText("00:00")
+            self.total_time_label.setText("00:00")
+            # 재생 버튼 아이콘 초기화
+            self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
-        # 볼륨 슬라이더 숨기기
+        # 볼륨 슬라이더 숨기기 및 초기화
         self.volume_slider.hide()
+        self.volume_slider.setValue(50)  # 기본 볼륨으로 초기화
 
+        # 이미지 미리보기 초기화
         self.image_preview_label.clear()
         self.image_preview_label.setText("파일을 선택하세요.")
+        
+        # 텍스트 미리보기 초기화
         self.text_browser.clear()
-        self.pdf_preview_label.clear() # PDF 미리보기 라벨 초기화
-        self.pdf_preview_label.setText("PDF 미리보기") # 텍스트 설정
+        
+        # PDF 미리보기 초기화
+        self.pdf_preview_label.clear()
+        self.pdf_preview_label.setText("PDF 미리보기")
+        
+        # 메타데이터 초기화
         self.metadata_browser.clear()
+        
+        # 태그 칩 초기화
         self._clear_tag_chips()
+        
+        # 스택 위젯을 기본 페이지로 설정
         self.preview_stacked_widget.setCurrentWidget(self.unsupported_preview_page)
         self.unsupported_label.setText("미리보기를 지원하지 않는 형식입니다.")
+        
+        # 현재 파일 경로 초기화
+        self.current_file_path = None
+        
+        # 레이아웃 강제 업데이트
+        self._force_layout_update()
 
     def _render_pdf_thumbnail(self, file_path):
         """PDF 파일의 썸네일을 렌더링하여 표시합니다."""
@@ -236,8 +368,8 @@ class FileDetailWidget(QWidget):
                 qimage = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
                 pixmap = QPixmap.fromImage(qimage)
 
-                # 라벨 크기에 맞춰 스케일링
-                scaled_pixmap = pixmap.scaled(self.pdf_preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                # 고정된 크기(280x280)로 스케일링하여 레이아웃 변화 방지
+                scaled_pixmap = pixmap.scaled(280, 280, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.pdf_preview_label.setPixmap(scaled_pixmap)
                 # 여러 페이지를 보여줄 경우, 여기에 각 페이지를 위한 별도의 QLabel을 추가하거나
                 # QScrollArea 내에 QVBoxLayout을 사용하여 동적으로 추가하는 로직이 필요합니다.
@@ -258,15 +390,32 @@ class FileDetailWidget(QWidget):
                 doc.close()
 
     def _refresh_tag_chips(self, tags):
-        self._clear_tag_chips()
-        row, col, max_cols = 0, 0, 3
-        for tag in tags:
-            chip = TagChip(tag)
-            chip.tag_removed.connect(self._on_tag_chip_removed)
-            self.tag_chip_layout.addWidget(chip, row, col)
-            col += 1
-            if col >= max_cols:
-                col, row = 0, row + 1
+        """태그 칩을 새로고침합니다."""
+        try:
+            self._clear_tag_chips()
+            
+            # 태그가 없을 때 플레이스홀더 표시
+            if not tags:
+                logger.info("태그가 없습니다.")
+                placeholder_label = QLabel("태그가 없습니다.")
+                placeholder_label.setAlignment(Qt.AlignCenter)
+                placeholder_label.setStyleSheet("color: #666666; font-style: italic; padding: 20px;")
+                self.tag_chip_layout.addWidget(placeholder_label, 0, 0)
+                return
+                
+            row, col, max_cols = 0, 0, 3
+            for tag in tags:
+                chip = TagChip(tag)
+                chip.tag_removed.connect(self._on_tag_chip_removed)
+                self.tag_chip_layout.addWidget(chip, row, col)
+                col += 1
+                if col >= max_cols:
+                    col, row = 0, row + 1
+                    
+            logger.info(f"태그 칩 업데이트 완료: {len(tags)}개 태그")
+        except Exception as e:
+            logger.error(f"태그 칩 업데이트 실패: {e}")
+            self._clear_tag_chips()
 
     def _clear_tag_chips(self):
         while self.tag_chip_layout.count() > 0:

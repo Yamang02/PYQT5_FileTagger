@@ -107,27 +107,33 @@ QPushButton#secondaryButton:pressed {
 
 /* Icon Buttons */
 QPushButton[class="icon-button"] {
-    background-color: transparent;
-    border: none;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
     border-radius: 4px;
-    padding: 4px;
-    min-width: 24px;
-    min-height: 24px;
+    padding: 0px;  /* 패딩 제거하여 아이콘이 중앙에 위치하도록 */
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    max-width: 36px;
+    max-height: 36px;
 }
 
 QPushButton[class="icon-button"]:hover {
-    background-color: rgba(25, 118, 210, 0.1);
+    background-color: #f5f5f5;
+    border-color: #1976d2;
 }
 
 QPushButton[class="icon-button"]:pressed {
-    background-color: rgba(25, 118, 210, 0.2);
+    background-color: #e3f2fd;
+    border-color: #1976d2;
 }
 
 /* ===== INPUT FIELDS ===== */
 QLineEdit {
     border: 2px solid #d0d7de;
     border-radius: 8px;
-    padding: 10px 14px;
+    padding: 6px 14px;
     background-color: #ffffff;
     font-size: 9pt;
     color: #0d1117;
@@ -285,7 +291,6 @@ QFrame#TagChip QPushButton#delete_button:hover {
 
 QFrame#TagChip QPushButton#delete_button:pressed {
     background-color: rgba(244, 67, 54, 0.3);
-    transform: scale(0.95);
 }
 
 /* ===== TREE VIEW ===== */
@@ -728,4 +733,21 @@ QSlider::handle:vertical {
 
 QSlider::handle:vertical:hover {
     background: #1565c0;
+}
+
+/* ===== SEARCH BUTTONS ===== */
+/* 검색 패널의 아이콘 버튼들은 전역 아이콘 버튼 스타일 사용 */
+
+/* ===== ADVANCED SEARCH PANEL ===== */
+/* 고급 검색 패널 제목 스타일 */
+QFrame#searchPanel QLabel {
+    font-weight: bold;
+    font-size: 14px;
+    color: #424242;
+    margin-bottom: 8px;
+}
+
+/* 고급 검색 패널 구분선 */
+QFrame#searchPanel QFrame[frameShape="4"] {
+    background-color: #E0E0E0;
 }

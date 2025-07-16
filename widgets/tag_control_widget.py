@@ -250,8 +250,11 @@ class TagControlWidget(QWidget):
 
         target = current_target_paths if current_target_paths else current_target_path
         dialog = BatchRemoveTagsDialog(self.viewmodel._tag_service, target, self) # ViewModel의 tag_service 전달
-        if dialog.exec_():
-            self.tags_updated.emit() # UI 업데이트
+        try:
+            if dialog.exec_():
+                self.tags_updated.emit() # UI 업데이트
+        finally:
+            dialog.deleteLater() # 다이얼로그 정리
 
     def clear_view(self):
         self.viewmodel.update_for_target(None, False)
@@ -262,14 +265,20 @@ class TagControlWidget(QWidget):
     def open_custom_tag_dialog(self):
         """커스텀 태그 관리 다이얼로그를 엽니다."""
         dialog = CustomTagDialog(self.custom_tag_manager, self)
-        if dialog.exec_() == CustomTagDialog.Accepted:
-            self.tags_updated.emit()
+        try:
+            if dialog.exec_() == CustomTagDialog.Accepted:
+                self.tags_updated.emit()
+        finally:
+            dialog.deleteLater() # 다이얼로그 정리
 
     def open_batch_remove_tags_dialog(self, directory_path):
         """일괄 태그 제거 다이얼로그를 엽니다."""
         dialog = BatchRemoveTagsDialog(self.viewmodel._tag_service, directory_path, self)
-        if dialog.exec_():
-            self.tags_updated.emit()
+        try:
+            if dialog.exec_():
+                self.tags_updated.emit()
+        finally:
+            dialog.deleteLater() # 다이얼로그 정리
             
     def _apply_font_hierarchy(self):
         """폰트 위계 시스템을 적용합니다."""

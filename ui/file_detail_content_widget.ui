@@ -34,6 +34,18 @@
        <height>300</height>
       </size>
      </property>
+     <property name="maximumSize">
+      <size>
+       <width>400</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <widget class="QWidget" name="image_preview_page"/>
      <widget class="QWidget" name="video_preview_page"/>
      <widget class="QWidget" name="text_preview_page"/>

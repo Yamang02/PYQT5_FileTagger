@@ -34,6 +34,11 @@ class MainWindow(QMainWindow):
     def __init__(self, mongo_client):
         super().__init__()
         
+        # 고정 크기 정의
+        self.DEFAULT_WIDTH = 1400
+        self.DEFAULT_HEIGHT = 900
+        self.is_fixed_size_mode = True  # 고정 크기 모드 플래그
+        
         # --- 코어 로직 초기화 ---
         self.mongo_client = mongo_client
         
@@ -63,18 +68,90 @@ class MainWindow(QMainWindow):
         self.data_loader.load_initial_data()
 
         self.statusbar.showMessage("준비 완료")
+        
+        # 윈도우 크기 설정 및 제한
+        self.setup_window_size_constraints()
+        
         self.show()
+
+    def setup_window_size_constraints(self):
+        """윈도우 크기 제한을 설정합니다."""
+        # 기본 크기로 설정
+        self.resize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
+        
+        # 최소/최대 크기를 기본 크기로 고정 (전체화면 제외)
+        self.setMinimumSize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
+        self.setMaximumSize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
+        
+        # 윈도우를 화면 중앙에 배치
+        self.center_on_screen()
+
+    def center_on_screen(self):
+        """윈도우를 화면 중앙에 배치합니다."""
+        from PyQt5.QtWidgets import QDesktopWidget
+        screen = QDesktopWidget().screenGeometry()
+        window = self.geometry()
+        x = (screen.width() - window.width()) // 2
+        y = (screen.height() - window.height()) // 2
+        self.move(x, y)
+
+
 
     def changeEvent(self, event):
         """창 상태 변경 이벤트를 처리하여 전체 화면 시 레이아웃을 조정합니다."""
         if event.type() == QEvent.WindowStateChange:
-            if self.isMaximized():
-                # 전체 화면: file_detail을 80%, file_list를 20%로 설정
-                self.splitter.setSizes([int(self.height() * 0.8), int(self.height() * 0.2)])
+            # 약간의 지연을 두고 레이아웃 조정 (위젯이 완전히 초기화된 후)
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(100, self._adjust_layout)
+            
+            if self.isMaximized() or self.isFullScreen():
+                # 전체 화면: 크기 제한 해제
+                self.setMaximumSize(16777215, 16777215)  # 최대값 해제
+                self.setMinimumSize(0, 0)  # 최소값도 해제
             else:
-                # 일반 화면: 50:50 비율로 복원
-                self.splitter.setSizes([self.height() // 2, self.height() // 2])
+                # 기본 화면: 크기 제한 재적용
+                self.setup_window_size_constraints()
         super().changeEvent(event)
+    
+    def _adjust_layout(self):
+        """창 상태에 따라 레이아웃을 조정합니다."""
+        try:
+            if hasattr(self, 'splitter') and self.splitter:
+                total_height = self.splitter.height()
+                if self.isMaximized() or self.isFullScreen():
+                    # 전체 화면: fileDetail 75%, fileList 25%
+                    detail_height = int(total_height * 0.75)
+                    list_height = int(total_height * 0.25)
+                else:
+                    # 기본 화면: fileDetail 60%, fileList 40%
+                    detail_height = int(total_height * 0.6)
+                    list_height = int(total_height * 0.4)
+                
+                self.splitter.setSizes([detail_height, list_height])
+                logger.info(f"레이아웃 조정: 상세영역={detail_height}, 리스트영역={list_height}")
+        except Exception as e:
+            logger.warning(f"레이아웃 조정 중 오류: {e}")
+
+    def resizeEvent(self, event):
+        """창 크기 변경 시 레이아웃을 안정화합니다."""
+        super().resizeEvent(event)
+        
+        # 전체화면이 아닌 경우 크기 제한 적용
+        if not (self.isMaximized() or self.isFullScreen()):
+            if (self.width() != self.DEFAULT_WIDTH or 
+                self.height() != self.DEFAULT_HEIGHT):
+                # 크기가 변경되었으면 기본 크기로 강제 복원
+                self.resize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
+                return
+        
+        # 모든 자식 위젯의 레이아웃을 강제로 업데이트
+        if hasattr(self, 'file_detail_widget'):
+            self.file_detail_widget.update()
+            self.file_detail_widget.repaint()
+        if hasattr(self, 'file_list_widget'):
+            self.file_list_widget.update()
+        if hasattr(self, 'search_widget'):
+            self.search_widget.update()
 
     # setup_connections 메서드는 더 이상 사용되지 않지만, 기존 함수를 참조하는 코드 호환을 위해 남겨둡니다.
     def setup_connections(self):
