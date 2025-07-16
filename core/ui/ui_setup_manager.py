@@ -166,14 +166,17 @@ class UISetupManager:
         
     def _configure_initial_sizes(self):
         """초기 크기를 설정합니다."""
-        # 메인 스플리터 크기 설정
-        self.main_window.mainSplitter.setSizes([150, self.main_window.width() - 300, 150])
+        # 메인 스플리터 크기 설정 (확대된 좌우 영역)
+        left_width = 200    # DirectoryTreeWidget (150px → 200px)
+        right_width = 200   # TagControlWidget (150px → 200px)
+        center_width = self.main_window.width() - left_width - right_width
+        self.main_window.mainSplitter.setSizes([left_width, center_width, right_width])
         
-        # 중앙 스플리터 크기 설정
-        self.main_window.splitter.setSizes([
-            self.main_window.height() // 2, 
-            self.main_window.height() // 2
-        ])
+        # 중앙 스플리터 크기 설정 (fileDetail 65%, fileList 35%)
+        total_height = self.main_window.height()
+        detail_height = int(total_height * 0.65)
+        list_height = int(total_height * 0.35)
+        self.main_window.splitter.setSizes([detail_height, list_height])
         
     def get_widget(self, widget_name: str):
         """생성된 위젯을 반환합니다."""
@@ -181,4 +184,59 @@ class UISetupManager:
         
     def get_all_widgets(self):
         """모든 위젯을 반환합니다."""
-        return self.widgets.copy() 
+        return self.widgets.copy()
+    
+    def adjust_layout(self):
+        """창 상태에 따라 전체 레이아웃을 동적으로 조정합니다."""
+        try:
+            self._adjust_main_splitter()
+            self._adjust_central_splitter()
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"레이아웃 조정 중 오류: {e}")
+    
+    def _adjust_main_splitter(self):
+        """mainSplitter (좌-중-우) 비율을 조정합니다."""
+        if hasattr(self.main_window, 'mainSplitter') and self.main_window.mainSplitter:
+            # 현재 상태 로깅
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            current_sizes = self.main_window.mainSplitter.sizes()
+            total_width = self.main_window.mainSplitter.width()
+            window_state = "최대화" if (self.main_window.isMaximized() or self.main_window.isFullScreen()) else "기본"
+            
+            logger.info(f"[UI] 레이아웃 조정 - 상태: {window_state}, 너비: {total_width}")
+            
+            if total_width <= 0:
+                logger.warning(f"[UI] mainSplitter 너비 오류: {total_width}")
+                return
+            
+            # 모든 모드에서 좌측/우측 영역 크기 확대
+            left_width = 200    # DirectoryTreeWidget (150px → 200px)
+            right_width = 200   # TagControlWidget (150px → 200px)
+            center_width = total_width - left_width - right_width
+            
+            new_sizes = [left_width, center_width, right_width]
+            self.main_window.mainSplitter.setSizes(new_sizes)
+            
+            # 강제 업데이트
+            self.main_window.mainSplitter.update()
+            
+            logger.info(f"[UI] mainSplitter 적용: 좌측={left_width}, 중앙={center_width}, 우측={right_width}")
+    
+    def _adjust_central_splitter(self):
+        """중앙 splitter (상-하) 비율을 조정합니다."""
+        if hasattr(self.main_window, 'splitter') and self.main_window.splitter:
+            total_height = self.main_window.splitter.height()
+            
+            # 모든 모드에서 동일한 비율: fileDetail 65%, fileList 35%
+            detail_height = int(total_height * 0.65)
+            list_height = int(total_height * 0.35)
+            
+            self.main_window.splitter.setSizes([detail_height, list_height])
+            
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"[UI] 중앙 splitter 적용: 상세영역={detail_height}(65%), 리스트영역={list_height}(35%)") 

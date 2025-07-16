@@ -7,6 +7,7 @@ from .quick_tags_widget import QuickTagsWidget
 from .tag_chip import TagChip
 from .custom_tag_dialog import CustomTagDialog
 from .batch_remove_tags_dialog import BatchRemoveTagsDialog
+from .flow_layout import FlowLayout
 
 __all__ = [
     'DirectoryTreeWidget',
@@ -17,5 +18,6 @@ __all__ = [
     'QuickTagsWidget',
     'TagChip',
     'CustomTagDialog',
-    'BatchRemoveTagsDialog'
+    'BatchRemoveTagsDialog',
+    'FlowLayout'
 ]

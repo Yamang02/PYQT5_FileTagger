@@ -31,18 +31,12 @@
      <property name="minimumSize">
       <size>
        <width>300</width>
-       <height>300</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>400</width>
-       <height>16777215</height>
+       <height>400</height>
       </size>
      </property>
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-       <horstretch>0</horstretch>
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>1</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
@@ -71,6 +65,12 @@
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <widget class="QTextBrowser" name="metadata_browser">
       <property name="html">
        <string>&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd"&gt;
@@ -84,30 +84,16 @@ p, li { white-space: pre-wrap; }
       <property name="widgetResizable">
        <bool>true</bool>
       </property>
-      <widget class="QWidget" name="tag_chip_container">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>194</width>
-         <height>394</height>
-        </rect>
-       </property>
-       <layout class="QGridLayout" name="tag_chip_layout">
-        <property name="leftMargin">
-         <number>2</number>
+             <widget class="QWidget" name="tag_chip_container">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>194</width>
+          <height>394</height>
+         </rect>
         </property>
-        <property name="topMargin">
-         <number>2</number>
-        </property>
-        <property name="rightMargin">
-         <number>2</number>
-        </property>
-        <property name="bottomMargin">
-         <number>2</number>
-        </property>
-       </layout>
-      </widget>
+       </widget>
      </widget>
     </widget>
    </item>

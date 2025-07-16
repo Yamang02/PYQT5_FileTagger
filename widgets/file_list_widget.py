@@ -175,5 +175,10 @@ class FileListWidget(QWidget):
 
     def _on_selection_changed(self, selected, deselected):
         selected_paths = self.get_selected_file_paths()
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[FILE_LIST] 파일 선택 변경: {len(selected_paths)}개 파일")
+        if selected_paths:
+            logger.info(f"[FILE_LIST] 첫 번째 선택 파일: {selected_paths[0]}")
         self.file_selection_changed.emit(selected_paths)
 

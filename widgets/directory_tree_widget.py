@@ -43,8 +43,8 @@ class DirectoryTreeWidget(QWidget):
         self.tree_view.setModel(self.proxy_model)
         self.tree_view.setRootIndex(self.proxy_model.mapFromSource(self.model.index(initial_root_path)))
         
-        # 최소 너비 설정 (예: 150 픽셀)
-        self.tree_view.setMinimumWidth(150)
+        # 최소 너비 설정 (200px로 확대)
+        self.tree_view.setMinimumWidth(200)
 
         # 불필요한 컬럼 숨기기 (이름만 표시)
         self.tree_view.hideColumn(1) # Size

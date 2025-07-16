@@ -4,6 +4,69 @@
 
 ---
 
+## 2025년 7월 15일 - Gemini AI
+
+### TagControlWidget 태그칩 렌더링 문제 해결 및 디버깅 과정 분석
+
+**배경:**
+- UI 개선 작업 중 TagControlWidget에서 태그칩이 화면에 표시되지 않는 문제 발생
+- 동일한 FlowLayout과 TagChip을 사용하는 FileDetailWidget은 정상 동작
+- 로그상으로는 모든 로직이 정상 작동하는 것으로 표시됨
+
+**잘못된 접근들 (순서대로):**
+
+1. **FlowLayout 클래스 구현 의심:**
+   - FlowLayout의 `addWidget` 메서드가 누락되었다고 판단
+   - `addWidget` 메서드를 추가했으나 오히려 두 위젯 모두 문제 발생
+
+2. **Boolean 평가 문제에 집착:**
+   - `bool(self.tag_chip_flow_layout)`이 False 반환하는 것에 과도하게 집중
+   - 조건문에서 boolean 체크를 제거하는 것으로 문제 해결 시도
+   - FlowLayout 클래스에 `__bool__` 메서드 정의 여부를 확인하는 등 불필요한 분석
+
+3. **신호 연결 및 데이터 흐름 의심:**
+   - ViewModel에서 UI로의 신호 전달 과정을 반복 확인
+   - 이미 정상 동작하는 부분을 계속 디버깅
+
+4. **UI 구조 및 레이아웃 설정 의심:**
+   - UI 파일 구조나 스플리터 설정 문제로 판단
+   - 컨테이너 크기나 가시성 문제로 접근
+
+5. **개념적 추측과 가능성 나열:**
+   - 구체적인 코드 비교 없이 추상적인 가능성들만 제시
+   - 실제 렌더링 로직의 차이를 놓치고 계속 추측만 반복
+
+**실제 문제의 원인:**
+- **렌더링 로직 불일치**: 두 위젯이 동일한 FlowLayout과 TagChip을 사용하지만, 태그칩 추가 후 가시화 과정이 다르게 구현됨
+  - `FileDetailWidget`: 태그칩 추가 후 `chip.show()`, `chip.setVisible(True)` 호출 + `layout.update()`, `layout.activate()` 호출
+  - `TagControlWidget`: 태그칩 추가만 하고 가시화 과정 누락
+
+**해결 방법:**
+```python
+# TagControlWidget의 _refresh_chip_layout 메서드에 추가
+if isinstance(chip_layout, FlowLayout):
+    chip_layout.addWidget(chip)
+    # 태그칩이 실제로 보이는지 확인
+    chip.show()
+    chip.setVisible(True)
+    
+# FlowLayout 강제 업데이트
+chip_layout.update()
+chip_layout.activate()
+```
+
+**교훈:**
+1. **직접적인 코드 비교의 중요성**: 동일한 기능을 하는 두 부분의 코드를 처음부터 직접 비교했다면 훨씬 빠르게 해결 가능했음
+2. **추측보다 실증**: 가능성을 나열하기보다는 구체적인 코드와 로직을 비교 분석하는 것이 효과적
+3. **렌더링 파이프라인 이해**: PyQt에서 위젯 추가와 가시화는 별개의 과정임을 간과
+4. **디버깅 우선순위**: 정상 동작하는 코드와 문제가 있는 코드의 차이점을 먼저 찾아야 함
+
+**관련 파일:**
+- `widgets/tag_control_widget.py`: `_refresh_chip_layout` 메서드 수정
+- `widgets/file_detail_widget.py`: 정상 동작하는 참조 코드
+
+---
+
 ## 2025년 7월 15일 - 개발팀
 
 ### UI 위젯 래핑으로 인한 AttributeError 반복 발생 및 아키텍처 개선

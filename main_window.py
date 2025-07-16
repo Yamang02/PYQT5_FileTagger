@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         # 고정 크기 정의
         self.DEFAULT_WIDTH = 1400
         self.DEFAULT_HEIGHT = 900
-        self.is_fixed_size_mode = True  # 고정 크기 모드 플래그
+        self.is_fixed_size_mode = False  # 최대화 허용으로 변경
         
         # --- 코어 로직 초기화 ---
         self.mongo_client = mongo_client
@@ -79,9 +79,10 @@ class MainWindow(QMainWindow):
         # 기본 크기로 설정
         self.resize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
         
-        # 최소/최대 크기를 기본 크기로 고정 (전체화면 제외)
+        # 최소 크기만 설정 (최대화 허용)
         self.setMinimumSize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
-        self.setMaximumSize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
+        # 최대 크기 제한 제거 - 최대화 허용
+        self.setMaximumSize(16777215, 16777215)
         
         # 윈도우를 화면 중앙에 배치
         self.center_on_screen()
@@ -100,9 +101,7 @@ class MainWindow(QMainWindow):
     def changeEvent(self, event):
         """창 상태 변경 이벤트를 처리하여 전체 화면 시 레이아웃을 조정합니다."""
         if event.type() == QEvent.WindowStateChange:
-            # 약간의 지연을 두고 레이아웃 조정 (위젯이 완전히 초기화된 후)
-            from PyQt5.QtCore import QTimer
-            QTimer.singleShot(100, self._adjust_layout)
+            logger.info(f"[WINDOW] 상태 변경: 최대화={self.isMaximized()}")
             
             if self.isMaximized() or self.isFullScreen():
                 # 전체 화면: 크기 제한 해제
@@ -111,38 +110,30 @@ class MainWindow(QMainWindow):
             else:
                 # 기본 화면: 크기 제한 재적용
                 self.setup_window_size_constraints()
+            
+            # 여러 번의 지연된 레이아웃 조정 시도
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(50, self._adjust_layout)   # 첫 번째 시도
+            QTimer.singleShot(150, self._adjust_layout)  # 두 번째 시도
+            QTimer.singleShot(300, self._adjust_layout)  # 세 번째 시도
+            
         super().changeEvent(event)
     
     def _adjust_layout(self):
         """창 상태에 따라 레이아웃을 조정합니다."""
-        try:
-            if hasattr(self, 'splitter') and self.splitter:
-                total_height = self.splitter.height()
-                if self.isMaximized() or self.isFullScreen():
-                    # 전체 화면: fileDetail 75%, fileList 25%
-                    detail_height = int(total_height * 0.75)
-                    list_height = int(total_height * 0.25)
-                else:
-                    # 기본 화면: fileDetail 60%, fileList 40%
-                    detail_height = int(total_height * 0.6)
-                    list_height = int(total_height * 0.4)
-                
-                self.splitter.setSizes([detail_height, list_height])
-                logger.info(f"레이아웃 조정: 상세영역={detail_height}, 리스트영역={list_height}")
-        except Exception as e:
-            logger.warning(f"레이아웃 조정 중 오류: {e}")
+        if hasattr(self, 'ui_setup') and self.ui_setup:
+            self.ui_setup.adjust_layout()
 
     def resizeEvent(self, event):
         """창 크기 변경 시 레이아웃을 안정화합니다."""
         super().resizeEvent(event)
         
-        # 전체화면이 아닌 경우 크기 제한 적용
-        if not (self.isMaximized() or self.isFullScreen()):
-            if (self.width() != self.DEFAULT_WIDTH or 
-                self.height() != self.DEFAULT_HEIGHT):
-                # 크기가 변경되었으면 기본 크기로 강제 복원
-                self.resize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
-                return
+        logger.info(f"[WINDOW] 크기 변경: {self.width()}x{self.height()}")
+        
+        # 최대화/전체화면 상태에서는 레이아웃 재조정
+        if self.isMaximized() or self.isFullScreen():
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(10, self._adjust_layout)  # 빠른 재조정
         
         # 모든 자식 위젯의 레이아웃을 강제로 업데이트
         if hasattr(self, 'file_detail_widget'):
@@ -239,26 +230,95 @@ class MainWindow(QMainWindow):
         self.statusbar.showMessage(f"필터 옵션 변경: 재귀={recursive}, 확장자={', '.join(file_extensions) if file_extensions else '모두'}")
 
     def on_file_selection_changed(self, selected_file_paths: list):
+        logger.info(f"[MAIN] 파일 선택 변경: {len(selected_file_paths)}개 파일")
+        
         if len(selected_file_paths) == 1:
             file_path = selected_file_paths[0]
+            logger.info(f"[MAIN] 단일 파일 선택: {os.path.basename(file_path)}")
             self.ui_setup.get_widget('file_detail').update_preview(file_path)
             self.tag_control_viewmodel.update_for_target(file_path, False)
+            
+            # 파일 상세보기 레이아웃 강제 새로고침
+            self._force_file_detail_refresh()
+            
             self.statusbar.showMessage(f"'{file_path}' 파일을 선택했습니다.")
         elif len(selected_file_paths) > 1:
+            logger.info(f"[MAIN] 다중 파일 선택: {len(selected_file_paths)}개")
             self.ui_setup.get_widget('file_detail').clear_preview()
             self.tag_control_viewmodel.update_for_target(selected_file_paths, False)
             self.statusbar.showMessage(f"{len(selected_file_paths)}개 파일을 선택했습니다.")
         else:
+            logger.info(f"[MAIN] 파일 선택 해제")
             self.ui_setup.get_widget('file_detail').clear_preview()
             self.tag_control_viewmodel.update_for_target(None, False)
             self.statusbar.showMessage("파일 선택이 해제되었습니다.")
 
+    def _force_file_detail_refresh(self):
+        """파일 상세보기 영역의 레이아웃을 강제로 새로고침합니다."""
+        try:
+            # 약간의 지연 후 강제 새로고침 (UI 업데이트 완료를 기다림)
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(10, self._do_file_detail_refresh)
+            QTimer.singleShot(50, self._do_file_detail_refresh)  # 보험용 두 번째 시도
+            
+        except Exception as e:
+            logger.warning(f"파일 상세보기 강제 새로고침 중 오류: {e}")
     
+    def _do_file_detail_refresh(self):
+        """실제 파일 상세보기 새로고침을 수행합니다."""
+        try:
+            file_detail = self.ui_setup.get_widget('file_detail')
+            if file_detail:
+                # 파일 상세보기 위젯 새로고침
+                file_detail.updateGeometry()
+                file_detail.update()
+                file_detail.repaint()
+                
+                # 중앙 splitter 미세 조정으로 강제 레이아웃 업데이트
+                if hasattr(self, 'splitter') and self.splitter:
+                    current_sizes = self.splitter.sizes()
+                    if current_sizes and len(current_sizes) >= 2:
+                        # 1픽셀씩 조정 후 즉시 복원
+                        temp_sizes = [current_sizes[0] + 1, current_sizes[1] - 1]
+                        self.splitter.setSizes(temp_sizes)
+                        
+                                                 # 10ms 후 원래 크기로 복원
+                        from PyQt5.QtCore import QTimer
+                        QTimer.singleShot(10, lambda: self.splitter.setSizes(current_sizes))
+                
+                # 메인 splitter도 미세 조정
+                if hasattr(self, 'mainSplitter') and self.mainSplitter:
+                    main_sizes = self.mainSplitter.sizes()
+                    if main_sizes and len(main_sizes) >= 3:
+                        # 중앙 영역을 1픽셀 조정 후 복원
+                        temp_main_sizes = [main_sizes[0], main_sizes[1] + 1, main_sizes[2]]
+                        self.mainSplitter.setSizes(temp_main_sizes)
+                        
+                        # 20ms 후 원래 크기로 복원
+                        from PyQt5.QtCore import QTimer
+                        QTimer.singleShot(20, lambda: self.mainSplitter.setSizes(main_sizes))
+                
+                logger.debug("[MAIN] 파일 상세보기 강제 새로고침 완료")
+                
+        except Exception as e:
+            logger.warning(f"파일 상세보기 새로고침 실행 중 오류: {e}")
 
-    
-
-    
-
-    
+    def on_tags_updated(self):
+        """태그가 변경될 때 관련 위젯들을 업데이트합니다."""
+        try:
+            logger.debug("[MAIN] 태그 업데이트 시그널 받음")
+            
+            # 파일 목록 업데이트 (태그 표시 새로고침)
+            if hasattr(self.file_list_viewmodel, 'refresh_current_files'):
+                self.file_list_viewmodel.refresh_current_files()
+            
+            # EventBus를 통해 이미 ViewModel들이 자동 업데이트되므로
+            # 여기서는 추가적인 ViewModel 업데이트를 하지 않음
+            # (무한 루프 방지)
+            
+            logger.debug("[MAIN] 태그 업데이트 완료")
+            
+        except Exception as e:
+            logger.error(f"[MAIN] 태그 업데이트 중 오류: {e}")
 
     

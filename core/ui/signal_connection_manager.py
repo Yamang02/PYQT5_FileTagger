@@ -52,10 +52,7 @@ class SignalConnectionManager:
         
         
         
-        # 파일 상세 정보 시그널 (TagControlWidget에서 ViewModel로 로직 이동)
-        # self.main_window.file_detail.file_tags_changed.connect(
-        #     self.main_window.on_tags_updated
-        # )
+        # 파일 상세 정보 위젯은 읽기 전용이므로 태그 변경 시그널 연결 불필요
         
     def _connect_search_signals(self):
         """검색 위젯의 시그널을 연결합니다."""
@@ -77,7 +74,7 @@ class SignalConnectionManager:
             
             self.main_window.ui_setup.get_widget('file_list').list_view.selectionModel().selectionChanged.disconnect()
             self.main_window.ui_setup.get_widget('tag_control').tags_updated.disconnect()
-            self.main_window.ui_setup.get_widget('file_detail').file_tags_changed.disconnect()
+            # 파일 상세 정보 위젯은 읽기 전용이므로 tags_updated 시그널 없음
             
             # 검색 시그널 해제
             self.main_window.ui_setup.get_widget('search_widget').search_requested.disconnect()
