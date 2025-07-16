@@ -11,8 +11,6 @@ from PyQt5.uic import loadUi
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 
-from widgets.tag_chip import TagChip
-from widgets.flow_layout import FlowLayout
 from viewmodels.file_detail_viewmodel import FileDetailViewModel # FileDetailViewModel 임포트
 
 logger = logging.getLogger(__name__)
@@ -74,158 +72,74 @@ class FileDetailWidget(QWidget):
     def on_viewmodel_file_details_updated(self, file_path: str, tags: list):
         """ViewModel에서 받은 정보로 UI 업데이트"""
         try:
-            logger.info(f"[FILE_DETAIL] 태그 업데이트: {file_path}, 태그 수: {len(tags)}, 태그: {tags}")
-            logger.debug("_refresh_tag_chips 호출 전")
-            self._refresh_tag_chips(tags)
-            logger.debug("_refresh_tag_chips 호출 후")
-            
-            # 태그 영역 가시성 확인
-            if hasattr(self, 'tag_chip_scroll_area'):
-                logger.info(f"태그 스크롤 영역 크기: {self.tag_chip_scroll_area.size()}")
-                logger.info(f"태그 스크롤 영역 가시성: {self.tag_chip_scroll_area.isVisible()}")
-                logger.info(f"태그 스크롤 영역 위치: {self.tag_chip_scroll_area.pos()}")
-                logger.info(f"태그 컨테이너 크기: {self.tag_chip_container.size()}")
-                logger.info(f"태그 컨테이너 가시성: {self.tag_chip_container.isVisible()}")
-                logger.info(f"태그 컨테이너 위치: {self.tag_chip_container.pos()}")
-                logger.info(f"FlowLayout 아이템 수: {self.tag_chip_flow_layout.count() if hasattr(self, 'tag_chip_flow_layout') else 0}")
-            
-            # ViewModel 업데이트 후 강제 레이아웃 새로고침 (최초 렌더링과 동일하게)
-            self._force_layout_update()  # 추가: 최초 렌더링과 동일한 강제 업데이트
-            self._force_splitter_refresh()
-            
+            pass # 태그 정보 업데이트 로직 제거
         except Exception as e:
             logger.error(f"태그 정보 업데이트 실패: {file_path}, 오류: {e}")
-            self._clear_tag_chips()
+            # self._clear_tag_chips() # 태그 칩 제거 로직 제거
 
     def setup_ui(self):
         # Material Design 스타일 적용
         self.setObjectName("fileDetailPanel")
-        
         loadUi('ui/file_detail_content_widget.ui', self)
-        
-        # 태그 영역에 제목 추가
-        self.tag_title_label = QLabel("파일 태그")
-        self.tag_title_label.setStyleSheet("font-weight: bold; font-size: 10pt; color: #1a1a1a; margin-bottom: 8px; padding: 4px;")
-        self.tag_title_label.setAlignment(Qt.AlignLeft)
-        
-        # 태그 스크롤 영역에 배경색 추가하여 가시성 향상
-        self.tag_chip_scroll_area.setStyleSheet("QScrollArea { background-color: #f8f9fa; border: 1px solid #e9ecef; }")
-        self.tag_chip_container.setStyleSheet("QWidget { background-color: #f8f9fa; }")
-        
-        # 태그 제목을 스크롤 영역 위에 추가
-        tag_section_layout = QVBoxLayout()
-        tag_section_layout.addWidget(self.tag_title_label)
-        tag_section_layout.addWidget(self.tag_chip_scroll_area)
-        
-        # 기존 right_splitter의 태그 영역을 새로운 레이아웃으로 교체
-        self.right_splitter.replaceWidget(1, QWidget())
-        tag_widget = QWidget()
-        tag_widget.setLayout(tag_section_layout)
-        self.right_splitter.insertWidget(1, tag_widget)
-        
-        # 스크롤 영역 크기 정책 조정 - 태그가 보이도록 충분한 공간 확보
-        self.tag_chip_scroll_area.setMinimumHeight(150)
-        self.tag_chip_scroll_area.setMaximumHeight(300)
-        
-        # 태그 영역이 확실히 보이도록 설정
-        self.tag_chip_scroll_area.setVisible(True)
-        self.tag_chip_container.setVisible(True)
-        self.tag_chip_scroll_area.show()
-        self.tag_chip_container.show()
-        
-        # 스크롤 영역 설정 확인
-        self.tag_chip_scroll_area.setWidgetResizable(True)
-        self.tag_chip_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.tag_chip_scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        
-        # 태그 칩 컨테이너에 FlowLayout 적용 (UI 파일에서 기존 레이아웃이 제거되었으므로 바로 설정)
-        self.tag_chip_flow_layout = FlowLayout(margin=4, spacing=4)
-        self.tag_chip_container.setLayout(self.tag_chip_flow_layout)
-        
-        # 스크롤 영역 크기 정책 조정
-        self.tag_chip_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
-
+        # 태그칩 관련 코드 완전 제거 (칩 컨테이너, FlowLayout, 스크롤 영역 등)
+        # 나머지 미리보기/메타데이터/비디오 등만 남김
         self.image_preview_label = QLabel("이미지 미리보기")
         self.image_preview_label.setAlignment(Qt.AlignCenter)
-        # 이미지 미리보기 라벨 크기 (50:50 비율에 맞게 조정)
         self.image_preview_label.setMinimumSize(300, 300)
-        self.image_preview_label.setScaledContents(False)  # 라벨 크기에 맞춰 스케일링 방지
-        # 배경색 설정으로 레이아웃 경계 명확화
+        self.image_preview_label.setScaledContents(False)
         self.image_preview_label.setStyleSheet("background-color: #f8f9fa; border: 1px solid #e9ecef;")
         self.image_preview_page.setLayout(QVBoxLayout())
         self.image_preview_page.layout().addWidget(self.image_preview_label)
-
-        # 텍스트 미리보기 페이지 설정
         self.text_browser = QTextBrowser()
         self.text_preview_page.setLayout(QVBoxLayout())
         self.text_preview_page.layout().addWidget(self.text_browser)
-
-        # PDF 미리보기 페이지 설정
         self.pdf_preview_label = QLabel("PDF 미리보기")
         self.pdf_preview_label.setAlignment(Qt.AlignCenter)
-        # PDF 미리보기 라벨 크기 (50:50 비율에 맞게 조정)
         self.pdf_preview_label.setMinimumSize(300, 300)
         self.pdf_preview_label.setScaledContents(False)
-        # 배경색 설정으로 레이아웃 경계 명확화
         self.pdf_preview_label.setStyleSheet("background-color: #f8f9fa; border: 1px solid #e9ecef;")
         self.pdf_preview_page.setLayout(QVBoxLayout())
         self.pdf_preview_page.layout().addWidget(self.pdf_preview_label)
-
-        # 비디오 미리보기 페이지 설정
         self.video_widget = QVideoWidget()
         video_page_layout = QVBoxLayout()
         video_page_layout.addWidget(self.video_widget)
         self.video_preview_page.setLayout(video_page_layout)
-
-        # 비디오 컨트롤 추가
         self.play_button = QToolButton()
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.play_button.setProperty("class", "video-control")
-        
         self.stop_button = QToolButton()
         self.stop_button.setIcon(self.style().standardIcon(QStyle.SP_MediaStop))
         self.stop_button.setProperty("class", "video-control")
-
-        # 볼륨 버튼 (음소거 아이콘)
         self.volume_button = QToolButton()
         self.volume_button.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
         self.volume_button.setProperty("class", "video-control")
-
-        # 볼륨 슬라이더 (세로, 초기 숨김)
-        self.volume_slider = QSlider(Qt.Vertical, self.video_preview_page) # video_preview_page의 자식으로 설정
+        self.volume_slider = QSlider(Qt.Vertical, self.video_preview_page)
         self.volume_slider.setRange(0, 100)
-        self.volume_slider.setValue(50) # 초기 볼륨 설정
-        self.volume_slider.hide() # 초기에는 숨김
-        self.volume_slider.setMinimumHeight(100) # 최소 높이 설정
-
+        self.volume_slider.setValue(50)
+        self.volume_slider.hide()
+        self.volume_slider.setMinimumHeight(100)
         self.position_slider = ClickableSlider(Qt.Horizontal)
-        self.position_slider.setRange(0, 0) # 초기 범위는 0
+        self.position_slider.setRange(0, 0)
         self.position_slider.sliderMoved.connect(self.set_position)
-
         self.current_time_label = QLabel("00:00")
         self.total_time_label = QLabel("00:00")
-
         video_controls_layout = QHBoxLayout()
         video_controls_layout.addWidget(self.play_button)
         video_controls_layout.addWidget(self.stop_button)
-        video_controls_layout.addWidget(self.volume_button) # 볼륨 버튼 추가
+        video_controls_layout.addWidget(self.volume_button)
         video_controls_layout.addWidget(self.current_time_label)
         video_controls_layout.addWidget(self.position_slider)
         video_controls_layout.addWidget(self.total_time_label)
-
         self.video_preview_page.layout().addLayout(video_controls_layout)
-
         self.media_player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         self.media_player.setVideoOutput(self.video_widget)
-
-        # 컨트롤 연결
         self.play_button.clicked.connect(self.toggle_play_pause)
         self.stop_button.clicked.connect(self.media_player.stop)
-        self.volume_button.clicked.connect(self.toggle_volume_slider) # 볼륨 버튼 클릭 시 볼륨 슬라이더 토글
+        self.volume_button.clicked.connect(self.toggle_volume_slider)
         self.volume_slider.valueChanged.connect(self.media_player.setVolume)
         self.media_player.positionChanged.connect(self.position_changed)
         self.media_player.durationChanged.connect(self.duration_changed)
-        self.media_player.stateChanged.connect(self.update_play_button_icon) # 재생 상태 변경 시 아이콘 업데이트
+        self.media_player.stateChanged.connect(self.update_play_button_icon)
 
     def update_preview(self, file_path):
         """파일 미리보기를 업데이트합니다."""
@@ -238,7 +152,7 @@ class FileDetailWidget(QWidget):
         if not file_path or not os.path.isfile(file_path):
             self.preview_stacked_widget.setCurrentWidget(self.unsupported_preview_page)
             self.metadata_browser.clear()
-            self._clear_tag_chips()
+            # self._clear_tag_chips() # 태그 칩 제거 로직 제거
             return
 
         try:
@@ -249,6 +163,15 @@ class FileDetailWidget(QWidget):
             
             # ViewModel에 파일 업데이트 요청 (비동기로 태그 정보 로드)
             self.viewmodel.update_for_file(file_path)
+            
+            # 즉시 태그 정보도 로드하여 표시 (ViewModel 시그널 대기 없이)
+            try:
+                # tags = self.viewmodel._tag_service.get_tags_for_file(file_path) # 태그 로드 로직 제거
+                # self._refresh_tag_chips(tags) # 태그 칩 새로고침 로직 제거
+                pass # 태그 정보 업데이트 로직 제거
+            except Exception as e:
+                logger.error(f"직접 태그 로드 실패: {e}")
+                # self._clear_tag_chips() # 태그 칩 제거 로직 제거
 
             if file_ext in self.IMAGE_EXTENSIONS:
                 self.preview_stacked_widget.setCurrentWidget(self.image_preview_page)
@@ -317,11 +240,6 @@ class FileDetailWidget(QWidget):
             if hasattr(self, 'metadata_browser'):
                 self.metadata_browser.updateGeometry()
                 self.metadata_browser.update()
-            
-            # 태그 스크롤 영역 업데이트
-            if hasattr(self, 'tag_chip_scroll_area'):
-                self.tag_chip_scroll_area.updateGeometry()
-                self.tag_chip_scroll_area.update()
                 
         except Exception as e:
             logger.warning(f"레이아웃 강제 업데이트 중 오류: {e}")
@@ -428,7 +346,7 @@ class FileDetailWidget(QWidget):
         self.metadata_browser.clear()
         
         # 태그 칩 초기화
-        self._clear_tag_chips()
+        # self._clear_tag_chips() # 태그 칩 제거 로직 제거
         
         # 스택 위젯을 기본 페이지로 설정
         self.preview_stacked_widget.setCurrentWidget(self.unsupported_preview_page)
@@ -480,123 +398,12 @@ class FileDetailWidget(QWidget):
             if doc: # doc 객체가 성공적으로 생성되었다면 닫아줍니다.
                 doc.close()
 
-    def _refresh_tag_chips(self, tags):
-        """태그 칩을 새로고침합니다."""
-        try:
-            logger.debug(f"_refresh_tag_chips 시작: {len(tags)}개 태그")
-            self._clear_tag_chips()
-            
-            # 태그가 없을 때 플레이스홀더 표시
-            if not tags:
-                logger.info("태그가 없습니다.")
-                placeholder_label = QLabel("태그가 없습니다.")
-                placeholder_label.setAlignment(Qt.AlignCenter)
-                placeholder_label.setStyleSheet("color: #666666; font-style: italic; padding: 20px;")
-                # FlowLayout에 추가
-                if hasattr(self, 'tag_chip_flow_layout'):
-                    self.tag_chip_flow_layout.addWidget(placeholder_label)
-                return
-                
-            # FlowLayout 사용 - 자동 줄바꿈
-            if hasattr(self, 'tag_chip_flow_layout'):
-                for tag in tags:
-                    # 읽기 전용 TagChip 생성 (삭제 버튼 숨김)
-                    chip = TagChip(tag)
-                    chip.delete_button.setVisible(False)  # 삭제 버튼 숨김
-                    chip.setToolTip(f"태그: {tag}\n(편집하려면 태그 관리 패널을 사용하세요)")
-                    
-                    # FlowLayout에 추가
-                    self.tag_chip_flow_layout.addWidget(chip)
-                    
-                    # 태그칩이 실제로 보이는지 확인
-                    chip.show()
-                    chip.setVisible(True)
-                    
-            logger.info(f"태그 칩 업데이트 완료: {len(tags)}개 태그, FlowLayout 아이템 수: {self.tag_chip_flow_layout.count() if hasattr(self, 'tag_chip_flow_layout') else 0}")
-            
-            # 태그 칩 업데이트 후 강제 화면 새로고침
-            if hasattr(self, 'tag_chip_scroll_area'):
-                # FlowLayout 강제 업데이트
-                if hasattr(self, 'tag_chip_flow_layout'):
-                    self.tag_chip_flow_layout.update()
-                    self.tag_chip_flow_layout.activate()
-                
-                # 단계별 강제 새로고침
-                # 1. FlowLayout 내의 모든 태그칩 새로고침
-                for i in range(self.tag_chip_flow_layout.count()):
-                    item = self.tag_chip_flow_layout.itemAt(i)
-                    if item and item.widget():
-                        widget = item.widget()
-                        widget.updateGeometry()
-                        widget.update()
-                        widget.repaint()
-                
-                # 2. 컨테이너 위젯들 강제 새로고침
-                self.tag_chip_container.updateGeometry()
-                self.tag_chip_container.update()
-                self.tag_chip_container.repaint()
-                
-                # 3. 스크롤 영역 강제 새로고침  
-                self.tag_chip_scroll_area.updateGeometry()
-                self.tag_chip_scroll_area.update()
-                self.tag_chip_scroll_area.repaint()
-                
-                # 4. 전체 위젯 강제 새로고침
-                self.updateGeometry()
-                self.update()
-                self.repaint()
-                
-                # 5. 부모 위젯도 강제 새로고침
-                if self.parent():
-                    self.parent().update()
-                    self.parent().repaint()
-                
-                logger.debug(f"[FILE_DETAIL] 태그 영역 강제 새로고침 완료 - 실제 표시된 태그칩 수: {self.tag_chip_flow_layout.count()}")
-                
-                # 6. 지연된 추가 새로고침 (PyQt 렌더링 타이밍 이슈 대응)
-                from PyQt5.QtCore import QTimer
-                QTimer.singleShot(10, lambda: self._delayed_refresh())
-                QTimer.singleShot(50, lambda: self._delayed_refresh())
-                
-                self.tag_chip_scroll_area.updateGeometry()
-                self.tag_chip_scroll_area.update()
-                self.tag_chip_container.updateGeometry()
-                self.tag_chip_container.update()
-                pass
-                
-        except Exception as e:
-            logger.error(f"태그 칩 업데이트 실패: {e}")
-            self._clear_tag_chips()
-
-    def _clear_tag_chips(self):
-        """기존 태그 칩들을 모두 제거합니다."""
-        try:
-            # FlowLayout에서 제거
-            if hasattr(self, 'tag_chip_flow_layout'):
-                while self.tag_chip_flow_layout.count() > 0:
-                    item = self.tag_chip_flow_layout.takeAt(0)
-                    if item and item.widget():
-                        item.widget().deleteLater()
-            pass
-        except Exception as e:
-            logger.error(f"태그 칩 제거 실패: {e}")
+    # _refresh_tag_chips 메서드 제거 - 태그 칩 관련 로직 제거
+    
+    # _clear_tag_chips 메서드 제거 - 태그 칩 관련 로직 제거
 
     # _on_tag_chip_removed 메서드 제거 - 읽기 전용으로 변경됨
     
-    def _delayed_refresh(self):
-        """지연된 강제 새로고침 - PyQt 렌더링 타이밍 이슈 해결용"""
-        try:
-            if hasattr(self, 'tag_chip_scroll_area') and hasattr(self, 'tag_chip_container'):
-                self.tag_chip_container.update()
-                self.tag_chip_container.repaint()
-                self.tag_chip_scroll_area.update()
-                self.tag_chip_scroll_area.repaint()
-                self.update()
-                self.repaint()
-                logger.debug("[FILE_DETAIL] 지연된 새로고침 완료")
-        except Exception as e:
-            logger.warning(f"[FILE_DETAIL] 지연된 새로고침 중 오류: {e}")
-
     def toggle_play_pause(self):
         if self.media_player.state() == QMediaPlayer.PlayingState:
             self.media_player.pause()

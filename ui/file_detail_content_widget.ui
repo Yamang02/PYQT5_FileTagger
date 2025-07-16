@@ -80,21 +80,6 @@ p, li { white-space: pre-wrap; }
 &lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"&gt;파일 메타데이터&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QScrollArea" name="tag_chip_scroll_area">
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-             <widget class="QWidget" name="tag_chip_container">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>194</width>
-          <height>394</height>
-         </rect>
-        </property>
-       </widget>
-     </widget>
     </widget>
    </item>
   </layout>

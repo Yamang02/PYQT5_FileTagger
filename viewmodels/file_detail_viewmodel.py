@@ -1,8 +1,11 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 from typing import List
+import logging
 
 from core.services.tag_service import TagService
 from core.events import EventBus, TagAddedEvent, TagRemovedEvent
+
+logger = logging.getLogger(__name__)
 
 class FileDetailViewModel(QObject):
     # UI 업데이트를 위한 시그널
@@ -33,8 +36,10 @@ class FileDetailViewModel(QObject):
         self._current_file_path = file_path
         if file_path:
             tags = self._tag_service.get_tags_for_file(file_path)
+            logger.info(f"[FILE_DETAIL_VIEWMODEL] 파일 업데이트: {file_path}, 태그 수: {len(tags)}, 태그: {tags}")
             self.file_details_updated.emit(file_path, tags)
         else:
+            logger.info(f"[FILE_DETAIL_VIEWMODEL] 파일 없음으로 업데이트")
             self.file_details_updated.emit(None, [])
 
     def remove_tag_from_file(self, tag_text: str):
