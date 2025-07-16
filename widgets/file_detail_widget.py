@@ -152,15 +152,21 @@ class FileDetailWidget(QWidget):
         # 4. 비디오 미리보기 위젯
         self.video_widget_container = QWidget()  # 비디오 위젯을 담는 컨테이너
         video_layout = QVBoxLayout(self.video_widget_container)
-        video_layout.setContentsMargins(0, 0, 0, 0)
+        video_layout.setContentsMargins(20, 20, 20, 20)  # 여백 추가
+        video_layout.setSpacing(10)  # 위젯 간 간격 추가
         
         self.video_widget = QVideoWidget()
         self.video_widget.setMinimumSize(400, 300)
         self.video_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.video_widget.setStyleSheet(
+            "QVideoWidget { background-color: #000000; border: 1px solid #e9ecef; border-radius: 4px; }"
+        )
         video_layout.addWidget(self.video_widget)
         
         # 비디오 컨트롤
         controls_layout = QHBoxLayout()
+        controls_layout.setContentsMargins(10, 10, 10, 10)  # 컨트롤 영역 여백
+        controls_layout.setSpacing(8)  # 컨트롤 간격
         
         self.play_button = QToolButton()
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
@@ -173,7 +179,10 @@ class FileDetailWidget(QWidget):
         self.volume_slider.setRange(0, 100)
         self.volume_slider.setValue(50)
         self.volume_slider.hide()
-        self.volume_slider.setMinimumHeight(100)
+        self.volume_slider.setMinimumHeight(80)  # 높이를 줄임
+        self.volume_slider.setMaximumHeight(80)  # 최대 높이도 제한
+        self.volume_slider.setFixedWidth(20)     # 너비를 고정
+        self.volume_slider.setParent(self.video_widget_container)  # video_widget_container의 자식으로 설정
         
         self.position_slider = ClickableSlider(Qt.Horizontal)
         self.position_slider.setRange(0, 0)
@@ -189,7 +198,7 @@ class FileDetailWidget(QWidget):
         controls_layout.addWidget(self.position_slider, 1)
         controls_layout.addWidget(self.total_time_label)
         
-        video_layout.addLayout(controls_layout)
+        video_layout.addLayout(controls_layout)  # controls_layout을 직접 추가
         
         # 5. 지원하지 않는 형식 위젯
         self.unsupported_label = QLabel("미리보기를 지원하지 않는 형식입니다.")
@@ -455,18 +464,17 @@ class FileDetailWidget(QWidget):
         if self.volume_slider.isVisible():
             self.volume_slider.hide()
         else:
-            button_rect = self.volume_button.geometry()
-            global_button_pos = self.volume_button.mapToGlobal(self.volume_button.rect().topLeft())
-            local_pos = self.mapFromGlobal(global_button_pos)
+            # 볼륨 버튼의 위치를 기준으로 슬라이더 배치
+            volume_button_rect = self.volume_button.geometry()
             
-            slider_width = self.volume_slider.width()
-            slider_height = self.volume_slider.height()
+            # 볼륨 버튼을 기준으로 슬라이더 위치 계산
+            # 버튼 위쪽에 슬라이더를 배치
+            x = volume_button_rect.x() - 5  # 버튼 왼쪽으로 5px
+            y = volume_button_rect.y() - 85  # 버튼 위쪽으로 85px (슬라이더 높이 + 간격)
             
-            x = local_pos.x() + (button_rect.width() - slider_width) // 2
-            y = local_pos.y() - slider_height
-            
-            self.volume_slider.setGeometry(x, y, slider_width, slider_height)
+            self.volume_slider.setGeometry(x, y, 20, 80)
             self.volume_slider.show()
+            self.volume_slider.raise_()  # 최상위로
 
     def position_changed(self, position):
         self.position_slider.setValue(position)
