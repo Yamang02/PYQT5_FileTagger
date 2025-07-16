@@ -137,7 +137,7 @@ class FileDetailWidget(QWidget):
         self.text_browser.setMinimumSize(400, 300)
         self.text_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.text_browser.setStyleSheet(
-            "QTextBrowser { background-color: #ffffff; border: 1px solid #e9ecef; padding: 10px; }"
+            "QTextBrowser { background-color: #ffffff; border: 1px solid #e9ecef; padding: 20px; }"
         )
         
         # 3. PDF 미리보기 위젯
@@ -152,53 +152,195 @@ class FileDetailWidget(QWidget):
         # 4. 비디오 미리보기 위젯
         self.video_widget_container = QWidget()  # 비디오 위젯을 담는 컨테이너
         video_layout = QVBoxLayout(self.video_widget_container)
-        video_layout.setContentsMargins(20, 20, 20, 20)  # 여백 추가
-        video_layout.setSpacing(10)  # 위젯 간 간격 추가
+        video_layout.setContentsMargins(0, 0, 0, 0)  # 여백 제거
+        video_layout.setSpacing(0)  # 간격 제거
         
         self.video_widget = QVideoWidget()
         self.video_widget.setMinimumSize(400, 300)
         self.video_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.video_widget.setStyleSheet(
-            "QVideoWidget { background-color: #000000; border: 1px solid #e9ecef; border-radius: 4px; }"
+            "QVideoWidget { background-color: #000000; border-radius: 8px; }"
         )
         video_layout.addWidget(self.video_widget)
         
-        # 비디오 컨트롤
-        controls_layout = QHBoxLayout()
-        controls_layout.setContentsMargins(10, 10, 10, 10)  # 컨트롤 영역 여백
-        controls_layout.setSpacing(8)  # 컨트롤 간격
+        # 현대적인 비디오 컨트롤 패널
+        self.controls_panel = QWidget()
+        self.controls_panel.setStyleSheet("""
+            QWidget {
+                background-color: rgba(255, 255, 255, 0.9);
+                border-radius: 8px;
+                border: 1px solid rgba(0, 0, 0, 0.1);
+            }
+        """)
+        self.controls_panel.setMaximumHeight(100)
         
-        self.play_button = QToolButton()
-        self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-        self.stop_button = QToolButton()
-        self.stop_button.setIcon(self.style().standardIcon(QStyle.SP_MediaStop))
-        self.volume_button = QToolButton()
-        self.volume_button.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
+        controls_layout = QVBoxLayout(self.controls_panel)
+        controls_layout.setContentsMargins(12, 8, 12, 8)
+        controls_layout.setSpacing(1)
         
-        self.volume_slider = QSlider(Qt.Vertical)
-        self.volume_slider.setRange(0, 100)
-        self.volume_slider.setValue(50)
-        self.volume_slider.hide()
-        self.volume_slider.setMinimumHeight(80)  # 높이를 줄임
-        self.volume_slider.setMaximumHeight(80)  # 최대 높이도 제한
-        self.volume_slider.setFixedWidth(20)     # 너비를 고정
-        self.volume_slider.setParent(self.video_widget_container)  # video_widget_container의 자식으로 설정
+        # 상단: 진행바
+        progress_layout = QHBoxLayout()
+        progress_layout.setContentsMargins(0, 5, 0, 5)
+        progress_layout.setSpacing(8)
+        
+        self.current_time_label = QLabel("00:00")
+        self.current_time_label.setStyleSheet("""
+            QLabel {
+                color: #333333;
+                font-size: 10px;
+                font-weight: 500;
+                min-width: 35px;
+                max-width: 35px;
+                min-height: 14px;
+                padding: 0px;
+                border: none;
+                background: transparent;
+            }
+        """)
         
         self.position_slider = ClickableSlider(Qt.Horizontal)
         self.position_slider.setRange(0, 0)
         self.position_slider.sliderMoved.connect(self.set_position)
+        self.position_slider.setStyleSheet("""
+            QSlider {
+                border: none;
+                background: transparent;
+            }
+            QSlider::groove:horizontal {
+                border: none;
+                height: 4px;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 2px;
+            }
+            QSlider::sub-page:horizontal {
+                background: #0078d4;
+                border-radius: 2px;
+            }
+            QSlider::handle:horizontal {
+                background: #ffffff;
+                border: 2px solid #0078d4;
+                width: 12px;
+                height: 12px;
+                border-radius: 6px;
+                margin: -4px 0;
+            }
+            QSlider::handle:horizontal:hover {
+                background: #f0f0f0;
+            }
+        """)
         
-        self.current_time_label = QLabel("00:00")
         self.total_time_label = QLabel("00:00")
+        self.total_time_label.setStyleSheet("""
+            QLabel {
+                color: #333333;
+                font-size: 10px;
+                font-weight: 500;
+                min-width: 35px;
+                max-width: 35px;
+                min-height: 14px;
+                padding: 0px;
+                border: none;
+                background: transparent;
+            }
+        """)
         
-        controls_layout.addWidget(self.play_button)
-        controls_layout.addWidget(self.stop_button)
-        controls_layout.addWidget(self.volume_button)
-        controls_layout.addWidget(self.current_time_label)
-        controls_layout.addWidget(self.position_slider, 1)
-        controls_layout.addWidget(self.total_time_label)
+        progress_layout.addWidget(self.current_time_label)
+        progress_layout.addWidget(self.position_slider, 1)
+        progress_layout.addWidget(self.total_time_label)
         
-        video_layout.addLayout(controls_layout)  # controls_layout을 직접 추가
+        # 하단: 컨트롤 버튼들 (가운데 정렬)
+        buttons_layout = QHBoxLayout()
+        buttons_layout.setContentsMargins(0, 5, 0, 15)
+        buttons_layout.setSpacing(10)
+        
+        # 공통 버튼 스타일
+        button_style = """
+            QToolButton {
+                background-color: rgba(0, 0, 0, 0.1);
+                border: none;
+                border-radius: 10px;
+                padding: 2px;
+                width: 18px;
+                height: 18px;
+            }
+            QToolButton:hover {
+                background-color: rgba(0, 0, 0, 0.2);
+            }
+            QToolButton:pressed {
+                background-color: rgba(0, 0, 0, 0.3);
+            }
+        """
+        
+        # 재생/일시정지 버튼
+        self.play_button = QToolButton()
+        self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.play_button.setStyleSheet(button_style)
+        self.play_button.setFixedSize(18, 18)
+        
+        # 정지 버튼
+        self.stop_button = QToolButton()
+        self.stop_button.setIcon(self.style().standardIcon(QStyle.SP_MediaStop))
+        self.stop_button.setStyleSheet(button_style)
+        self.stop_button.setFixedSize(18, 18)
+        
+        # 볼륨 버튼
+        self.volume_button = QToolButton()
+        self.volume_button.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
+        self.volume_button.setStyleSheet(button_style)
+        self.volume_button.setFixedSize(18, 18)
+        
+        # 버튼들을 가운데 정렬
+        buttons_layout.addItem(QSpacerItem(20, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        buttons_layout.addWidget(self.play_button)
+        buttons_layout.addWidget(self.stop_button)
+        buttons_layout.addWidget(self.volume_button)
+        buttons_layout.addItem(QSpacerItem(20, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        
+        # 레이아웃 조립
+        controls_layout.addLayout(progress_layout)
+        controls_layout.addLayout(buttons_layout)
+        
+        # 볼륨 슬라이더 (개선된 디자인)
+        self.volume_slider = QSlider(Qt.Vertical)
+        self.volume_slider.setRange(0, 100)
+        self.volume_slider.setValue(50)
+        self.volume_slider.hide()
+        self.volume_slider.setMinimumHeight(80)
+        self.volume_slider.setMaximumHeight(80)
+        self.volume_slider.setFixedWidth(20)
+        self.volume_slider.setParent(self.video_widget_container)
+        self.volume_slider.setStyleSheet("""
+            QSlider {
+                border: none;
+                background: transparent;
+            }
+            QSlider::groove:vertical {
+                border: none;
+                width: 4px;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 2px;
+            }
+            QSlider::sub-page:vertical {
+                background: #0078d4;
+                border-radius: 2px;
+            }
+            QSlider::handle:vertical {
+                background: #ffffff;
+                border: 2px solid #0078d4;
+                width: 12px;
+                height: 12px;
+                border-radius: 6px;
+                margin: 0 -4px;
+            }
+            QSlider::handle:vertical:hover {
+                background: #f0f0f0;
+            }
+        """)
+        
+        # 컨트롤 패널을 비디오 레이아웃에 추가 (여백 포함)
+        video_layout.addWidget(self.controls_panel)
+        video_layout.setContentsMargins(8, 8, 8, 8)  # 비디오 컨테이너에 여백 추가
+        video_layout.setSpacing(10)  # 비디오 위젯과 컨트롤 패널 사이 간격
         
         # 5. 지원하지 않는 형식 위젯
         self.unsupported_label = QLabel("미리보기를 지원하지 않는 형식입니다.")
@@ -385,6 +527,12 @@ class FileDetailWidget(QWidget):
         if hasattr(self, 'volume_slider') and self.volume_slider:
             self.volume_slider.hide()
             self.volume_slider.setValue(50)
+        
+        # 시간 라벨 강제 업데이트
+        if hasattr(self, 'current_time_label') and self.current_time_label:
+            self.current_time_label.setText("00:00")
+        if hasattr(self, 'total_time_label') and self.total_time_label:
+            self.total_time_label.setText("00:00")
 
     def _update_info_bar(self, file_path, error_message=None):
         """하단 정보 바 업데이트"""

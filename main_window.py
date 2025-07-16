@@ -146,8 +146,6 @@ class MainWindow(QMainWindow):
         """창 크기 변경 시 레이아웃을 안정화합니다."""
         super().resizeEvent(event)
 
-        logger.info(f"[WINDOW] 크기 변경: {self.width()}x{self.height()}")
-
         # 최대화/전체화면 상태에서는 레이아웃 재조정
         if self.isMaximized() or self.isFullScreen():
             from PyQt5.QtCore import QTimer

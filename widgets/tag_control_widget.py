@@ -10,6 +10,7 @@ from widgets.batch_tagging_options_widget import BatchTaggingOptionsWidget
 from widgets.flow_layout import FlowLayout
 from core.custom_tag_manager import CustomTagManager
 from widgets.batch_remove_tags_dialog import BatchRemoveTagsDialog
+from widgets.custom_tag_dialog import CustomTagDialog
 from viewmodels.tag_control_viewmodel import TagControlViewModel # ViewModel 임포트
 
 logger = logging.getLogger(__name__)
@@ -37,16 +38,31 @@ class TagControlWidget(QWidget):
         # 폰트 위계 시스템 적용
         self._apply_font_hierarchy()
 
+        # 대상 파일/디렉토리 라벨 높이 고정
+        self.individual_target_label.setMaximumHeight(20)
+        self.individual_target_label.setMinimumHeight(20)
+        self.individual_target_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        
+        self.batch_target_label.setMaximumHeight(20)
+        self.batch_target_label.setMinimumHeight(20)
+        self.batch_target_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        
         # QuickTagsWidget 인스턴스 생성 및 배치
         self.individual_quick_tags = QuickTagsWidget(self.custom_tag_manager, self)
-        self.individual_quick_tags.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.individual_quick_tags.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.individual_verticalLayout.replaceWidget(self.individual_quick_tags_placeholder, self.individual_quick_tags)
         self.individual_quick_tags_placeholder.deleteLater()
+        
+        # 퀵 태그와 태그칩 영역 사이 여백 추가
+        self.individual_verticalLayout.setSpacing(12)
 
         self.batch_quick_tags = QuickTagsWidget(self.custom_tag_manager, self)
-        self.batch_quick_tags.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.batch_quick_tags.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.batch_verticalLayout.replaceWidget(self.batch_quick_tags_placeholder, self.batch_quick_tags)
         self.batch_quick_tags_placeholder.deleteLater()
+        
+        # 퀵 태그와 태그칩 영역 사이 여백 추가
+        self.batch_verticalLayout.setSpacing(12)
 
         # BatchTaggingOptionsWidget 인스턴스 생성 및 배치
         self.batch_options = BatchTaggingOptionsWidget()
@@ -170,7 +186,7 @@ class TagControlWidget(QWidget):
 
     def on_viewmodel_target_info_updated(self, label_text: str, is_dir: bool):
         # 긴 텍스트를 축약하는 헬퍼 함수
-        def truncate_text(text: str, max_length: int = 40) -> str:
+        def truncate_text(text: str, max_length: int = 30) -> str:
             if len(text) <= max_length:
                 return text
             return text[:max_length-3] + "..."
@@ -367,6 +383,13 @@ class TagControlWidget(QWidget):
         dialog = CustomTagDialog(self.custom_tag_manager, self)
         try:
             if dialog.exec_() == CustomTagDialog.Accepted:
+                # 커스텀 태그가 변경되었으므로 QuickTagsWidget들을 새로고침
+                self.individual_quick_tags.load_quick_tags()
+                self.batch_quick_tags.load_quick_tags()
+                # 자동완성 모델도 업데이트
+                self.update_completer_model()
+                # 모든 태그 목록도 업데이트
+                self.update_all_tags_list()
                 self.tags_updated.emit()
         finally:
             dialog.deleteLater() # 다이얼로그 정리
