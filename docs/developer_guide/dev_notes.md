@@ -6,6 +6,89 @@
 
 ## 2025년 7월 15일 - Gemini AI
 
+### FileDetailWidget 스크롤 문제 해결 및 구조 단순화
+
+**배경:**
+- 파일 미리보기 영역에서 스크롤바가 보이지만 동작하지 않는 문제 발생
+- MD 파일, 이미지 파일, 비디오 파일 등 모든 형식에서 스크롤 문제 발생
+- 기존 구조가 QScrollArea + QStackedWidget으로 복잡하게 구성되어 있어 문제 해결이 어려움
+
+**문제 분석 과정:**
+
+1. **초기 접근 - 스크롤바 정책 조정:**
+   - `setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)` 설정 확인
+   - QSS에서 스크롤바 화살표 버튼 높이 조정
+   - TagControlWidget의 스크롤 영역 최대 높이 제한 해제
+
+2. **근본 원인 발견:**
+   - `setWidgetResizable(True)`가 스크롤을 방해하는 주요 원인
+   - QScrollArea가 내부 위젯 크기를 자동 조정하여 스크롤이 필요하지 않게 됨
+   - 불필요한 중첩된 위젯 구조(QScrollArea + QStackedWidget)가 복잡성 증가
+
+3. **구조 단순화 결정:**
+   - QScrollArea 완전 제거
+   - QStackedWidget 제거하고 직접 위젯 전환 방식으로 변경
+   - QTextBrowser 자체의 스크롤 기능 활용
+
+**구현된 해결책:**
+
+1. **위젯 구조 단순화:**
+   ```python
+   # 기존: QScrollArea → QStackedWidget → 각 위젯
+   # 변경: 직접 위젯 전환
+   self.current_preview_widget = self.unsupported_label
+   ```
+
+2. **위젯 전환 로직 개선:**
+   ```python
+   def _switch_preview_widget(self, new_widget):
+       if self.current_preview_widget != new_widget:
+           self.current_preview_widget.hide()
+           main_layout = self.layout()
+           if main_layout:
+               main_layout.replaceWidget(main_layout.itemAt(0).widget(), new_widget)
+           new_widget.show()
+           self.current_preview_widget = new_widget
+   ```
+
+3. **비디오 위젯 구조 수정:**
+   - `video_widget`을 `self.video_widget_container`로 변경하여 인스턴스 변수로 저장
+   - `_handle_video_file()`에서 직접 컨테이너 사용
+
+4. **안전장치 추가:**
+   - `clear_preview()`에서 비디오 관련 객체 접근 제거
+   - `hasattr()` 체크로 객체 존재 여부 확인
+
+**발생한 부작용 및 해결:**
+
+1. **wrapped C/C++ object has been deleted 에러:**
+   - 원인: `setParent(None)`로 위젯 분리 시 PyQt가 객체 소멸
+   - 해결: `hide()`/`show()` 방식으로 위젯 전환
+
+2. **비디오 위젯 접근 에러:**
+   - 원인: `video_widget`이 지역 변수로만 생성되어 인스턴스 변수로 저장되지 않음
+   - 해결: `self.video_widget_container`로 변경하여 직접 접근
+
+**결과:**
+- MD 파일 스크롤 정상 동작
+- 이미지 파일 미리보기 정상 동작
+- 비디오 파일 미리보기 정상 동작
+- 구조 단순화로 성능 향상 및 유지보수성 개선
+
+**교훈:**
+1. **복잡한 구조보다 단순한 구조가 더 안정적**: QScrollArea + QStackedWidget 조합보다 직접 위젯 전환이 더 안정적
+2. **PyQt 객체 생명주기 주의**: `setParent(None)` 사용 시 객체 소멸 가능성 고려
+3. **인스턴스 변수 관리**: 지역 변수와 인스턴스 변수 구분하여 적절히 저장
+
+**관련 파일:**
+- `widgets/file_detail_widget.py`: 구조 단순화 및 스크롤 문제 해결
+- `ui/tag_control_widget.ui`: 스크롤 영역 높이 제한 해제
+- `assets/style.qss`: 스크롤바 화살표 버튼 복원
+
+---
+
+## 2025년 7월 15일 - Gemini AI
+
 ### UI 위젯 구조 단순화 작업 완료
 
 **배경:**

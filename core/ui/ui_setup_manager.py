@@ -89,7 +89,8 @@ class UISetupManager:
         # 각 위젯에 카드 효과 적용 (래핑된 QFrame은 별도로 저장)
         self.main_window.directory_tree_frame = self._create_card_widget(directory_tree_widget, "directoryTree")
         self.main_window.file_list_frame = self._create_card_widget(file_list_widget, "fileList")
-        self.main_window.file_detail_frame = self._create_card_widget(file_detail_widget, "fileDetail")
+        # file_detail_widget은 QFrame 래핑 없이 직접 사용 (스크롤 문제 해결을 위해)
+        self.main_window.file_detail_frame = file_detail_widget
         self.main_window.tag_control_frame = self._create_card_widget(tag_control_widget, "tagControl")
         self.main_window.search_widget_frame = self._create_card_widget(search_widget, "search")
 
