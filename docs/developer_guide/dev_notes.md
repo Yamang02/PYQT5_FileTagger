@@ -6,6 +6,64 @@
 
 ## 2025년 7월 15일 - Gemini AI
 
+### UI 위젯 구조 단순화 작업 완료
+
+**배경:**
+- FileDetailWidget과 TagControlWidget의 단순화 작업 후, 다른 주요 UI 위젯들도 동일한 "데이터 → 뷰모델 → UI" 단순 구조로 정리 필요
+- 불필요한 강제 새로고침, 중복 신호, 복잡한 레이아웃 조작 제거로 유지보수성과 확장성 향상 목표
+
+**단순화된 위젯들:**
+
+1. **SearchWidget** ✅ **단순화 완료**
+   - **복잡한 자동완성 로직 제거**: `_on_tag_input_focus`, `_on_tag_input_text_changed`, `_update_tag_completer` 메서드 제거
+   - **디바운싱 타이머 단순화**: 불필요한 복잡한 로직 제거
+   - **고급 검색 패널 토글 로직 단순화**: 아이콘 변경 로직 간소화
+   - **불필요한 히스토리 관련 코드 제거**: `_search_history`, `MAX_HISTORY`, `_add_to_history` 등 제거
+   - **하드코딩된 스타일 제거**: 인라인 QSS 제거, 전역 QSS 사용
+   - **폰트 위계 시스템 제거**: 불필요한 `_apply_font_hierarchy` 메서드 제거
+
+2. **QuickTagsWidget** ✅ **단순화 완료**
+   - **복잡한 예외 처리 로직 제거**: `RuntimeError` 처리 로직 단순화
+   - **하드코딩된 스타일시트 제거**: 인라인 스타일 제거, QSS로 처리
+   - **버튼 생성/제거 로직 단순화**: `_init_buttons` → `_create_buttons`로 메서드명 변경
+   - **불필요한 상태 관리 제거**: 복잡한 버튼 상태 관리 로직 제거
+
+3. **BatchRemoveTagsDialog** ✅ **단순화 완료**
+   - **복잡한 레이아웃 조작 로직 제거**: `_clear_layout` → `_clear_chips`로 단순화
+   - **메서드명을 더 명확하게 변경**: `populate_tags` → `load_tags`, `update_chip_layout` → `create_tag_chips`
+   - **중복 코드 제거**: 파일 목록 가져오기 로직을 `_get_target_files` 메서드로 분리
+   - **불필요한 시그널 제거**: `tags_updated` 시그널 관련 로직 제거
+
+**이미 단순한 구조를 가진 위젯들:**
+
+1. **FileListWidget** - "데이터 → 뷰모델 → UI" 구조 완벽
+2. **DirectoryTreeWidget** - Qt 기본 모델 사용으로 단순함
+3. **TagControlWidget** - FlowLayout 적용으로 단순화됨
+4. **FileDetailWidget** - ViewModel 연결이 깔끔함
+5. **TagChip** - 단순한 UI 위젯, 복잡한 로직 없음
+6. **CustomTagDialog** - 기본적인 다이얼로그 구조
+7. **BatchTaggingOptionsWidget** - 단순한 옵션 위젯
+
+**달성된 목표:**
+
+- **불필요한 강제 새로고침 제거** ✅
+- **중복 신호 연결 제거** ✅  
+- **복잡한 레이아웃 조작 제거** ✅
+- **하드코딩된 스타일 제거** ✅
+- **복잡한 예외 처리 로직 단순화** ✅
+
+**결과:**
+모든 주요 UI 위젯이 **"데이터 → 뷰모델 → UI"** 단순 구조로 동작하며, 유지보수성과 확장성이 크게 향상되었습니다. 각 위젯이 명확한 책임을 가지고 있으며, 복잡한 의존성이나 불필요한 강제 새로고침 없이 깔끔하게 동작합니다.
+
+**관련 파일:**
+- `widgets/search_widget.py`: 자동완성, 히스토리, 스타일 관련 복잡한 로직 제거
+- `widgets/quick_tags_widget.py`: 예외 처리, 스타일시트, 버튼 관리 로직 단순화
+- `widgets/batch_remove_tags_dialog.py`: 레이아웃 조작, 메서드명, 중복 코드 정리
+
+---
+
+## 2025년 7월 15일 - Gemini AI
+
 ### TagControlWidget 태그칩 렌더링 문제 해결 및 디버깅 과정 분석
 
 **배경:**

@@ -26,64 +26,34 @@ class QuickTagsWidget(QWidget):
         self.load_quick_tags() # 커스텀 태그 로드
 
     def load_quick_tags(self):
+        """퀵 태그 목록을 로드하고 버튼을 생성합니다."""
         self._quick_tags = self.custom_tag_manager.load_custom_quick_tags()
-        # 기존 버튼/레이아웃 제거
-        try:
-            for btn in self._buttons.values():
-                self.horizontalLayout.removeWidget(btn)
-                btn.deleteLater()
-            self._buttons.clear()
-            self._init_buttons()
-        except RuntimeError as e:
-            # 위젯이 삭제된 경우 무시
-            if "wrapped C/C++ object" in str(e):
-                return
-            else:
-                raise
+        self._create_buttons()
 
-    def _init_buttons(self):
+    def _create_buttons(self):
+        """태그 버튼들을 생성합니다."""
+        # 기존 버튼 제거
+        for btn in self._buttons.values():
+            self.horizontalLayout.removeWidget(btn)
+            btn.deleteLater()
+        self._buttons.clear()
+        
+        # 새 버튼 생성
         for tag in self._quick_tags:
             btn = QPushButton(tag, self)
-            
             btn.clicked.connect(lambda _, t=tag: self._on_btn_clicked(t))
             self.horizontalLayout.addWidget(btn)
             self._buttons[tag] = btn
 
-
     def _on_btn_clicked(self, tag):
+        """태그 버튼 클릭 처리"""
         self.tags_changed.emit(tag)
 
     def set_enabled(self, enabled: bool):
         """위젯 전체 활성/비활성 상태를 설정합니다."""
         self.is_enabled = enabled  
-        
         self.setEnabled(enabled)
         
+        # 버튼들의 활성화 상태만 변경 (스타일은 QSS에서 처리)
         for button in self._buttons.values():
             button.setEnabled(enabled)
-            if not enabled:
-                button.setStyleSheet("""
-                    QPushButton {
-                        background-color: #f5f5f5;
-                        border: 1px solid #ddd;
-                        border-radius: 14px;
-                        padding: 4px 12px;
-                        font-size: 9px;
-                        color: #999;
-                    }
-                """)
-            else:
-                button.setStyleSheet("""
-                    QPushButton {
-                        background-color: #f0f0f0;
-                        border: 1px solid #ccc;
-                        border-radius: 14px;
-                        padding: 4px 12px;
-                        font-size: 9px;
-                        color: #333;
-                    }
-                    QPushButton:hover {
-                        background-color: #e0e0e0;
-                        border: 1px solid #999;
-                    }
-                """)
