@@ -34,7 +34,7 @@ class FileTableModel(QAbstractTableModel):
         return len(self.viewmodel.get_current_display_files())
         
     def columnCount(self, parent=QModelIndex()):
-        return 3  # 파일명, 상대 경로, 태그
+        return 3  # 파일명, 태그, 경로
         
     def data(self, index, role=Qt.DisplayRole):
         if not index.isValid():
@@ -49,7 +49,13 @@ class FileTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if index.column() == 0:  # 파일명
                 return os.path.basename(file_path)
-            elif index.column() == 1:  # 경로
+            elif index.column() == 1:  # 태그
+                try:
+                    tags = self.viewmodel.get_tags_for_file(file_path)
+                    return ", ".join(tags) if tags else ""
+                except Exception:
+                    return ""
+            elif index.column() == 2:  # 경로
                 if self.viewmodel.is_search_mode():
                     return file_path
                 elif self.viewmodel.get_current_directory():
@@ -58,12 +64,6 @@ class FileTableModel(QAbstractTableModel):
                     except ValueError:
                         return file_path
                 return file_path
-            elif index.column() == 2:  # 태그
-                try:
-                    tags = self.viewmodel.get_tags_for_file(file_path)
-                    return ", ".join(tags) if tags else ""
-                except Exception:
-                    return ""
                     
         elif role == Qt.UserRole:  # 전체 파일 경로 반환
             return file_path
@@ -72,7 +72,7 @@ class FileTableModel(QAbstractTableModel):
         
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            headers = ["파일명", "경로", "태그"]
+            headers = ["파일명", "태그", "경로"]
             if section < len(headers):
                 return headers[section]
         return QVariant()
@@ -90,9 +90,9 @@ class FileTableModel(QAbstractTableModel):
         if not current_display_files:
             return
 
-        # 태그 컬럼 (인덱스 2)에 대해서만 dataChanged 시그널 발생
-        top_left = self.index(0, 2)
-        bottom_right = self.index(len(current_display_files) - 1, 2)
+        # 태그 컬럼 (인덱스 1)에 대해서만 dataChanged 시그널 발생
+        top_left = self.index(0, 1)
+        bottom_right = self.index(len(current_display_files) - 1, 1)
         self.dataChanged.emit(top_left, bottom_right)
 
 
@@ -122,14 +122,30 @@ class FileListWidget(QWidget):
 
         # 테이블 헤더 설정
         header = self.list_view.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)  # 파일명
-        header.setSectionResizeMode(1, QHeaderView.Stretch)  # 경로
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # 태그
+        header.setSectionResizeMode(0, QHeaderView.Interactive)  # 파일명 - 4 비율
+        header.setSectionResizeMode(1, QHeaderView.Interactive)  # 태그 - 4 비율  
+        header.setSectionResizeMode(2, QHeaderView.Interactive)  # 경로 - 2 비율
         
         layout.addWidget(self.list_view)
         self.setLayout(layout)
 
+        # 위젯이 표시된 후 컬럼 크기 설정
+        from PyQt5.QtCore import QTimer
+        QTimer.singleShot(100, self._setup_column_sizes)
+
         self.connect_viewmodel_signals()
+
+    def _setup_column_sizes(self):
+        """컬럼 크기를 비율에 맞게 설정합니다."""
+        header = self.list_view.horizontalHeader()
+        total_width = self.list_view.width()
+        if total_width > 0:
+            file_name_width = int(total_width * 0.4)  # 40%
+            tag_width = int(total_width * 0.4)  # 40%
+            path_width = int(total_width * 0.2)  # 20%
+            header.resizeSection(0, file_name_width)
+            header.resizeSection(1, tag_width)
+            header.resizeSection(2, path_width)
 
     def connect_viewmodel_signals(self):
         self.viewmodel.files_updated.connect(self.on_viewmodel_files_updated)

@@ -29,13 +29,20 @@ class SearchWidget(QWidget):
         self._debounce_timer.timeout.connect(self._on_debounce_timeout)
         
         self._advanced_panel_visible = False
+        
+        # 태그 자동완성 초기화
+        self._initialize_tag_completer()
 
     def setup_ui(self):
         # Material Design 스타일 적용
         self.setObjectName("searchPanel")
         
+        # SearchWidget 자체의 높이 정책 설정
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setMinimumHeight(60)  # 메인 레이아웃 마진(8*2) + QLineEdit 높이(44) = 60px
+        
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(16, 8, 16, 8)
+        main_layout.setContentsMargins(16, 8, 16, 8)  # 상하 마진을 늘려서 여유 공간 확보
         main_layout.setSpacing(12)
 
         # 파일명 입력 (20%)
@@ -50,6 +57,7 @@ class SearchWidget(QWidget):
         self.extensions_input.setPlaceholderText(".jpg, .png")
         self.extensions_input.setFixedHeight(36)
         self.extensions_input.setFixedWidth(100)
+        self.extensions_input.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         main_layout.addWidget(self.extensions_input)
 
         # 태그 입력 (30%)
@@ -60,55 +68,68 @@ class SearchWidget(QWidget):
         self.tag_input.setToolTip("쉼표(,)는 AND, 파이프(|)는 OR, 별표(*)는 NOT 조건입니다.")
         main_layout.addWidget(self.tag_input, 3)
         
-        # 자동완성 단순화
+        # 자동완성 설정
         self._tag_completer_model = QStringListModel()
         self._tag_completer = QCompleter(self._tag_completer_model, self)
         self._tag_completer.setCaseSensitivity(Qt.CaseInsensitive)
         self._tag_completer.setFilterMode(Qt.MatchContains)
+        self._tag_completer.setCompletionMode(QCompleter.PopupCompletion)  # 팝업 모드로 설정
+        self._tag_completer.setMaxVisibleItems(10)  # 최대 10개 항목 표시
         self.tag_input.setCompleter(self._tag_completer)
 
         # 아이콘 버튼들을 별도 컨테이너에 배치하여 정렬 개선
         button_container = QWidget()
+        button_container.setFixedHeight(40)  # QLineEdit의 실제 높이에 맞춤 (36 + 테두리 4px)
         button_layout = QHBoxLayout(button_container)
-        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setContentsMargins(0, 2, 0, 2)  # 상하 패딩 추가하여 버튼 중앙 정렬
         button_layout.setSpacing(8)
 
-        # 검색 버튼
+        # 검색 버튼 (정사각형, QLineEdit의 실제 높이에 맞춤)
         self.search_button = QPushButton()
         self.search_button.setIcon(QIcon("assets/icons/search.svg"))
-        self.search_button.setFixedSize(36, 36)
+        self.search_button.setFixedSize(36, 36)  # 정사각형 유지
         self.search_button.setToolTip("검색 실행")
+        self.search_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # 크기 정책 고정
+        self.search_button.setProperty("class", "search-button")  # CSS 클래스 설정
         button_layout.addWidget(self.search_button)
 
-        # 초기화 버튼
+        # 초기화 버튼 (정사각형, QLineEdit의 실제 높이에 맞춤)
         self.clear_button = QPushButton()
         self.clear_button.setIcon(QIcon("assets/icons/close.svg"))
-        self.clear_button.setFixedSize(36, 36)
+        self.clear_button.setFixedSize(36, 36)  # 정사각형 유지
         self.clear_button.setToolTip("검색 조건 초기화")
+        self.clear_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # 크기 정책 고정
+        self.clear_button.setProperty("class", "search-button")  # CSS 클래스 설정
         button_layout.addWidget(self.clear_button)
 
-        # 고급 검색 토글 버튼
+        # 고급 검색 토글 버튼 (정사각형, QLineEdit의 실제 높이에 맞춤)
         self.advanced_toggle = QPushButton()
         self.advanced_toggle.setIcon(QIcon("assets/icons/expand_more.svg"))
-        self.advanced_toggle.setFixedSize(36, 36)
+        self.advanced_toggle.setFixedSize(36, 36)  # 정사각형 유지
         self.advanced_toggle.setToolTip("고급 검색 옵션")
+        self.advanced_toggle.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # 크기 정책 고정
+        self.advanced_toggle.setProperty("class", "search-button")  # CSS 클래스 설정
         button_layout.addWidget(self.advanced_toggle)
 
         main_layout.addWidget(button_container)
 
-        # 결과 표시 영역
+        # 결과 표시 영역 (고정 너비)
         result_container = QWidget()
+        result_container.setFixedWidth(200)  # 고정 너비 설정
+        result_container.setFixedHeight(44)  # QLineEdit의 실제 높이에 맞춤 (36 + 테두리 4px)
         result_layout = QVBoxLayout(result_container)
-        result_layout.setContentsMargins(0, 0, 0, 0)
-        result_layout.setSpacing(4)
+        result_layout.setContentsMargins(0, 4, 0, 4)  # 상하 패딩 추가
+        result_layout.setSpacing(2)
 
         self.result_count_label = QLabel("검색 결과")
         self.result_count_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.result_count_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         result_layout.addWidget(self.result_count_label)
 
         self.search_conditions_label = QLabel()
         self.search_conditions_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.search_conditions_label.setWordWrap(True)
+        self.search_conditions_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         result_layout.addWidget(self.search_conditions_label)
 
         main_layout.addWidget(result_container)
@@ -364,6 +385,20 @@ class SearchWidget(QWidget):
         """고급 검색 패널 위젯을 반환합니다."""
         return self.advanced_panel
 
+    def _initialize_tag_completer(self):
+        """태그 자동완성을 초기화합니다."""
+        # 약간의 지연을 두고 초기화하여 태그 데이터가 로드될 시간을 줍니다
+        QTimer.singleShot(100, self._load_tag_completer_data)
+    
+    def _load_tag_completer_data(self):
+        """태그 자동완성 데이터를 로드합니다."""
+        try:
+            all_tags = self.viewmodel.get_all_tags()
+            self._tag_completer_model.setStringList(all_tags)
+            # 태그 자동완성 초기화 완료
+        except Exception as e:
+            logger.error(f"태그 자동완성 초기화 실패: {e}")
+    
     def update_tag_completer(self, tags: list):
         """태그 자동완성 목록을 업데이트합니다."""
         self._tag_completer_model.setStringList(tags) 

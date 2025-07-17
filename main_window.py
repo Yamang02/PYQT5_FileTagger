@@ -325,6 +325,13 @@ class MainWindow(QMainWindow):
             if hasattr(self.file_list_viewmodel, "refresh_current_files"):
                 self.file_list_viewmodel.refresh_current_files()
 
+            # 검색 위젯의 자동완성 업데이트
+            try:
+                all_tags = self.tag_service.get_all_tags()
+                self.ui_setup.get_widget("search_widget").update_tag_completer(all_tags)
+            except Exception as e:
+                logger.warning(f"[MAIN] 검색 위젯 자동완성 업데이트 실패: {e}")
+
             # EventBus를 통해 이미 ViewModel들이 자동 업데이트되므로
             # 여기서는 추가적인 ViewModel 업데이트를 하지 않음
             # (무한 루프 방지)

@@ -119,8 +119,8 @@ class UISetupManager:
         vbox.setSpacing(0)
         self.main_window.centralwidget.setLayout(vbox)
         
-        # 검색 툴바 추가
-        vbox.addWidget(self.widgets['search_widget'])
+        # 검색 툴바 추가 (QFrame으로 래핑)
+        vbox.addWidget(self.main_window.search_widget_frame)
         
         # 고급 검색 패널 추가 (기본 숨김)
         self.main_window.advanced_panel_widget = self.widgets['search_widget'].get_advanced_panel()

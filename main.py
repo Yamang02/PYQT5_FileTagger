@@ -6,7 +6,7 @@ from pymongo import MongoClient
 import config
 from main_window import MainWindow
 
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s:%(name)s:%(lineno)d] %(message)s')
+logging.basicConfig(level=logging.WARNING, format='[%(levelname)s:%(name)s:%(lineno)d] %(message)s')
 
 if __name__ == '__main__':
     try:

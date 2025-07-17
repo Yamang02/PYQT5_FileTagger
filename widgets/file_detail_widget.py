@@ -69,7 +69,6 @@ class FileDetailWidget(QWidget):
 
     def connect_viewmodel_signals(self):
         """ViewModel 시그널 연결"""
-        logger.info(f"FileDetailWidget: ViewModel 시그널 연결 중... ViewModel: {self.viewmodel}")
         self.viewmodel.file_details_updated.connect(self.on_viewmodel_file_details_updated)
         self.viewmodel.show_message.connect(
             lambda msg, duration: (
@@ -78,7 +77,6 @@ class FileDetailWidget(QWidget):
                 else self.window().statusbar.showMessage(msg, duration)
             )
         )
-        logger.info("FileDetailWidget: ViewModel 시그널 연결 완료")
 
     def setup_ui(self):
         """UI 초기화 - 근본적인 단순화"""
@@ -294,48 +292,86 @@ class FileDetailWidget(QWidget):
         buttons_layout.addWidget(self.play_button)
         buttons_layout.addWidget(self.stop_button)
         buttons_layout.addWidget(self.volume_button)
+        # 볼륨 슬라이더는 처음엔 추가하지 않음 (동적으로 추가/제거)
         buttons_layout.addItem(QSpacerItem(20, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
-        
-        # 레이아웃 조립
-        controls_layout.addLayout(progress_layout)
-        controls_layout.addLayout(buttons_layout)
-        
-        # 볼륨 슬라이더 (개선된 디자인)
-        self.volume_slider = QSlider(Qt.Vertical)
+
+        # 볼륨 슬라이더 (가로형, 버튼 오른쪽에 위치)
+        self.volume_slider = QSlider(Qt.Horizontal)
         self.volume_slider.setRange(0, 100)
         self.volume_slider.setValue(50)
         self.volume_slider.hide()
-        self.volume_slider.setMinimumHeight(80)
-        self.volume_slider.setMaximumHeight(80)
-        self.volume_slider.setFixedWidth(20)
-        self.volume_slider.setParent(self.video_widget_container)
+        self.volume_slider.setMinimumWidth(80)
+        self.volume_slider.setMaximumWidth(120)
+        self.volume_slider.setFixedHeight(20)
         self.volume_slider.setStyleSheet("""
             QSlider {
                 border: none;
                 background: transparent;
             }
-            QSlider::groove:vertical {
+            QSlider::groove:horizontal {
                 border: none;
-                width: 4px;
+                height: 4px;
                 background: rgba(0, 0, 0, 0.2);
                 border-radius: 2px;
             }
-            QSlider::sub-page:vertical {
+            QSlider::sub-page:horizontal {
                 background: #0078d4;
                 border-radius: 2px;
             }
-            QSlider::handle:vertical {
+            QSlider::handle:horizontal {
                 background: #ffffff;
                 border: 2px solid #0078d4;
                 width: 12px;
                 height: 12px;
                 border-radius: 6px;
-                margin: 0 -4px;
+                margin: -4px 0;
             }
-            QSlider::handle:vertical:hover {
+            QSlider::handle:horizontal:hover {
                 background: #f0f0f0;
             }
         """)
+        self._volume_slider_added = False
+
+        # 레이아웃 조립
+        controls_layout.addLayout(progress_layout)
+        controls_layout.addLayout(buttons_layout)
+        
+        # 볼륨 슬라이더 (개선된 디자인)
+        # self.volume_slider = QSlider(Qt.Vertical) # 이 부분은 버튼 오른쪽에 위치하도록 변경되었으므로 제거
+        # self.volume_slider.setRange(0, 100)
+        # self.volume_slider.setValue(50)
+        # self.volume_slider.hide()
+        # self.volume_slider.setMinimumHeight(80)
+        # self.volume_slider.setMaximumHeight(80)
+        # self.volume_slider.setFixedWidth(20)
+        # self.volume_slider.setParent(self.video_widget_container)
+        # self.volume_slider.setStyleSheet("""
+        #     QSlider {
+        #         border: none;
+        #         background: transparent;
+        #     }
+        #     QSlider::groove:vertical {
+        #         border: none;
+        #         width: 4px;
+        #         background: rgba(0, 0, 0, 0.2);
+        #         border-radius: 2px;
+        #     }
+        #     QSlider::sub-page:vertical {
+        #         background: #0078d4;
+        #         border-radius: 2px;
+        #     }
+        #     QSlider::handle:vertical {
+        #         background: #ffffff;
+        #         border: 2px solid #0078d4;
+        #         width: 12px;
+        #         height: 12px;
+        #         border-radius: 6px;
+        #         margin: 0 -4px;
+        #     }
+        #     QSlider::handle:vertical:hover {
+        #         background: #f0f0f0;
+        #     }
+        # """)
         
         # 컨트롤 패널을 비디오 레이아웃에 추가 (여백 포함)
         video_layout.addWidget(self.controls_panel)
@@ -609,20 +645,22 @@ class FileDetailWidget(QWidget):
             self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
     def toggle_volume_slider(self):
+        # 볼륨 버튼 오른쪽에 플로팅으로 표시/숨김
         if self.volume_slider.isVisible():
             self.volume_slider.hide()
         else:
-            # 볼륨 버튼의 위치를 기준으로 슬라이더 배치
-            volume_button_rect = self.volume_button.geometry()
-            
-            # 볼륨 버튼을 기준으로 슬라이더 위치 계산
-            # 버튼 위쪽에 슬라이더를 배치
-            x = volume_button_rect.x() - 5  # 버튼 왼쪽으로 5px
-            y = volume_button_rect.y() - 85  # 버튼 위쪽으로 85px (슬라이더 높이 + 간격)
-            
-            self.volume_slider.setGeometry(x, y, 20, 80)
+            # 볼륨 버튼의 글로벌 위치 계산
+            button_rect = self.volume_button.rect()
+            button_global = self.volume_button.mapToGlobal(button_rect.topRight())
+            parent_global = self.controls_panel.mapToGlobal(self.controls_panel.rect().topLeft())
+            # controls_panel 기준 상대 좌표
+            x = button_global.x() - parent_global.x() + 8  # 약간 오른쪽 여유
+            y = button_global.y() - parent_global.y() - (self.volume_slider.height() - button_rect.height()) // 2
+            # 슬라이더를 controls_panel 위에 플로팅으로 표시
+            self.volume_slider.setParent(self.controls_panel)
+            self.volume_slider.setGeometry(x, y, self.volume_slider.width(), self.volume_slider.height())
             self.volume_slider.show()
-            self.volume_slider.raise_()  # 최상위로
+            self.volume_slider.raise_()
 
     def position_changed(self, position):
         self.position_slider.setValue(position)
