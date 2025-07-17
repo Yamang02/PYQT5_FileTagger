@@ -137,7 +137,7 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>60</height>
+           <height>120</height>
           </size>
          </property>
          <property name="maximumSize">
@@ -152,7 +152,7 @@
             <x>0</x>
             <y>0</y>
             <width>356</width>
-            <height>60</height>
+            <height>120</height>
            </rect>
           </property>
          </widget>
@@ -167,13 +167,6 @@
        </item>
        <item>
         <widget class="QWidget" name="batch_options_placeholder" native="true"/>
-       </item>
-       <item>
-        <widget class="QPushButton" name="batch_apply_button">
-         <property name="text">
-          <string>일괄 태그 적용</string>
-         </property>
-        </widget>
        </item>
        <item>
         <widget class="QPushButton" name="batch_remove_tags_button">

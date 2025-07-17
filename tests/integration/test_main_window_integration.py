@@ -191,8 +191,7 @@ class TestMainWindowIntegration:
         main_window.tag_control.batch_tag_input.returnPressed.emit()
         QApplication.processEvents()
         
-        # Simulate apply button click
-        main_window.tag_control.apply_batch_tags()
+        # 태그 입력 후 Enter 키로 즉시 적용 (버튼 제거됨)
         QApplication.processEvents()
 
         # Then

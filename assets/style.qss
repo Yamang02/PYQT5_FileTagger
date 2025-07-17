@@ -214,6 +214,28 @@ QFrame#tagControlPanel {
     margin: 4px;
 }
 
+/* 태그 관리 패널 비활성화 상태 */
+QFrame#tagControlPanel:disabled {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+/* 태그 관리 패널 내부 위젯들 비활성화 상태 */
+QFrame#tagControlPanel QLineEdit:disabled,
+QFrame#tagControlPanel QPushButton:disabled,
+QFrame#tagControlPanel QLabel:disabled,
+QFrame#tagControlPanel QTabWidget:disabled,
+QFrame#tagControlPanel QTabWidget::pane:disabled,
+QFrame#tagControlPanel QTabBar::tab:disabled,
+QFrame#tagControlPanel QScrollArea:disabled,
+QFrame#tagControlPanel QListView:disabled,
+QFrame#tagControlPanel QCheckBox:disabled,
+QFrame#tagControlPanel QComboBox:disabled {
+    background-color: #f1f3f4;
+    border-color: #dadce0;
+    color: #b0b4ba;
+}
+
 QFrame#fileDetailPanel {
     background-color: #ffffff;
     border: 1px solid #e0e0e0;
@@ -318,6 +340,12 @@ QFrame#TagChip QPushButton#delete_button:pressed {
     background-color: #ef5350;
     border-color: #d32f2f;
     color: #ffffff;
+}
+
+QFrame#TagChip QPushButton#delete_button:disabled {
+    background: transparent;
+    border: none;
+    color: #c0c4cc;
 }
 
 /* ===== TREE VIEW ===== */

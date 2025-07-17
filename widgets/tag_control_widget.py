@@ -105,8 +105,7 @@ class TagControlWidget(QWidget):
         self.individual_quick_tags.tags_changed.connect(self.on_individual_quick_tags_changed)
 
         # 일괄 태깅 탭 시그널
-        self.batch_tag_input.returnPressed.connect(lambda: self.add_tag_from_input(mode='batch'))
-        self.batch_apply_button.clicked.connect(self.apply_batch_tags)
+        self.batch_tag_input.returnPressed.connect(lambda: self.add_tag_from_input(mode='batch'))        
         self.batch_quick_tags.tags_changed.connect(self.on_batch_quick_tags_changed)
         self.batch_remove_tags_button.clicked.connect(self._on_batch_remove_tags_clicked)
 
@@ -229,12 +228,8 @@ class TagControlWidget(QWidget):
     def remove_tag(self, tag_text, mode):
         if mode == 'individual':
             self.viewmodel.remove_tag_from_individual(tag_text)
-        elif mode == 'batch':
-            # ViewModel에 일괄 태깅 탭의 태그 제거 로직 추가 필요
-            batch_tags = self.viewmodel.get_current_batch_tags()
-            if tag_text in batch_tags:
-                batch_tags.remove(tag_text)
-                self._refresh_chip_layout(batch_tags, self.batch_flow_layout, self.batch_tag_input)
+        # 일괄 태깅 탭에서는 태그칩 삭제 버튼이 비활성화되므로 
+        # mode == 'batch' 로직은 제거됨
 
     def _refresh_chip_layout(self, tags, chip_layout, tag_input_field):
         logger.info(f"TagControlWidget: 칩 레이아웃 새로고침 - 태그 수: {len(tags)}, 레이아웃 타입: {type(chip_layout).__name__}")
@@ -256,13 +251,16 @@ class TagControlWidget(QWidget):
         # 현재 태그 목록으로 새 칩 생성 및 추가
         for tag in tags:
             chip = TagChip(tag)
-            # 현재 활성화된 탭에 따라 remove_tag 호출 시 mode 인자 전달
+            # 현재 활성화된 탭에 따라 삭제 버튼 동작 결정
             current_tab_index = self.tagging_tab_widget.currentIndex()
             if current_tab_index == 0: # 개별 태깅 탭
-                # lambda 변수 캡처 문제 해결을 위해 기본값 사용
+                # 개별 태깅 탭에서는 삭제 버튼 활성화
                 chip.delete_button.clicked.connect(lambda checked, t=tag: self.remove_tag(t, 'individual'))
             elif current_tab_index == 1: # 일괄 태깅 탭
-                chip.delete_button.clicked.connect(lambda checked, t=tag: self.remove_tag(t, 'batch'))
+                # 일괄 태깅 탭에서는 삭제 버튼 비활성화
+                # 일괄 태그 제거는 BatchRemoveTagsDialog를 통해서만 가능
+                chip.delete_button.setEnabled(False)
+                chip.delete_button.setToolTip("일괄 태그 제거는 일괄 태그 제거' 버튼을 사용하세요")
             
             # FlowLayout인지에 따라 다르게 추가
             if isinstance(chip_layout, FlowLayout):
@@ -313,19 +311,12 @@ class TagControlWidget(QWidget):
     def save_individual_tags(self):
         pass  # 더 이상 사용하지 않음, 버튼도 UI에서 제거 필요
 
-    def apply_batch_tags(self):
-        tags_to_add = self.viewmodel.get_current_batch_tags()
-        recursive = self.batch_options.recursive_checkbox.isChecked()
-        file_extensions = self.batch_options._get_file_extensions()
-        self.viewmodel.apply_batch_tags(tags_to_add, recursive, file_extensions)
-
     def set_enabled(self, enabled):
         # 탭 위젯 자체의 활성화/비활성화는 여기서 제어하지 않고, update_for_target에서 탭별로 제어
         self.individual_tag_input.setEnabled(enabled)
         self.individual_quick_tags.set_enabled(enabled)
 
         self.batch_tag_input.setEnabled(enabled)
-        self.batch_apply_button.setEnabled(enabled)
         self.batch_quick_tags.set_enabled(enabled)
         self.batch_options.setEnabled(enabled)
 
