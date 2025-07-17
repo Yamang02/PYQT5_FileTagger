@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QSizePolicy, QFrame, QGraphicsDropShado
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import QDir
 from PyQt5.uic import loadUi
-import config
+from core.config_manager import config_manager
 
 from widgets.directory_tree_widget import DirectoryTreeWidget
 from widgets.file_list_widget import FileListWidget
@@ -70,11 +70,7 @@ class UISetupManager:
     def _create_widgets(self):
         """필요한 위젯 인스턴스들을 생성하고 카드 효과를 적용합니다."""
         # 초기 작업공간 설정
-        initial_workspace = (
-            config.DEFAULT_WORKSPACE_PATH
-            if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH)
-            else QDir.homePath()
-        )
+        initial_workspace = config_manager.get_workspace_path()
 
         # 위젯 인스턴스 생성
         directory_tree_widget = DirectoryTreeWidget(initial_workspace)

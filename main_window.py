@@ -1,6 +1,6 @@
 import os
 import logging
-import config
+from core.config_manager import config_manager
 from PyQt5.QtWidgets import (
     QMainWindow,
     QFileDialog,
@@ -170,9 +170,9 @@ class MainWindow(QMainWindow):
 
     def set_workspace(self):
         current_workspace = (
-            config.DEFAULT_WORKSPACE_PATH
-            if config.DEFAULT_WORKSPACE_PATH
-            and os.path.isdir(config.DEFAULT_WORKSPACE_PATH)
+            config_manager.get_workspace_path()
+            if config_manager.get_workspace_path()
+            and os.path.isdir(config_manager.get_workspace_path())
             else QDir.homePath()
         )
         new_workspace = QFileDialog.getExistingDirectory(
@@ -180,16 +180,9 @@ class MainWindow(QMainWindow):
         )
         if new_workspace:
             try:
-                with open("config.py", "r", encoding="utf-8") as f:
-                    lines = f.readlines()
-                with open("config.py", "w", encoding="utf-8") as f:
-                    for line in lines:
-                        if line.startswith("DEFAULT_WORKSPACE_PATH ="):
-                            cleaned_path = new_workspace.replace("\\", "/")
-                            f.write(f'DEFAULT_WORKSPACE_PATH = "{cleaned_path}"\n')
-                        else:
-                            f.write(line)
-                config.DEFAULT_WORKSPACE_PATH = new_workspace
+                # 새로운 ConfigManager를 사용하여 설정 저장
+                config_manager.set_workspace_path(new_workspace)
+                config_manager.save_config()
                 self.ui_setup.get_widget("directory_tree").set_root_path(new_workspace)
                 self.file_list_viewmodel.set_directory(new_workspace)
                 self.ui_setup.get_widget("file_detail").clear_preview()

@@ -24,8 +24,8 @@ class SearchManager:
             extensions = filename_cond.get('extensions', [])
             workspace_path = getattr(self.tag_manager, 'workspace_path', None)
             if not workspace_path:
-                import config
-                workspace_path = config.DEFAULT_WORKSPACE_PATH if hasattr(config, 'DEFAULT_WORKSPACE_PATH') and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) else os.path.expanduser('~')
+                from core.config_manager import config_manager
+                workspace_path = config_manager.get_workspace_path()
             search_results = []
             for root, _, files in os.walk(workspace_path):
                 for file in files:

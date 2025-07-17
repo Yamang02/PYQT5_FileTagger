@@ -3,7 +3,7 @@ import logging
 import os # os 모듈 추가
 from PyQt5.QtWidgets import QApplication
 from pymongo import MongoClient
-import config
+from core.config_manager import config_manager
 from main_window import MainWindow
 
 logging.basicConfig(level=logging.WARNING, format='[%(levelname)s:%(name)s:%(lineno)d] %(message)s')
@@ -11,12 +11,18 @@ logging.basicConfig(level=logging.WARNING, format='[%(levelname)s:%(name)s:%(lin
 if __name__ == '__main__':
     try:
         # MongoDB 클라이언트 생성
-        client = MongoClient(config.MONGO_URI, serverSelectionTimeoutMS=5000)
+        client = MongoClient(config_manager.get_mongodb_uri(), serverSelectionTimeoutMS=5000)
         # 연결 테스트
         client.admin.command('ping')
         logging.info("MongoDB에 성공적으로 연결되었습니다.")
 
-        app = QApplication(sys.argv)
+        # QApplication 초기화 - 매개변수 안전하게 처리
+        if hasattr(sys, '_MEIPASS'):
+            # PyInstaller로 빌드된 경우
+            app = QApplication([])
+        else:
+            # 일반 Python 실행의 경우
+            app = QApplication(sys.argv)
 
         # QSS 파일 로드 및 적용
         qss_file_path = os.path.join(os.path.dirname(__file__), 'assets', 'style.qss')

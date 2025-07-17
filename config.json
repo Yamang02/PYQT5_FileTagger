@@ -1,0 +1,17 @@
+{
+  "mongodb": {
+    "host": "localhost",
+    "port": 27018,
+    "database": "file_tagger",
+    "collection": "tags",
+    "uri": "mongodb://localhost:27018/"
+  },
+  "application": {
+    "default_workspace_path": "",
+    "custom_tags_file": "custom_tags.json"
+  },
+  "ui": {
+    "theme": "default",
+    "language": "ko"
+  }
+} 

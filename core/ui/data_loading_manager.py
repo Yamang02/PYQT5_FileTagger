@@ -7,7 +7,7 @@
 
 import os
 from PyQt5.QtCore import QDir
-import config
+from core.config_manager import config_manager
 
 
 class DataLoadingManager:
@@ -32,11 +32,7 @@ class DataLoadingManager:
     def _load_workspace_data(self):
         """작업공간 데이터를 로드합니다."""
         # 초기 작업공간 경로 설정
-        initial_workspace = (
-            config.DEFAULT_WORKSPACE_PATH 
-            if config.DEFAULT_WORKSPACE_PATH and os.path.isdir(config.DEFAULT_WORKSPACE_PATH) 
-            else QDir.homePath()
-        )
+        initial_workspace = config_manager.get_workspace_path()
         
         # 디렉토리 트리에 초기 경로 설정
         if hasattr(self.main_window, 'directory_tree'):

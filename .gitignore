@@ -25,3 +25,13 @@ Thumbs.db
 
 
 custom_tags.json
+
+# Build and deployment
+FileTagger_Package/
+dist/
+build/
+*.spec
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

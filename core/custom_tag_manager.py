@@ -1,7 +1,7 @@
 import json
 import os
 import logging
-import config
+from core.config_manager import config_manager
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class CustomTagManager:
     사용자 정의 빠른 태그(Quick Tags)를 파일 시스템에 저장하고 로드하는 클래스입니다.
     """
     def __init__(self):
-        self.file_path = os.path.join(os.getcwd(), config.CUSTOM_TAGS_FILE)
+        self.file_path = os.path.join(os.getcwd(), config_manager.get_custom_tags_file())
         logger.info(f"[CustomTagManager] 커스텀 태그 파일 경로: {self.file_path}")
 
     def load_custom_quick_tags(self) -> list[str]:
