@@ -8,7 +8,9 @@ from PyQt5.QtTest import QTest
 
 from core.tag_ui_state_manager import TagUIStateManager
 from core import TagManager
-from widgets.batch_tagging_options_widget import BatchTaggingOptionsWidget
+from widgets.search_widget import SearchWidget
+from viewmodels.search_viewmodel import SearchViewModel
+from core.search_manager import SearchManager
 
 # Mock TagManager for UI tests
 @pytest.fixture(scope="function")
@@ -43,9 +45,12 @@ def state_manager():
     return TagUIStateManager()
 
 @pytest.fixture
-def batch_tagging_options_widget(app):
-    """BatchTaggingOptionsWidget 인스턴스를 생성합니다."""
-    widget = BatchTaggingOptionsWidget()
+def search_widget(app):
+    """SearchWidget 인스턴스를 생성합니다."""
+    mock_tag_service = MagicMock()
+    mock_search_manager = MagicMock()
+    viewmodel = SearchViewModel(mock_tag_service, mock_search_manager)
+    widget = SearchWidget(viewmodel)
     widget.show()
     return widget
 
@@ -57,73 +62,71 @@ def temp_dir():
     shutil.rmtree(temp_path, ignore_errors=True)
 
 @pytest.mark.ui
-def test_batch_tagging_options_widget_initial_state(batch_tagging_options_widget, qtbot):
-    """일괄 태그 옵션 위젯의 초기 상태 테스트"""
-    assert batch_tagging_options_widget.isVisible()
-    assert batch_tagging_options_widget.recursive_checkbox.isChecked()  # 기본값이 True로 설정됨
-    assert batch_tagging_options_widget.ext_combo.currentText() == "모든 파일"
-    assert batch_tagging_options_widget.custom_ext_edit.text() == ""
+def test_search_widget_extension_filter_initial_state(search_widget, qtbot):
+    """고급 검색 패널의 확장자 필터 초기 상태 테스트"""
+    # 고급 검색 패널 열기
+    search_widget.advanced_toggle.click()
+    qtbot.wait(100)
+    
+    assert search_widget.extension_filter_combo.currentText() == "모든 파일"
+    assert not search_widget.custom_extension_input.isVisible()
+    assert search_widget.custom_extension_input.text() == ""
 
 @pytest.mark.ui
-def test_batch_tagging_options_widget_recursive_option(batch_tagging_options_widget, qtbot):
-    """재귀 옵션 변경 테스트"""
-    # 초기 상태 확인 (기본값이 True로 설정됨)
-    assert batch_tagging_options_widget.recursive_checkbox.isChecked()
-    
-    # 재귀 옵션 비활성화
-    batch_tagging_options_widget.recursive_checkbox.setChecked(False)
-    assert not batch_tagging_options_widget.recursive_checkbox.isChecked()
-    
-    # 재귀 옵션 활성화
-    batch_tagging_options_widget.recursive_checkbox.setChecked(True)
-    assert batch_tagging_options_widget.recursive_checkbox.isChecked()
-
-@pytest.mark.ui
-def test_batch_tagging_options_widget_extension_filter(batch_tagging_options_widget, qtbot):
-    """확장자 필터 변경 테스트"""
-    # 초기 상태 확인
-    assert batch_tagging_options_widget.ext_combo.currentText() == "모든 파일"
-    assert batch_tagging_options_widget.custom_ext_edit.text() == ""
+def test_search_widget_extension_filter_options(search_widget, qtbot):
+    """확장자 필터 옵션 변경 테스트"""
+    # 고급 검색 패널 열기
+    search_widget.advanced_toggle.click()
+    qtbot.wait(100)
     
     # 이미지 파일 필터 선택
-    batch_tagging_options_widget.ext_combo.setCurrentText("이미지 파일")
-    assert batch_tagging_options_widget.ext_combo.currentText() == "이미지 파일"
+    search_widget.extension_filter_combo.setCurrentText("이미지 파일")
+    assert search_widget.extension_filter_combo.currentText() == "이미지 파일"
+    assert not search_widget.custom_extension_input.isVisible()
     
     # 문서 파일 필터 선택
-    batch_tagging_options_widget.ext_combo.setCurrentText("문서 파일")
-    assert batch_tagging_options_widget.ext_combo.currentText() == "문서 파일"
+    search_widget.extension_filter_combo.setCurrentText("문서 파일")
+    assert search_widget.extension_filter_combo.currentText() == "문서 파일"
+    assert not search_widget.custom_extension_input.isVisible()
     
     # 사용자 정의 필터 선택
-    batch_tagging_options_widget.ext_combo.setCurrentText("사용자 정의")
-    assert batch_tagging_options_widget.ext_combo.currentText() == "사용자 정의"
+    search_widget.extension_filter_combo.setCurrentText("사용자 정의")
+    assert search_widget.extension_filter_combo.currentText() == "사용자 정의"
+    assert search_widget.custom_extension_input.isVisible()
     
     # 사용자 정의 확장자 입력
-    batch_tagging_options_widget.custom_ext_edit.setText(".txt,.pdf")
-    assert batch_tagging_options_widget.custom_ext_edit.text() == ".txt,.pdf"
+    search_widget.custom_extension_input.setText(".txt,.pdf")
+    assert search_widget.custom_extension_input.text() == ".txt,.pdf"
 
 @pytest.mark.ui
-def test_batch_tagging_options_widget_get_file_extensions(batch_tagging_options_widget, qtbot):
-    """get_file_extensions 메서드 테스트"""
+def test_search_widget_get_extension_filter_extensions(search_widget, qtbot):
+    """_get_extension_filter_extensions 메서드 테스트"""
+    # 고급 검색 패널 열기
+    search_widget.advanced_toggle.click()
+    qtbot.wait(100)
+    
     # 모든 파일 선택 시
-    batch_tagging_options_widget.ext_combo.setCurrentText("모든 파일")
-    extensions = batch_tagging_options_widget._get_file_extensions()
+    search_widget.extension_filter_combo.setCurrentText("모든 파일")
+    extensions = search_widget._get_extension_filter_extensions()
     assert extensions == []
     
     # 이미지 파일 선택 시
-    batch_tagging_options_widget.ext_combo.setCurrentText("이미지 파일")
-    extensions = batch_tagging_options_widget._get_file_extensions()
+    search_widget.extension_filter_combo.setCurrentText("이미지 파일")
+    extensions = search_widget._get_extension_filter_extensions()
     assert ".jpg" in extensions
     assert ".png" in extensions
+    assert ".svg" in extensions
     
-    # 문서 파일 선택 시
-    batch_tagging_options_widget.ext_combo.setCurrentText("문서 파일")
-    extensions = batch_tagging_options_widget._get_file_extensions()
+    # 문서 파일 선택 시 (md 포함)
+    search_widget.extension_filter_combo.setCurrentText("문서 파일")
+    extensions = search_widget._get_extension_filter_extensions()
     assert ".txt" in extensions
     assert ".pdf" in extensions
+    assert ".md" in extensions  # md 확장자 추가 확인
     
     # 사용자 정의 선택 시
-    batch_tagging_options_widget.ext_combo.setCurrentText("사용자 정의")
-    batch_tagging_options_widget.custom_ext_edit.setText(".py,.js")
-    extensions = batch_tagging_options_widget._get_file_extensions()
+    search_widget.extension_filter_combo.setCurrentText("사용자 정의")
+    search_widget.custom_extension_input.setText(".py,.js")
+    extensions = search_widget._get_extension_filter_extensions()
     assert extensions == [".py", ".js"]
 

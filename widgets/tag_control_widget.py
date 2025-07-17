@@ -6,7 +6,6 @@ from PyQt5.QtCore import Qt, QStringListModel, pyqtSignal
 
 from widgets.tag_chip import TagChip
 from widgets.quick_tags_widget import QuickTagsWidget
-from widgets.batch_tagging_options_widget import BatchTaggingOptionsWidget
 from widgets.flow_layout import FlowLayout
 from core.custom_tag_manager import CustomTagManager
 from widgets.batch_remove_tags_dialog import BatchRemoveTagsDialog
@@ -28,6 +27,9 @@ class TagControlWidget(QWidget):
         self.connect_signals()
         self.connect_viewmodel_signals()
         self.update_all_tags_list() # 모든 태그 목록 초기화
+        
+        # ViewModel의 초기 상태를 받아서 UI 업데이트
+        self.viewmodel.update_for_target(None, False)
 
     def setup_ui(self):
         # Material Design 스타일 적용
@@ -64,17 +66,17 @@ class TagControlWidget(QWidget):
         # 퀵 태그와 태그칩 영역 사이 여백 추가
         self.batch_verticalLayout.setSpacing(12)
 
-        # BatchTaggingOptionsWidget 인스턴스 생성 및 배치
-        self.batch_options = BatchTaggingOptionsWidget()
-        self.batch_verticalLayout.replaceWidget(self.batch_options_placeholder, self.batch_options)
-        self.batch_options_placeholder.deleteLater()
-
         # 기존 HBoxLayout을 FlowLayout으로 교체
         self._setup_flow_layouts()
 
         # 모든 태그 목록을 위한 모델
         self.all_tags_model = QStringListModel()
         self.all_tags_list_view.setModel(self.all_tags_model)
+
+        # 초기 탭 상태 설정 (아무것도 선택되지 않은 상태)
+        self.tagging_tab_widget.setTabEnabled(0, True)   # 개별 태깅 탭 활성화
+        self.tagging_tab_widget.setTabEnabled(1, False)  # 일괄 태깅 탭 비활성화
+        self.tagging_tab_widget.setCurrentIndex(0)       # 개별 태깅 탭으로 설정
 
         self.set_enabled(False) # 초기에는 비활성화
 
@@ -151,7 +153,8 @@ class TagControlWidget(QWidget):
         if current_tab_index == 0: # 개별 태깅 탭
             self.viewmodel.add_tag_to_individual(selected_tag)
         elif current_tab_index == 1: # 일괄 태깅 탭
-            self._add_tag_to_list(selected_tag, self.viewmodel.get_current_batch_tags(), self.batch_flow_layout, self.batch_tag_input)
+            # 일괄 태깅 탭에서는 ViewModel을 통해 실제로 태그를 적용
+            self.viewmodel.apply_batch_tags([selected_tag], recursive=True, file_extensions=[])
 
     def _add_tag_to_list(self, tag_text, tag_list, chip_layout, tag_input_field):
         if tag_text and tag_text not in tag_list:
@@ -222,7 +225,8 @@ class TagControlWidget(QWidget):
         elif mode == 'batch':
             tag_text = self.batch_tag_input.text().strip()
             if tag_text:
-                self._add_tag_to_list(tag_text, self.viewmodel.get_current_batch_tags(), self.batch_flow_layout, self.batch_tag_input)
+                # 일괄 태깅 탭에서는 ViewModel을 통해 실제로 태그를 적용
+                self.viewmodel.apply_batch_tags([tag_text], recursive=True, file_extensions=[])
                 self.batch_tag_input.clear()
 
     def remove_tag(self, tag_text, mode):
@@ -318,7 +322,7 @@ class TagControlWidget(QWidget):
 
         self.batch_tag_input.setEnabled(enabled)
         self.batch_quick_tags.set_enabled(enabled)
-        self.batch_options.setEnabled(enabled)
+        # self.batch_options.setEnabled(enabled) # 일괄 태깅 옵션 위젯 제거
 
         self.all_tags_search_input.setEnabled(enabled)
         self.all_tags_list_view.setEnabled(enabled)
@@ -343,8 +347,8 @@ class TagControlWidget(QWidget):
 
     def on_batch_quick_tags_changed(self, tag):
         # 빠른 태그 변경 시 일괄 태깅 탭의 태그 목록 업데이트
-        # ViewModel의 apply_batch_tags를 호출하도록 변경
-        self.viewmodel.apply_batch_tags([tag], self.batch_options.recursive_checkbox.isChecked(), self.batch_options._get_file_extensions())
+        # 확장자 필터 기능은 고급 검색 패널로 이동했으므로 기본 일괄 태깅만 수행
+        self.viewmodel.apply_batch_tags([tag], recursive=True, file_extensions=[])
 
     def _on_batch_remove_tags_clicked(self):
         current_target_path = self.viewmodel.get_current_target_path()

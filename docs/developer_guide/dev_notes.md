@@ -1174,3 +1174,179 @@ def _get_common_tags_for_files(self, file_paths):
     - `core/file_reconciler.py` (신규): 파일 내용이 변경될 수 있는 경우의 파일 시스템 스캔, 사라진/새로운 파일 식별, 휴리스틱 기반 재연결 시도 로직.
     - `main_window.py` 또는 별도의 UI 서비스: 해당 기능들을 트리거하는 UI 요소 및 백그라운드 작업 관리.
 - **다음 단계**: 향후 개발 로드맵에 포함하여 구체적인 설계 및 구현 진행 예정.
+
+---
+
+## 2025년 1월 27일 - Gemini AI
+
+### 창 크기 제한 개선 및 태그 관리 위젯 너비 확대
+
+**배경:**
+- 애플리케이션의 최소 창 크기가 1400x900으로 너무 커서 작은 화면에서 사용하기 어려운 문제 발생
+- 태그 관리 위젯(우측 패널)의 너비가 150px/200px로 좁아서 사용성이 떨어지는 문제 발생
+- 창 크기가 작을 때 UI 요소들이 제대로 표시되지 않는 문제 발생
+
+**변경사항:**
+
+1. **최소 창 크기 조정:**
+   - **기존**: 1400x900 (너무 큰 최소 크기)
+   - **변경**: 800x600 (더 작은 최소 크기로 변경)
+   - 작은 화면에서도 애플리케이션 사용 가능
+
+2. **동적 스플리터 크기 조정:**
+   - **작은 창 (< 1000px)**: 좌우 영역 150px씩
+   - **큰 창 (≥ 1000px)**: 좌우 영역 200px씩
+   - **중앙 영역**: 최소 400px 보장
+
+3. **태그 관리 위젯 너비 확대:**
+   - **기존**: 작은 창 150px, 큰 창 200px
+   - **변경**: 작은 창 250px (+100px), 큰 창 300px (+100px)
+   - 태그 목록과 입력 필드가 더 편리하게 사용 가능
+
+4. **스플리터 축소 방지:**
+   - `setChildrenCollapsible(False)` 설정으로 위젯이 완전히 숨겨지는 것을 방지
+   - 작은 창에서도 모든 UI 요소가 표시됨
+
+5. **중앙 스플리터 비율 조정:**
+   - **작은 창 (< 400px 높이)**: 상세영역 55%, 리스트영역 45%
+   - **큰 창 (≥ 400px 높이)**: 상세영역 65%, 리스트영역 35%
+   - **최소 크기 보장**: 상세영역 200px, 리스트영역 150px
+
+6. **레이아웃 조정 강화:**
+   - 창 크기 변경 시 여러 번의 지연된 레이아웃 조정으로 안정성 확보
+   - 10ms, 50ms, 100ms 후에 순차적으로 레이아웃 조정 실행
+
+**기술적 세부사항:**
+
+1. **최소 크기 설정:**
+   ```python
+   # main_window.py
+   min_width = 800   # 1400 → 800으로 줄임
+   min_height = 600  # 900 → 600으로 줄임
+   self.setMinimumSize(min_width, min_height)
+   ```
+
+2. **동적 스플리터 크기:**
+   ```python
+   # core/ui/ui_setup_manager.py
+   if total_width < 1000:
+       left_width = 150
+       right_width = 250   # 150px → 250px로 확대
+   else:
+       left_width = 200
+       right_width = 300   # 200px → 300px로 확대
+   ```
+
+3. **스플리터 축소 방지:**
+   ```python
+   self.main_window.mainSplitter.setChildrenCollapsible(False)
+   self.main_window.splitter.setChildrenCollapsible(False)
+   ```
+
+**결과:**
+- 작은 창(800x600)에서도 모든 UI 요소가 정상적으로 표시됨
+- 태그 관리 패널이 더 넓어져서 사용성이 크게 개선됨
+- 창 크기에 따라 동적으로 레이아웃이 조정되어 다양한 화면 크기에 대응 가능
+- 전체적인 사용자 경험 향상
+
+**관련 파일:**
+- `main_window.py`: 최소 창 크기 조정 및 레이아웃 조정 강화
+- `core/ui/ui_setup_manager.py`: 동적 스플리터 크기 조정 및 축소 방지 설정
+
+---
+
+## 2025년 1월 27일 - Gemini AI
+
+### 파일 상세 영역 경로 복사 기능 구현
+
+**배경:**
+- 파일 상세 영역의 파일 경로 링크 클릭 시 해당 파일을 여는 기능이 제대로 동작하지 않는 문제 발생
+- 사용자가 파일 경로를 쉽게 복사하여 다른 곳에서 사용할 수 있는 기능 필요
+- 링크 기능 대신 더 실용적인 경로 복사 기능으로 변경 요청
+
+**변경사항:**
+
+1. **링크 기능 제거 및 경로 복사 기능 추가:**
+   - 파일 경로를 클릭 가능한 링크에서 일반 텍스트로 변경
+   - "경로복사" 버튼 추가로 파일 경로를 클립보드에 복사 가능
+   - 우클릭 메뉴를 통한 추가 기능 제공
+
+2. **복사 버튼 UI 개선:**
+   - **버튼 텍스트**: "복사" → "경로복사" (더 명확한 기능 표시)
+   - **버튼 크기**: 높이 18px로 컴팩트하게 조정
+   - **스타일링**: 작고 깔끔한 디자인으로 파일 경로 라벨과 조화
+   - **표시 조건**: 파일이 선택되었을 때만 표시
+
+3. **우클릭 메뉴 기능:**
+   - **"경로 복사"**: 파일 경로를 클립보드에 복사
+   - **"폴더 열기"**: 파일이 있는 폴더를 탐색기에서 열기
+   - 운영체제별 지원 (Windows: explorer, macOS: open, Linux: xdg-open)
+
+4. **클립보드 복사 기능:**
+   - `QApplication.clipboard()`를 사용하여 파일 경로를 클립보드에 복사
+   - 복사 완료 시 상태바에 메시지 표시 (2초간)
+   - 로그를 통한 복사 동작 확인
+
+**기술적 세부사항:**
+
+1. **클립보드 복사:**
+   ```python
+   def copy_file_path_to_clipboard(self):
+       if hasattr(self, 'current_file_path') and self.current_file_path:
+           clipboard = QApplication.clipboard()
+           clipboard.setText(self.current_file_path)
+           self.window().statusbar.showMessage("파일 경로가 클립보드에 복사되었습니다.", 2000)
+   ```
+
+2. **우클릭 메뉴:**
+   ```python
+   def on_file_path_context_menu(self, position):
+       menu = QMenu(self)
+       copy_action = menu.addAction("경로 복사")
+       copy_action.triggered.connect(self.copy_file_path_to_clipboard)
+       open_folder_action = menu.addAction("폴더 열기")
+       open_folder_action.triggered.connect(self.open_file_folder)
+       menu.exec_(self.file_path_label.mapToGlobal(position))
+   ```
+
+3. **폴더 열기 (운영체제별):**
+   ```python
+   if system == "Windows":
+       subprocess.run(['explorer', folder_path], check=True)
+   elif system == "Darwin":  # macOS
+       subprocess.run(['open', folder_path], check=True)
+   else:  # Linux
+       subprocess.run(['xdg-open', folder_path], check=True)
+   ```
+
+4. **버튼 스타일링:**
+   ```css
+   QPushButton {
+       background-color: #f8f9fa;
+       border: 1px solid #dee2e6;
+       border-radius: 4px;
+       padding: 2px 6px;
+       font-size: 9px;
+       color: #495057;
+       min-width: 60px;
+       max-width: 60px;
+       min-height: 18px;
+       max-height: 18px;
+   }
+   ```
+
+**결과:**
+- 파일 경로를 쉽게 복사하여 다른 애플리케이션에서 사용 가능
+- 우클릭 메뉴를 통한 추가 기능 제공으로 사용성 향상
+- 작고 깔끔한 복사 버튼으로 UI 일관성 유지
+- 운영체제별 폴더 열기 기능으로 다양한 환경 지원
+
+**관련 파일:**
+- `widgets/file_detail_widget.py`: 경로 복사 기능, 우클릭 메뉴, 폴더 열기 기능 구현
+- `assets/style.qss`: 복사 버튼 스타일링 (필요시)
+
+**사용 방법:**
+1. **복사 버튼 클릭**: 파일 경로를 클립보드에 복사
+2. **우클릭 메뉴**: 
+   - "경로 복사" 선택 → 클립보드에 복사
+   - "폴더 열기" 선택 → 탐색기에서 폴더 열기

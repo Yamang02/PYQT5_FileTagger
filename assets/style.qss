@@ -531,7 +531,7 @@ QTabBar {
 }
 
 QTabBar::tab {
-    background-color: #e8eaed;
+    background-color: #c0c0c0;
     border: 1px solid #e0e0e0;
     border-bottom: none;
     padding: 10px 16px;
@@ -551,10 +551,16 @@ QTabBar::tab:selected {
     border-bottom: 1px solid #f8f9fa;
 }
 
-QTabBar::tab {
-    background-color: #c0c0c0;
-    color: #666666;
-    font-weight: 500;
+QTabBar::tab:focus {
+    outline: none;
+    border: 1px solid #e0e0e0;
+    border-bottom: none;
+}
+
+QTabBar::tab:hover {
+    background-color: #d0d0d0;
+    border: 1px solid #e0e0e0;
+    border-bottom: none;
 }
 
 /* TagControlWidget 내부의 탭 특별 처리 */
@@ -569,6 +575,18 @@ QWidget#tagControlPanel QTabWidget#tagging_tab_widget QTabBar::tab {
     background-color: #c0c0c0;
     color: #666666;
     font-weight: 500;
+}
+
+QWidget#tagControlPanel QTabWidget#tagging_tab_widget QTabBar::tab:focus {
+    outline: none;
+    border: 1px solid #e0e0e0;
+    border-bottom: none;
+}
+
+QWidget#tagControlPanel QTabWidget#tagging_tab_widget QTabBar::tab:hover {
+    background-color: #d0d0d0;
+    border: 1px solid #e0e0e0;
+    border-bottom: none;
 }
 
 /* ===== SPLITTERS ===== */

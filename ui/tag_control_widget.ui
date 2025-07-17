@@ -166,9 +166,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QWidget" name="batch_options_placeholder" native="true"/>
-       </item>
-       <item>
         <widget class="QPushButton" name="batch_remove_tags_button">
          <property name="text">
           <string>일괄 태그 제거</string>

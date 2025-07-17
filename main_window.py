@@ -97,8 +97,10 @@ class MainWindow(QMainWindow):
         # 기본 크기로 설정
         self.resize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
 
-        # 최소 크기만 설정 (최대화 허용)
-        self.setMinimumSize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
+        # 최소 크기를 더 작게 설정하여 작은 창에서도 동작하도록 함
+        min_width = 800   # 1400 → 800으로 줄임
+        min_height = 600  # 900 → 600으로 줄임
+        self.setMinimumSize(min_width, min_height)
         # 최대 크기 제한 제거 - 최대화 허용
         self.setMaximumSize(16777215, 16777215)
 
@@ -146,11 +148,13 @@ class MainWindow(QMainWindow):
         """창 크기 변경 시 레이아웃을 안정화합니다."""
         super().resizeEvent(event)
 
-        # 최대화/전체화면 상태에서는 레이아웃 재조정
-        if self.isMaximized() or self.isFullScreen():
-            from PyQt5.QtCore import QTimer
+        # 창 크기가 변경될 때마다 레이아웃 재조정
+        from PyQt5.QtCore import QTimer
 
-            QTimer.singleShot(10, self._adjust_layout)  # 빠른 재조정
+        # 지연된 레이아웃 조정 (여러 번 시도하여 안정성 확보)
+        QTimer.singleShot(10, self._adjust_layout)   # 첫 번째 시도
+        QTimer.singleShot(50, self._adjust_layout)   # 두 번째 시도
+        QTimer.singleShot(100, self._adjust_layout)  # 세 번째 시도
 
         # 모든 자식 위젯의 레이아웃을 강제로 업데이트
         if hasattr(self, "file_detail_widget"):

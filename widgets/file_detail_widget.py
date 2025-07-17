@@ -17,12 +17,14 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QSizePolicy,
     QSpacerItem,
+    QPushButton,
+    QMenu,
+    QApplication,
 )
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QClipboard
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5.QtGui import QDesktopServices
 
 from viewmodels.file_detail_viewmodel import FileDetailViewModel
 
@@ -96,15 +98,42 @@ class FileDetailWidget(QWidget):
         info_layout.setContentsMargins(8, 4, 8, 4)
         info_layout.setSpacing(8)
         
-        # 파일 경로 라벨 (클릭 가능한 링크)
+        # 파일 경로 라벨 (일반 텍스트)
         self.file_path_label = QLabel("파일을 선택하세요")
         self.file_path_label.setStyleSheet("color: #666; font-size: 11px;")
         self.file_path_label.setWordWrap(True)
-        self.file_path_label.setOpenExternalLinks(True)
-        self.file_path_label.linkActivated.connect(self.on_file_path_link_activated)
+        self.file_path_label.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.file_path_label.customContextMenuRequested.connect(self.on_file_path_context_menu)
+        
+        # 경로 복사 버튼
+        self.copy_path_button = QPushButton("경로복사")
+        self.copy_path_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                padding: 2px 6px;
+                font-size: 9px;
+                color: #495057;
+                min-width: 60px;
+                max-width: 60px;
+                min-height: 18px;
+                max-height: 18px;
+            }
+            QPushButton:hover {
+                background-color: #e9ecef;
+                border-color: #adb5bd;
+            }
+            QPushButton:pressed {
+                background-color: #dee2e6;
+            }
+        """)
+        self.copy_path_button.clicked.connect(self.copy_file_path_to_clipboard)
+        self.copy_path_button.setVisible(False)  # 초기에는 숨김
         
         # 확장 공간
         info_layout.addWidget(self.file_path_label, 1)
+        info_layout.addWidget(self.copy_path_button, 0)  # 복사 버튼 추가
         info_layout.addItem(QSpacerItem(20, 0, QSizePolicy.Fixed, QSizePolicy.Minimum))
         
         # 파일 정보 라벨
@@ -578,22 +607,23 @@ class FileDetailWidget(QWidget):
         if error_message:
             self.file_path_label.setText(error_message)
             self.file_info_label.setText("")
+            self.copy_path_button.setVisible(False)
             return
         
         if not file_path:
             self.file_path_label.setText("파일을 선택하세요")
             self.file_info_label.setText("")
+            self.copy_path_button.setVisible(False)
             return
         
         try:
-            # 파일 경로를 클릭 가능한 링크로 변환
+            # 파일 경로를 일반 텍스트로 표시
             display_path = file_path
             if len(display_path) > 80:
                 display_path = "..." + display_path[-77:]
             
-            # 링크 스타일로 변환
-            link_text = f'<a href="file://{file_path}" style="color: #1976d2; text-decoration: underline;">{display_path}</a>'
-            self.file_path_label.setText(link_text)
+            self.file_path_label.setText(display_path)
+            self.copy_path_button.setVisible(True)  # 복사 버튼 표시
             
             # 파일 정보
             file_size = os.path.getsize(file_path)
@@ -607,6 +637,7 @@ class FileDetailWidget(QWidget):
             logger.error(f"정보 바 업데이트 실패: {e}")
             self.file_path_label.setText(file_path)
             self.file_info_label.setText("")
+            self.copy_path_button.setVisible(False)
 
     def clear_preview(self):
         """모든 미리보기를 초기화합니다."""
@@ -623,21 +654,79 @@ class FileDetailWidget(QWidget):
         # 정보 바 초기화
         self._update_info_bar(None)
         
+        # 복사 버튼 숨기기
+        if hasattr(self, 'copy_path_button'):
+            self.copy_path_button.setVisible(False)
+        
         # 지원하지 않는 형식 위젯으로 설정 (안전장치 추가)
         if hasattr(self, 'unsupported_label') and self.unsupported_label:
             self._switch_preview_widget(self.unsupported_label)
         
         self.current_file_path = None
 
-    def on_file_path_link_activated(self, url):
-        """파일 경로 링크가 클릭되었을 때 처리합니다."""
+    def copy_file_path_to_clipboard(self):
+        """파일 경로를 클립보드에 복사합니다."""
+        if hasattr(self, 'current_file_path') and self.current_file_path:
+            clipboard = QApplication.clipboard()
+            clipboard.setText(self.current_file_path)
+            logger.info(f"파일 경로가 클립보드에 복사되었습니다: {self.current_file_path}")
+            
+            # 복사 완료 메시지 표시
+            self.window().statusbar.showMessage("파일 경로가 클립보드에 복사되었습니다.", 2000)
+
+    def on_file_path_context_menu(self, position):
+        """파일 경로 라벨 우클릭 메뉴를 표시합니다."""
+        if not hasattr(self, 'current_file_path') or not self.current_file_path:
+            return
+            
+        menu = QMenu(self)
+        
+        # 경로 복사 액션
+        copy_action = menu.addAction("경로 복사")
+        copy_action.triggered.connect(self.copy_file_path_to_clipboard)
+        
+        # 폴더 열기 액션
+        open_folder_action = menu.addAction("폴더 열기")
+        open_folder_action.triggered.connect(self.open_file_folder)
+        
+        # 메뉴 표시
+        menu.exec_(self.file_path_label.mapToGlobal(position))
+
+    def open_file_folder(self):
+        """파일이 있는 폴더를 엽니다."""
+        if not hasattr(self, 'current_file_path') or not self.current_file_path:
+            return
+            
         try:
-            # file:// 프로토콜 제거
-            file_path = url.replace('file://', '')
-            # 기본 프로그램으로 파일 열기
-            QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
+            # 파일이 존재하는지 확인
+            if not os.path.exists(self.current_file_path):
+                logger.error(f"파일이 존재하지 않습니다: {self.current_file_path}")
+                return
+            
+            # 파일이 있는 폴더 경로 추출
+            folder_path = os.path.dirname(self.current_file_path)
+            
+            # 운영체제별로 폴더 열기
+            import platform
+            system = platform.system()
+            
+            if system == "Windows":
+                # Windows: explorer로 폴더 열기
+                import subprocess
+                subprocess.run(['explorer', folder_path], check=True)
+            elif system == "Darwin":  # macOS
+                # macOS: Finder로 폴더 열기
+                import subprocess
+                subprocess.run(['open', folder_path], check=True)
+            else:  # Linux
+                # Linux: xdg-open으로 폴더 열기
+                import subprocess
+                subprocess.run(['xdg-open', folder_path], check=True)
+                
+            logger.info(f"폴더가 열렸습니다: {folder_path}")
+            
         except Exception as e:
-            logger.error(f"파일을 열 수 없습니다: {e}")
+            logger.error(f"폴더를 열 수 없습니다: {e}")
 
     def on_viewmodel_file_details_updated(self, file_path: str, tags: list):
         """ViewModel에서 받은 정보로 UI 업데이트"""

@@ -149,6 +149,10 @@ class UISetupManager:
         self.main_window.mainSplitter.insertWidget(1, self.main_window.splitter)
         self.main_window.mainSplitter.insertWidget(2, self.main_window.tag_control_frame)
 
+        # 스플리터 최소 크기 설정 (작은 창에서도 위젯이 완전히 숨겨지지 않도록)
+        self.main_window.mainSplitter.setChildrenCollapsible(False)  # 자식 위젯 축소 방지
+        self.main_window.splitter.setChildrenCollapsible(False)      # 자식 위젯 축소 방지
+
         # 기존 placeholder 위젯 삭제
         self.main_window.directoryTreeWidget.deleteLater()
         self.main_window.tagControlWidget.deleteLater()
@@ -163,10 +167,18 @@ class UISetupManager:
         
     def _configure_initial_sizes(self):
         """초기 크기를 설정합니다."""
-        # 메인 스플리터 크기 설정 (확대된 좌우 영역)
-        left_width = 200    # DirectoryTreeWidget (150px → 200px)
-        right_width = 200   # TagControlWidget (150px → 200px)
-        center_width = self.main_window.width() - left_width - right_width
+        # 메인 스플리터 크기 설정 (동적 계산)
+        total_width = self.main_window.width()
+        
+        # 작은 창에서는 좌우 영역을 더 작게 설정
+        if total_width < 1000:
+            left_width = 150    # 작은 창에서는 150px
+            right_width = 200   # 작은 창에서는 250px (150px → 250px로 확대)
+        else:
+            left_width = 200    # 큰 창에서는 200px
+            right_width = 250   # 큰 창에서는 300px (200px → 300px로 확대)
+            
+        center_width = max(400, total_width - left_width - right_width)  # 최소 400px 보장
         self.main_window.mainSplitter.setSizes([left_width, center_width, right_width])
         
         # 중앙 스플리터 크기 설정 (fileDetail 65%, fileList 35%)
@@ -210,10 +222,15 @@ class UISetupManager:
                 logger.warning(f"[UI] mainSplitter 너비 오류: {total_width}")
                 return
             
-            # 모든 모드에서 좌측/우측 영역 크기 확대
-            left_width = 200    # DirectoryTreeWidget (150px → 200px)
-            right_width = 200   # TagControlWidget (150px → 200px)
-            center_width = total_width - left_width - right_width
+            # 창 크기에 따라 동적으로 좌측/우측 영역 크기 조정
+            if total_width < 1000:
+                left_width = 150    # 작은 창에서는 150px
+                right_width = 250   # 작은 창에서는 250px (150px → 250px로 확대)
+            else:
+                left_width = 200    # 큰 창에서는 200px
+                right_width = 300   # 큰 창에서는 300px (200px → 300px로 확대)
+                
+            center_width = max(400, total_width - left_width - right_width)  # 최소 400px 보장
             
             new_sizes = [left_width, center_width, right_width]
             self.main_window.mainSplitter.setSizes(new_sizes)
@@ -228,12 +245,28 @@ class UISetupManager:
         if hasattr(self.main_window, 'splitter') and self.main_window.splitter:
             total_height = self.main_window.splitter.height()
             
-            # 모든 모드에서 동일한 비율: fileDetail 65%, fileList 35%
-            detail_height = int(total_height * 0.65)
-            list_height = int(total_height * 0.35)
+            if total_height <= 0:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"[UI] 중앙 splitter 높이 오류: {total_height}")
+                return
+            
+            # 작은 창에서는 비율을 조정
+            if total_height < 400:
+                # 작은 창에서는 상세영역을 더 작게, 리스트영역을 더 크게
+                detail_height = int(total_height * 0.55)  # 65% → 55%
+                list_height = int(total_height * 0.45)    # 35% → 45%
+            else:
+                # 큰 창에서는 기존 비율 유지
+                detail_height = int(total_height * 0.65)
+                list_height = int(total_height * 0.35)
+            
+            # 최소 크기 보장
+            detail_height = max(200, detail_height)  # 상세영역 최소 200px
+            list_height = max(150, list_height)      # 리스트영역 최소 150px
             
             self.main_window.splitter.setSizes([detail_height, list_height])
             
             import logging
             logger = logging.getLogger(__name__)
-            logger.info(f"[UI] 중앙 splitter 적용: 상세영역={detail_height}(65%), 리스트영역={list_height}(35%)") 
+            logger.info(f"[UI] 중앙 splitter 적용: 상세영역={detail_height}, 리스트영역={list_height}") 
