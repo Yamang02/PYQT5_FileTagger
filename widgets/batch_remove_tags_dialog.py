@@ -1,4 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QDialogButtonBox, QLabel, QScrollArea, QWidget
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtCore import QUrl
 from widgets.tag_chip import TagChip
 from widgets.flow_layout import FlowLayout
 
@@ -8,7 +11,8 @@ class BatchRemoveTagsDialog(QDialog):
         self.tag_manager = tag_manager
         self.target_path = target_path
         self.setWindowTitle("일괄 태그 제거")
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(800)
+        self.setMinimumHeight(600)
 
         self.all_tags = []
         self.tag_chips = []
@@ -51,9 +55,14 @@ class BatchRemoveTagsDialog(QDialog):
     def _update_target_label(self):
         """대상 정보 레이블을 업데이트합니다."""
         if isinstance(self.target_path, list):
-            self.target_label.setText(f"<b>대상 파일:</b><br>{'<br>'.join(self.target_path[:5])}")
+            # 파일 경로들을 일반 텍스트로 표시
+            file_paths = []
+            for i, file_path in enumerate(self.target_path[:5]):
+                file_paths.append(file_path)
+            
+            self.target_label.setText(f"<b>대상 파일:</b><br>{'<br>'.join(file_paths)}")
             if len(self.target_path) > 5:
-                self.target_label.setText(self.target_label.text() + "...")
+                self.target_label.setText(self.target_label.text() + "<br>...")
         elif isinstance(self.target_path, str):
             self.target_label.setText(f"<b>대상 디렉토리:</b><br>{self.target_path}")
 
@@ -122,6 +131,8 @@ class BatchRemoveTagsDialog(QDialog):
         chip_widget.deleteLater()
         if chip_widget in self.tag_chips:
             self.tag_chips.remove(chip_widget)
+
+
 
     def get_tags_to_remove(self):
         """제거할 태그 목록을 반환합니다."""

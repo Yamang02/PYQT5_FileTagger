@@ -6,6 +6,93 @@
 
 ## 2025년 7월 15일 - Gemini AI
 
+### QCompleter 드롭다운 스타일링 및 파일 경로 링크 기능 개선
+
+**배경:**
+- QCompleter 드롭다운의 높이가 너무 낮고 선택된 아이템의 텍스트가 하얀색으로 보이지 않는 문제 발생
+- 파일 상세뷰와 일괄 제거 다이얼로그에서 파일 경로에 클릭 가능한 링크 기능 요청
+- 일괄 태깅에서 확장자 필터가 제대로 적용되지 않는 문제 발생
+
+**변경사항:**
+
+1. **QCompleter 드롭다운 스타일링 개선:**
+   - **높이 조정**: Python 코드에서 팝업 뷰의 최소/최대 높이 직접 설정
+     ```python
+     popup = self._tag_completer.popup()
+     popup.setMinimumHeight(200)  # 최소 높이 설정
+     popup.setMaximumHeight(300)  # 최대 높이 설정
+     ```
+   - **아이템 높이 증가**: CSS에서 `min-height: 28px` → `min-height: 40px`
+   - **패딩 증가**: `padding: 12px 16px` → `padding: 16px 20px`
+   - **선택된 아이템 텍스트 색상**: 하얀색 텍스트가 잘 보이도록 진한 파란색 배경 적용
+
+2. **CSS 중복 제거 및 정리:**
+   - QCompleter 관련 중복된 CSS 선택자들을 통합
+   - 50줄 → 25줄로 단축하여 유지보수성 향상
+   - 명확한 구조와 주석으로 가독성 개선
+
+3. **파일 경로 링크 기능:**
+   - **파일 상세뷰**: 하단 파일 경로를 클릭 가능한 링크로 변환
+     ```python
+     link_text = f'<a href="file://{file_path}" style="color: #1976d2; text-decoration: underline;">{display_path}</a>'
+     ```
+   - **일괄 제거 다이얼로그**: 파일 경로 링크 제거 (요청에 따라)
+   - **링크 클릭 이벤트**: `QDesktopServices.openUrl()`로 기본 프로그램에서 파일 열기
+
+4. **일괄 태깅 확장자 필터 수정:**
+   - **확장자 필터 정규화 개선**: 점 제거 및 소문자 변환 로직 명확화
+   - **파일 확장자 비교 로직 개선**: 정규화된 확장자와 파일 확장자 비교
+   - **디버깅 로그 추가**: 확장자 필터 동작 확인을 위한 로그 출력
+
+**기술적 세부사항:**
+
+1. **QCompleter 스타일링:**
+   ```css
+   QCompleter::item:selected,
+   QCompleter QAbstractItemView::item:selected,
+   QCompleter QListView::item:selected,
+   QCompleter QListView::item:focus {
+       background-color: #1976d2;
+       color: #ffffff;
+       font-weight: 600;
+   }
+   ```
+
+2. **확장자 필터 로직:**
+   ```python
+   # 확장자 필터 정규화 (점 제거하고 소문자로)
+   normalized_extensions = []
+   if file_extensions:
+       for ext in file_extensions:
+           normalized_ext = ext.lower().lstrip('.')
+           normalized_extensions.append(normalized_ext)
+   ```
+
+3. **파일 경로 링크:**
+   ```python
+   def on_file_path_link_activated(self, url):
+       file_path = url.replace('file://', '')
+       QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
+   ```
+
+**결과:**
+- QCompleter 드롭다운이 충분한 높이를 가지고 선택된 아이템의 텍스트가 명확히 보임
+- 파일 상세뷰에서 파일 경로 클릭 시 해당 파일이 기본 프로그램으로 열림
+- 일괄 태깅에서 선택한 확장자에 맞는 파일들에만 태그가 적용됨
+- CSS 코드가 깔끔하게 정리되어 유지보수성 향상
+
+**관련 파일:**
+- `widgets/search_widget.py`: QCompleter 높이 설정 및 스타일링
+- `widgets/tag_control_widget.py`: QCompleter 높이 설정 및 스타일링
+- `widgets/file_detail_widget.py`: 파일 경로 링크 기능 추가
+- `widgets/batch_remove_tags_dialog.py`: 파일 경로 링크 제거
+- `core/services/tag_service.py`: 확장자 필터 로직 개선
+- `assets/style.qss`: QCompleter CSS 정리 및 개선
+
+---
+
+## 2025년 7월 15일 - Gemini AI
+
 ### UI 로그 정리 및 탭 스타일 개선
 
 **배경:**

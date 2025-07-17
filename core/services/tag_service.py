@@ -128,6 +128,15 @@ class TagService:
 
     def add_tags_to_directory(self, directory_path, tags, recursive=False, file_extensions=None):
         target_files = self._get_files_in_directory(directory_path, recursive, file_extensions)
+        
+        # 디버깅 로그 추가
+        print(f"[DEBUG] 일괄 태깅 - 디렉토리: {directory_path}")
+        print(f"[DEBUG] 확장자 필터: {file_extensions}")
+        print(f"[DEBUG] 재귀 여부: {recursive}")
+        print(f"[DEBUG] 대상 파일 수: {len(target_files)}")
+        if target_files:
+            print(f"[DEBUG] 대상 파일 예시: {target_files[:3]}")
+        
         if not target_files:
             return {"success": True, "message": "조건에 맞는 파일이 없습니다", "processed": 0}
         
@@ -138,20 +147,33 @@ class TagService:
             return []
 
         target_files = []
-        file_extensions = [ext.lower().lstrip('.') for ext in file_extensions] if file_extensions else []
+        # 확장자 필터 정규화 (점 제거하고 소문자로)
+        normalized_extensions = []
+        if file_extensions:
+            for ext in file_extensions:
+                # 점이 있으면 제거하고 소문자로 변환
+                normalized_ext = ext.lower().lstrip('.')
+                normalized_extensions.append(normalized_ext)
 
         if recursive:
             for root, _, files in os.walk(directory_path):
                 for file in files:
                     file_path = os.path.join(root, file)
-                    if not file_extensions or os.path.splitext(file_path)[1].lower().lstrip('.') in file_extensions:
+                    file_ext = os.path.splitext(file_path)[1].lower().lstrip('.')
+                    
+                    # 확장자 필터 적용
+                    if not normalized_extensions or file_ext in normalized_extensions:
                         target_files.append(normalize_path(file_path))
         else:
             for file in os.listdir(directory_path):
                 file_path = os.path.join(directory_path, file)
                 if os.path.isfile(file_path):
-                    if not file_extensions or os.path.splitext(file_path)[1].lower().lstrip('.') in file_extensions:
+                    file_ext = os.path.splitext(file_path)[1].lower().lstrip('.')
+                    
+                    # 확장자 필터 적용
+                    if not normalized_extensions or file_ext in normalized_extensions:
                         target_files.append(normalize_path(file_path))
+        
         return target_files
 
     def get_files_in_directory(self, directory_path, recursive=False, file_extensions=None):

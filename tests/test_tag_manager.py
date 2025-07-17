@@ -2,13 +2,13 @@ import pytest
 from unittest.mock import MagicMock, patch
 from core import TagManager
 from core.repositories.tag_repository import TagRepository
-import config
+from core.config_manager import config_manager
 import os
 from core.path_utils import normalize_path
 
 # 테스트용 설정 오버라이드
-config.MONGO_DB_NAME = "test_db"
-config.MONGO_COLLECTION_NAME = "test_collection"
+config_manager.set_config_value("mongodb", "database", "test_db")
+config_manager.set_config_value("mongodb", "collection", "test_collection")
 
 @pytest.fixture
 def mock_mongo_client():

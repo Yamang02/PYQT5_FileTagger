@@ -270,9 +270,9 @@ class MainWindow(QMainWindow):
             ).model.viewmodel.get_current_directory()
             if not current_path:
                 current_path = (
-                    config.DEFAULT_WORKSPACE_PATH
-                    if config.DEFAULT_WORKSPACE_PATH
-                    and os.path.isdir(config.DEFAULT_WORKSPACE_PATH)
+                    config_manager.get_workspace_path()
+                    if config_manager.get_workspace_path()
+                    and os.path.isdir(config_manager.get_workspace_path())
                     else QDir.homePath()
                 )
 
@@ -324,6 +324,13 @@ class MainWindow(QMainWindow):
                 self.ui_setup.get_widget("search_widget").update_tag_completer(all_tags)
             except Exception as e:
                 logger.warning(f"[MAIN] 검색 위젯 자동완성 업데이트 실패: {e}")
+
+            # 태그 컨트롤 위젯의 "모든 태그" 목록과 자동완성 업데이트
+            try:
+                self.tag_control.update_all_tags_list()
+                self.tag_control.update_completer_model()
+            except Exception as e:
+                logger.warning(f"[MAIN] 태그 컨트롤 위젯 업데이트 실패: {e}")
 
             # EventBus를 통해 이미 ViewModel들이 자동 업데이트되므로
             # 여기서는 추가적인 ViewModel 업데이트를 하지 않음

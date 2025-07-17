@@ -7,11 +7,11 @@
     "uri": "mongodb://localhost:27018/"
   },
   "application": {
-    "default_workspace_path": "",
+    "default_workspace_path": "G:/내 드라이브/obsidian",
     "custom_tags_file": "custom_tags.json"
   },
   "ui": {
     "theme": "default",
     "language": "ko"
   }
-} 
+}

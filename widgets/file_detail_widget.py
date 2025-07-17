@@ -22,6 +22,7 @@ from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
+from PyQt5.QtGui import QDesktopServices
 
 from viewmodels.file_detail_viewmodel import FileDetailViewModel
 
@@ -95,10 +96,12 @@ class FileDetailWidget(QWidget):
         info_layout.setContentsMargins(8, 4, 8, 4)
         info_layout.setSpacing(8)
         
-        # 파일 경로 라벨
+        # 파일 경로 라벨 (클릭 가능한 링크)
         self.file_path_label = QLabel("파일을 선택하세요")
         self.file_path_label.setStyleSheet("color: #666; font-size: 11px;")
         self.file_path_label.setWordWrap(True)
+        self.file_path_label.setOpenExternalLinks(True)
+        self.file_path_label.linkActivated.connect(self.on_file_path_link_activated)
         
         # 확장 공간
         info_layout.addWidget(self.file_path_label, 1)
@@ -583,11 +586,14 @@ class FileDetailWidget(QWidget):
             return
         
         try:
-            # 파일 경로 (긴 경로는 축약)
+            # 파일 경로를 클릭 가능한 링크로 변환
             display_path = file_path
             if len(display_path) > 80:
                 display_path = "..." + display_path[-77:]
-            self.file_path_label.setText(display_path)
+            
+            # 링크 스타일로 변환
+            link_text = f'<a href="file://{file_path}" style="color: #1976d2; text-decoration: underline;">{display_path}</a>'
+            self.file_path_label.setText(link_text)
             
             # 파일 정보
             file_size = os.path.getsize(file_path)
@@ -622,6 +628,16 @@ class FileDetailWidget(QWidget):
             self._switch_preview_widget(self.unsupported_label)
         
         self.current_file_path = None
+
+    def on_file_path_link_activated(self, url):
+        """파일 경로 링크가 클릭되었을 때 처리합니다."""
+        try:
+            # file:// 프로토콜 제거
+            file_path = url.replace('file://', '')
+            # 기본 프로그램으로 파일 열기
+            QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
+        except Exception as e:
+            logger.error(f"파일을 열 수 없습니다: {e}")
 
     def on_viewmodel_file_details_updated(self, file_path: str, tags: list):
         """ViewModel에서 받은 정보로 UI 업데이트"""

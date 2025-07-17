@@ -1,9 +1,12 @@
+import logging
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, 
                              QPushButton, QLabel, QFrame, QSizePolicy, QSpacerItem, QCompleter, QMessageBox)
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QStringListModel, QSize
 from PyQt5.QtGui import QIcon, QFont
 
 from viewmodels.search_viewmodel import SearchViewModel
+
+logger = logging.getLogger(__name__)
 
 class SearchWidget(QWidget):
     """
@@ -70,12 +73,21 @@ class SearchWidget(QWidget):
         
         # 자동완성 설정
         self._tag_completer_model = QStringListModel()
-        self._tag_completer = QCompleter(self._tag_completer_model, self)
+        self._tag_completer = QCompleter(self._tag_completer_model, self.tag_input)
         self._tag_completer.setCaseSensitivity(Qt.CaseInsensitive)
         self._tag_completer.setFilterMode(Qt.MatchContains)
-        self._tag_completer.setCompletionMode(QCompleter.PopupCompletion)  # 팝업 모드로 설정
-        self._tag_completer.setMaxVisibleItems(10)  # 최대 10개 항목 표시
+        self._tag_completer.setCompletionMode(QCompleter.PopupCompletion)
+        self._tag_completer.setMaxVisibleItems(6)  # 표시 항목 수 조정 (높이 제한)
+        self._tag_completer.setWrapAround(False)
+        
+        # QCompleter 팝업 뷰의 높이 직접 설정
+        popup = self._tag_completer.popup()
+        popup.setMinimumHeight(200)  # 최소 높이 설정
+        popup.setMaximumHeight(300)  # 최대 높이 설정
+        
         self.tag_input.setCompleter(self._tag_completer)
+        
+
 
         # 아이콘 버튼들을 별도 컨테이너에 배치하여 정렬 개선
         button_container = QWidget()
@@ -128,8 +140,10 @@ class SearchWidget(QWidget):
 
         self.search_conditions_label = QLabel()
         self.search_conditions_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.search_conditions_label.setWordWrap(True)
+        self.search_conditions_label.setWordWrap(False)  # 줄바꿈 비활성화
         self.search_conditions_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        self.search_conditions_label.setProperty("class", "search-conditions")
+        self.search_conditions_label.setFixedWidth(180)  # 명시적 너비 설정
         result_layout.addWidget(self.search_conditions_label)
 
         main_layout.addWidget(result_container)
@@ -199,9 +213,20 @@ class SearchWidget(QWidget):
         self.tag_input.textChanged.connect(self._on_input_changed)
         self.extensions_input.textChanged.connect(self._on_input_changed)
         
+        # 태그 입력 필드 포커스 이벤트 연결
+        self.tag_input.focusInEvent = self._on_tag_input_focus_in
+        
         # Enter 키 연결
         self.filename_input.returnPressed.connect(self._on_search_requested)
-        self.tag_input.returnPressed.connect(self._on_search_requested)
+        self.tag_input.returnPressed.connect(self._on_tag_input_return_pressed)
+        self.extensions_input.returnPressed.connect(self._on_search_requested)
+        
+        # 고급 검색 패널 Enter 키 연결
+        self.exact_filename_input.returnPressed.connect(self._on_search_requested)
+        self.partial_filename_input.returnPressed.connect(self._on_search_requested)
+        self.and_tags_input.returnPressed.connect(self._on_search_requested)
+        self.or_tags_input.returnPressed.connect(self._on_search_requested)
+        self.not_tags_input.returnPressed.connect(self._on_search_requested)
 
     def _on_input_changed(self):
         """입력 변경 시 디바운싱 적용"""
@@ -209,7 +234,9 @@ class SearchWidget(QWidget):
         
     def _on_debounce_timeout(self):
         """디바운싱 타임아웃 시 실시간 검색"""
-        if self.filename_input.text().strip() or self.tag_input.text().strip():
+        if (self.filename_input.text().strip() or 
+            self.tag_input.text().strip() or 
+            self.extensions_input.text().strip()):
             self._on_search_requested()
             
     def _on_search_requested(self):
@@ -334,45 +361,65 @@ class SearchWidget(QWidget):
         self.result_count_label.setText(f"{count}개 검색됨")
         
         # 사용자가 입력한 검색값들만 조건표시창에 표시
-        if conditions_summary:
-            display_conditions = []
+        display_conditions = []
+        
+        # 파일명 검색 조건
+        filename = self.filename_input.text().strip()
+        extensions = self.extensions_input.text().strip()
+        if filename:
+            display_conditions.append(f"파일명: '{filename}'")
+        if extensions:
+            display_conditions.append(f"확장자: {extensions}")
+                
+        # 태그 검색 조건
+        tag_query = self.tag_input.text().strip()
+        if tag_query:
+            display_conditions.append(f"태그: '{tag_query}'")
+                
+        # 고급 검색 조건
+        if self._advanced_panel_visible:
+            exact_filename = self.exact_filename_input.text().strip()
+            partial_filename = self.partial_filename_input.text().strip()
+            and_tags = self.and_tags_input.text().strip()
+            or_tags = self.or_tags_input.text().strip()
+            not_tags = self.not_tags_input.text().strip()
             
-            # 파일명 검색 조건
-            filename = self.filename_input.text().strip()
-            extensions = self.extensions_input.text().strip()
-            if filename:
-                display_conditions.append(f"파일명: '{filename}'")
-            if extensions:
-                display_conditions.append(f"확장자: {extensions}")
-                
-            # 태그 검색 조건
-            tag_query = self.tag_input.text().strip()
-            if tag_query:
-                display_conditions.append(f"태그: '{tag_query}'")
-                
-            # 고급 검색 조건
-            if self._advanced_panel_visible:
-                exact_filename = self.exact_filename_input.text().strip()
-                partial_filename = self.partial_filename_input.text().strip()
-                and_tags = self.and_tags_input.text().strip()
-                or_tags = self.or_tags_input.text().strip()
-                not_tags = self.not_tags_input.text().strip()
-                
-                if exact_filename:
-                    display_conditions.append(f"정확한 파일명: '{exact_filename}'")
-                if partial_filename:
-                    display_conditions.append(f"부분 파일명: '{partial_filename}'")
-                if and_tags:
-                    display_conditions.append(f"AND 태그: {and_tags}")
-                if or_tags:
-                    display_conditions.append(f"OR 태그: {or_tags}")
-                if not_tags:
-                    display_conditions.append(f"NOT 태그: {not_tags}")
+            if exact_filename:
+                display_conditions.append(f"정확한 파일명: '{exact_filename}'")
+            if partial_filename:
+                display_conditions.append(f"부분 파일명: '{partial_filename}'")
+            if and_tags:
+                display_conditions.append(f"AND: {and_tags}")
+            if or_tags:
+                display_conditions.append(f"OR: {or_tags}")
+            if not_tags:
+                display_conditions.append(f"NOT: {not_tags}")
                     
-            if display_conditions:
-                self.search_conditions_label.setText(" | ".join(display_conditions))
-            else:
-                self.search_conditions_label.clear()
+        if display_conditions:
+            # 모든 조건을 하나의 줄로 표시
+            combined_text = " | ".join(display_conditions)
+            
+            # 라벨의 너비에 맞춰 전체 텍스트를 말줄임표 처리
+            max_width = 180  # 라벨의 고정 너비
+            font_metrics = self.search_conditions_label.fontMetrics()
+            
+            # 텍스트가 너무 길면 말줄임표 처리
+            if font_metrics.width(combined_text) > max_width:
+                # 말줄임표를 포함한 최대 길이 계산
+                ellipsis_width = font_metrics.width("...")
+                available_width = max_width - ellipsis_width
+                
+                # 사용 가능한 너비에 맞는 텍스트 길이 계산
+                truncated_text = ""
+                for char in combined_text:
+                    if font_metrics.width(truncated_text + char) <= available_width:
+                        truncated_text += char
+                    else:
+                        break
+                
+                combined_text = truncated_text + "..."
+            
+            self.search_conditions_label.setText(combined_text)
         else:
             self.search_conditions_label.clear()
 
@@ -387,18 +434,37 @@ class SearchWidget(QWidget):
 
     def _initialize_tag_completer(self):
         """태그 자동완성을 초기화합니다."""
-        # 약간의 지연을 두고 초기화하여 태그 데이터가 로드될 시간을 줍니다
-        QTimer.singleShot(100, self._load_tag_completer_data)
+        # 즉시 초기화 시도
+        self._load_tag_completer_data()
+        
+        # 애플리케이션 시작 후 태그 데이터가 로드될 시간을 주고 다시 시도
+        QTimer.singleShot(2000, self._load_tag_completer_data)
     
     def _load_tag_completer_data(self):
         """태그 자동완성 데이터를 로드합니다."""
         try:
             all_tags = self.viewmodel.get_all_tags()
             self._tag_completer_model.setStringList(all_tags)
-            # 태그 자동완성 초기화 완료
         except Exception as e:
-            logger.error(f"태그 자동완성 초기화 실패: {e}")
+            # 자동완성 실패 시 빈 리스트로 설정
+            self._tag_completer_model.setStringList([])
     
     def update_tag_completer(self, tags: list):
         """태그 자동완성 목록을 업데이트합니다."""
-        self._tag_completer_model.setStringList(tags) 
+        self._tag_completer_model.setStringList(tags)
+    
+    def _on_tag_input_focus_in(self, event):
+        """태그 입력 필드에 포커스가 들어올 때 호출됩니다."""
+        # 원래 focusInEvent를 먼저 호출하여 기본 동작(커서 깜빡임 등) 보장
+        QLineEdit.focusInEvent(self.tag_input, event)
+        # 포커스 인 시 자동완성 데이터 다시 로드
+        self._load_tag_completer_data()
+    
+    def _on_tag_input_return_pressed(self):
+        """태그 입력 필드에서 엔터 키가 눌렸을 때 호출됩니다."""
+        # 자동완성 팝업이 열려있고 선택된 항목이 있으면 검색하지 않음
+        if self._tag_completer.popup().isVisible():
+            return
+        
+        # 자동완성 팝업이 닫혀있을 때만 검색 실행
+        self._on_search_requested() 
