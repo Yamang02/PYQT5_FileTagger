@@ -46,27 +46,18 @@
     <widget class="QPushButton" name="delete_button">
      <property name="minimumSize">
       <size>
-       <width>14</width>
-       <height>14</height>
+       <width>16</width>
+       <height>16</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>14</width>
-       <height>14</height>
+       <width>16</width>
+       <height>16</height>
       </size>
      </property>
-     <property name="icon">
-      <iconset>
-       <normaloff>assets/icons/close.svg</normaloff>
-       <normalon>assets/icons/close.svg</normalon>
-       <disabledoff>assets/icons/close.svg</disabledoff>
-       <disabledon>assets/icons/close.svg</disabledon>
-       <activeoff>assets/icons/close.svg</activeoff>
-       <activeon>assets/icons/close.svg</activeon>
-       <selectedoff>assets/icons/close.svg</selectedoff>
-       <selectedon>assets/icons/close.svg</selectedon>
-      </iconset>
+     <property name="text">
+      <string>×</string>
      </property>
     </widget>
    </item>

@@ -102,6 +102,7 @@ class FileListWidget(QWidget):
     def __init__(self, file_list_viewmodel: FileListViewModel, parent=None):
         super().__init__(parent)
         self.viewmodel = file_list_viewmodel
+        self.user_has_resized = False  # 사용자가 수동으로 조정했는지 추적
         
         # 레이아웃 설정
         layout = QVBoxLayout(self)
@@ -120,11 +121,17 @@ class FileListWidget(QWidget):
 
         self.list_view.selectionModel().selectionChanged.connect(self._on_selection_changed)
 
-        # 테이블 헤더 설정
+        # 테이블 헤더 설정 - 사용자 조정 가능하도록 Interactive 모드 사용
         header = self.list_view.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Interactive)  # 파일명 - 4 비율
-        header.setSectionResizeMode(1, QHeaderView.Interactive)  # 태그 - 4 비율  
-        header.setSectionResizeMode(2, QHeaderView.Interactive)  # 경로 - 2 비율
+        header.setSectionResizeMode(0, QHeaderView.Interactive)  # 파일명 - 사용자 조정 가능
+        header.setSectionResizeMode(1, QHeaderView.Interactive)  # 태그 - 사용자 조정 가능
+        header.setSectionResizeMode(2, QHeaderView.Interactive)  # 경로 - 사용자 조정 가능
+        
+        # 최소 컬럼 너비 설정
+        header.setMinimumSectionSize(80)
+        
+        # 헤더 섹션 크기 변경 시그널 연결
+        header.sectionResized.connect(self._on_section_resized)
         
         layout.addWidget(self.list_view)
         self.setLayout(layout)
@@ -135,17 +142,44 @@ class FileListWidget(QWidget):
 
         self.connect_viewmodel_signals()
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # 창 크기 변경 시 컬럼 크기를 자동으로 조정합니다.
+        if not self.user_has_resized:
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(50, self._setup_column_sizes)
+
+    def _on_section_resized(self, logical_index, old_size, new_size):
+        """사용자가 헤더 섹션을 수동으로 조정했을 때 호출됩니다."""
+        self.user_has_resized = True
+
     def _setup_column_sizes(self):
         """컬럼 크기를 비율에 맞게 설정합니다."""
+        if self.user_has_resized:
+            return  # 사용자가 수동으로 조정했다면 자동 조정하지 않음
+            
         header = self.list_view.horizontalHeader()
         total_width = self.list_view.width()
+        
         if total_width > 0:
-            file_name_width = int(total_width * 0.4)  # 40%
-            tag_width = int(total_width * 0.4)  # 40%
-            path_width = int(total_width * 0.2)  # 20%
+            # 스크롤바 너비를 고려하여 실제 사용 가능한 너비 계산
+            scrollbar_width = 20  # 스크롤바 너비
+            available_width = total_width - scrollbar_width
+            
+            # 최소 너비 보장
+            min_width = 80
+            file_name_width = max(int(available_width * 0.4), min_width)  # 40%
+            tag_width = max(int(available_width * 0.4), min_width)  # 40%
+            path_width = max(int(available_width * 0.2), min_width)  # 20%
+            # 컬럼 크기 설정
             header.resizeSection(0, file_name_width)
             header.resizeSection(1, tag_width)
             header.resizeSection(2, path_width)
+
+    def reset_column_sizes(self):
+        """컬럼 크기를 기본 비율로 리셋하고 자동 조정을 다시 활성화합니다."""
+        self.user_has_resized = False
+        self._setup_column_sizes()
 
     def connect_viewmodel_signals(self):
         self.viewmodel.files_updated.connect(self.on_viewmodel_files_updated)

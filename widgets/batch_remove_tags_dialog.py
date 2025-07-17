@@ -1,5 +1,6 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QDialogButtonBox, QLabel, QScrollArea, QWidget, QGridLayout
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QDialogButtonBox, QLabel, QScrollArea, QWidget
 from widgets.tag_chip import TagChip
+from widgets.flow_layout import FlowLayout
 
 class BatchRemoveTagsDialog(QDialog):
     def __init__(self, tag_manager, target_path, parent=None):
@@ -34,7 +35,8 @@ class BatchRemoveTagsDialog(QDialog):
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         container = QWidget()
-        self.chip_layout = QGridLayout(container)
+        self.chip_layout = FlowLayout(container, margin=4, spacing=4)
+        container.setLayout(self.chip_layout)
         scroll_area.setWidget(container)
         layout.addWidget(scroll_area)
 
@@ -93,18 +95,11 @@ class BatchRemoveTagsDialog(QDialog):
         self._clear_chips()
         
         # 새 칩들 생성
-        row, col = 0, 0
-        max_cols = 3
-
         for tag in tags:
             chip = TagChip(tag)
             chip.tag_removed.connect(lambda tag_text, chip_widget=chip: self.on_tag_removed(tag_text, chip_widget))
             self.tag_chips.append(chip)
-            self.chip_layout.addWidget(chip, row, col)
-            col += 1
-            if col >= max_cols:
-                col = 0
-                row += 1
+            self.chip_layout.addWidget(chip)
 
     def _clear_chips(self):
         """모든 태그 칩을 제거합니다."""

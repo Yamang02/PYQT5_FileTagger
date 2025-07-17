@@ -13,5 +13,5 @@ password = urllib.parse.quote_plus("password")
 MONGO_URI = f"mongodb://{username}:{password}@{MONGO_HOST}:{MONGO_PORT}/?authSource=admin"
 
 # Application settings
-DEFAULT_WORKSPACE_PATH = "G:/내 드라이브/obsidian/cloud"
+DEFAULT_WORKSPACE_PATH = "G:/내 드라이브/obsidian"
 CUSTOM_TAGS_FILE = "custom_tags.json" # 커스텀 태그 저장 파일
