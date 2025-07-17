@@ -16,7 +16,13 @@ if __name__ == '__main__':
         client.admin.command('ping')
         logging.info("MongoDB에 성공적으로 연결되었습니다.")
 
-        app = QApplication(sys.argv)
+        # QApplication 초기화 - 매개변수 안전하게 처리
+        if hasattr(sys, '_MEIPASS'):
+            # PyInstaller로 빌드된 경우
+            app = QApplication([])
+        else:
+            # 일반 Python 실행의 경우
+            app = QApplication(sys.argv)
 
         # QSS 파일 로드 및 적용
         qss_file_path = os.path.join(os.path.dirname(__file__), 'assets', 'style.qss')

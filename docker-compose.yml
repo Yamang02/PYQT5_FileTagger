@@ -1,16 +1,12 @@
 version: '3.8'
 
 services:
-  # MongoDB 서비스 정의
+  # MongoDB 서비스 정의 (완전히 인증 없음)
   mongodb:
     image: mongo:latest
     container_name: file-tagger-db
-    # MongoDB 인증을 위한 환경 변수 설정
-    # 중요: 실제 프로덕션 환경에서는 이 값을 직접 하드코딩하지 말고,
-    # .env 파일을 사용하거나 다른 보안 방식을 통해 주입해야 합니다.
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: password
+    # MongoDB 완전히 인증 없이 실행
+    command: mongod --noauth --bind_ip_all --port 27017
     ports:
       # 호스트의 27018 포트와 컨테이너의 27017 포트를 연결합니다.
       # PyQt 앱이 localhost:27018로 접속할 수 있게 됩니다.

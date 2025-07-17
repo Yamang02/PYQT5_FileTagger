@@ -26,8 +26,13 @@ class TagRepository:
         return doc.get("tags", []) if doc else []
 
     def get_all_tags(self) -> list:
-        tags = self._collection.distinct("tags")
-        return tags
+        # distinct 대신 find와 집합 연산을 사용
+        all_tags = set()
+        cursor = self._collection.find({}, {"tags": 1})
+        for doc in cursor:
+            if "tags" in doc and doc["tags"]:
+                all_tags.update(doc["tags"])
+        return sorted(list(all_tags))
 
     def get_files_by_tags(self, tags: list) -> list:
         docs = self._collection.find({"tags": {"$in": tags}})
