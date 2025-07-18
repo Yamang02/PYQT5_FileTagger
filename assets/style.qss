@@ -182,6 +182,91 @@ QLineEdit:disabled {
     border-color: #e0e0e0;
 }
 
+/* ===== COMBO BOX ===== */
+QComboBox {
+    border: 2px solid #d0d7de;
+    border-radius: 8px;
+    padding: 6px 14px;
+    background-color: #ffffff;
+    font-size: 9pt;
+    color: #0d1117;
+    height: 20px;
+    min-height: 20px;
+    max-height: 36px;
+    line-height: 24px;
+}
+
+QComboBox:hover {
+    border-color: #1976d2;
+}
+
+QComboBox:focus {
+    border: 2px solid #1976d2;
+    background-color: #ffffff;
+}
+
+QComboBox:disabled {
+    color: #999999;
+    background-color: #f5f5f5;
+    border-color: #e0e0e0;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 20px;
+    height: 36px;
+    margin: 0px;
+    padding: 0px;
+}
+
+QComboBox::down-arrow {
+    image: url(assets/icons/expand_more.svg);
+    width: 16px;
+    height: 16px;
+}
+
+QComboBox::down-arrow:on {
+    image: url(assets/icons/expand_less.svg);
+}
+
+QComboBox QAbstractItemView {
+    border: 2px solid #d0d7de;
+    border-radius: 8px;
+    background-color: #ffffff;
+    selection-background-color: #e3f2fd;
+    selection-color: #0d1117;
+    outline: none;
+}
+
+QComboBox QAbstractItemView::item {
+    padding: 8px 14px;
+    border: none;
+    height: 36px;
+    line-height: 20px;
+    margin: 0px;
+}
+
+QComboBox QAbstractItemView::item:hover {
+    background-color: #f3f4f6;
+}
+
+QComboBox QAbstractItemView::item:selected {
+    background-color: #e3f2fd;
+    color: #0d1117;
+}
+
+/* QComboBox 내부 텍스트 영역 제어 */
+QComboBox QAbstractItemView {
+    border: 2px solid #d0d7de;
+    border-radius: 8px;
+    background-color: #ffffff;
+    selection-background-color: #e3f2fd;
+    selection-color: #0d1117;
+    outline: none;
+    margin: 0px;
+    padding: 0px;
+}
+
 /* ===== CARDS/PANELS ===== */
 QFrame.card {
     background-color: #ffffff;
@@ -204,6 +289,20 @@ QFrame#searchPanel {
     border-radius: 8px;
     padding: 12px;
     margin: 4px;
+}
+
+/* SearchWidget 내부의 QComboBox 특별 스타일 */
+QFrame#searchPanel QComboBox {
+    border: 2px solid #d0d7de;
+    border-radius: 8px;
+    padding: 6px 14px;
+    background-color: #ffffff;
+    font-size: 9pt;
+    color: #0d1117;
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    line-height: 24px;
 }
 
 QFrame#tagControlPanel {

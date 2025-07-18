@@ -1,6 +1,6 @@
 import logging
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, 
-                             QPushButton, QLabel, QFrame, QSizePolicy, QSpacerItem, QCompleter, QMessageBox)
+                             QPushButton, QLabel, QFrame, QSizePolicy, QSpacerItem, QCompleter, QMessageBox, QComboBox)
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QStringListModel, QSize
 from PyQt5.QtGui import QIcon, QFont
 
@@ -55,13 +55,19 @@ class SearchWidget(QWidget):
         self.filename_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         main_layout.addWidget(self.filename_input, 2)
 
-        # 확장자 입력 (고정폭)
-        self.extensions_input = QLineEdit()
-        self.extensions_input.setPlaceholderText(".jpg, .png")
-        self.extensions_input.setFixedHeight(36)
-        self.extensions_input.setFixedWidth(100)
-        self.extensions_input.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        main_layout.addWidget(self.extensions_input)
+        # 확장자 필터 콤보박스 (고정폭)
+        self.extension_filter_combo = QComboBox()
+        self.extension_filter_combo.addItems([
+            "모든 파일",
+            "이미지 파일", 
+            "문서 파일",
+            "사용자 정의"
+        ])
+        self.extension_filter_combo.setFixedHeight(20)
+        self.extension_filter_combo.setFixedWidth(120)
+        self.extension_filter_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.extension_filter_combo.currentTextChanged.connect(self._on_extension_filter_changed)
+        main_layout.addWidget(self.extension_filter_combo)
 
         # 태그 입력 (30%)
         self.tag_input = QLineEdit()
@@ -158,69 +164,106 @@ class SearchWidget(QWidget):
         
         advanced_layout = QVBoxLayout(self.advanced_panel)
         advanced_layout.setContentsMargins(16, 8, 16, 8)
-        advanced_layout.setSpacing(12)
+        advanced_layout.setSpacing(16)
 
-        # 파일명 고급 검색
-        filename_advanced_layout = QHBoxLayout()
-        filename_advanced_layout.setSpacing(8)
-
+        # 파일명 고급 검색 (단순화)
+        filename_group = QWidget()
+        filename_layout = QVBoxLayout(filename_group)
+        filename_layout.setContentsMargins(0, 0, 0, 0)
+        filename_layout.setSpacing(8)
+        
+        # 그룹 제목
+        filename_title = QLabel("파일명 고급 검색")
+        filename_title.setProperty("class", "level2-subtitle")
+        filename_layout.addWidget(filename_title)
+        
+        # 파일명 입력 필드들
+        filename_inputs_layout = QHBoxLayout()
+        filename_inputs_layout.setSpacing(8)
+        
         self.exact_filename_input = QLineEdit()
-        self.exact_filename_input.setPlaceholderText("정확한 파일명")
+        self.exact_filename_input.setPlaceholderText("정확한 파일명 (예: document.pdf)")
         self.exact_filename_input.setMinimumHeight(36)
-        filename_advanced_layout.addWidget(self.exact_filename_input)
-
+        filename_inputs_layout.addWidget(self.exact_filename_input)
+        
         self.partial_filename_input = QLineEdit()
-        self.partial_filename_input.setPlaceholderText("부분 파일명")
+        self.partial_filename_input.setPlaceholderText("부분 파일명 (예: report)")
         self.partial_filename_input.setMinimumHeight(36)
-        filename_advanced_layout.addWidget(self.partial_filename_input)
+        filename_inputs_layout.addWidget(self.partial_filename_input)
+        
+        from PyQt5.QtWidgets import QCheckBox
+        self.regex_checkbox = QCheckBox("정규식 사용")
+        self.regex_checkbox.setMinimumHeight(36)
+        filename_inputs_layout.addWidget(self.regex_checkbox)
+        
+        filename_layout.addLayout(filename_inputs_layout)
+        advanced_layout.addWidget(filename_group)
 
-        # 확장자 필터 콤보박스 추가
-        from PyQt5.QtWidgets import QComboBox
-        self.extension_filter_combo = QComboBox()
-        self.extension_filter_combo.addItems([
-            "모든 파일",
-            "이미지 파일", 
-            "문서 파일",
-            "사용자 정의"
-        ])
-        self.extension_filter_combo.setMinimumHeight(36)
-        self.extension_filter_combo.currentTextChanged.connect(self._on_extension_filter_changed)
-        filename_advanced_layout.addWidget(self.extension_filter_combo)
-
-        # 사용자 정의 확장자 입력 필드
+        # 확장자 고급 검색
+        extension_group = QWidget()
+        extension_layout = QVBoxLayout(extension_group)
+        extension_layout.setContentsMargins(0, 0, 0, 0)
+        extension_layout.setSpacing(8)
+        
+        # 그룹 제목
+        extension_title = QLabel("확장자 고급 검색")
+        extension_title.setProperty("class", "level2-subtitle")
+        extension_layout.addWidget(extension_title)
+        
+        # 확장자 입력 필드들
+        extension_inputs_layout = QHBoxLayout()
+        extension_inputs_layout.setSpacing(8)
+        
+        # 확장자 입력 필드 (고급 검색 패널용)
+        self.extensions_input = QLineEdit()
+        self.extensions_input.setPlaceholderText("특정 확장자 (예: .jpg, .png, .pdf)")
+        self.extensions_input.setMinimumHeight(36)
+        self.extensions_input.textChanged.connect(self._on_input_changed)
+        extension_inputs_layout.addWidget(self.extensions_input)
+        
+        # 사용자 정의 확장자 입력 필드 (메인 콤보박스와 연동)
         self.custom_extension_input = QLineEdit()
-        self.custom_extension_input.setPlaceholderText("예: .jpg, .png, .pdf")
+        self.custom_extension_input.setPlaceholderText("사용자 정의 확장자 (예: .jpg, .png, .pdf)")
         self.custom_extension_input.setMinimumHeight(36)
         self.custom_extension_input.setVisible(False)
         self.custom_extension_input.textChanged.connect(self._on_input_changed)
-        filename_advanced_layout.addWidget(self.custom_extension_input)
+        extension_inputs_layout.addWidget(self.custom_extension_input)
+        
+        extension_layout.addLayout(extension_inputs_layout)
+        advanced_layout.addWidget(extension_group)
 
-        from PyQt5.QtWidgets import QCheckBox
-        self.regex_checkbox = QCheckBox("정규식 사용")
-        filename_advanced_layout.addWidget(self.regex_checkbox)
-
-        advanced_layout.addLayout(filename_advanced_layout)
-
-        # 태그 고급 검색
-        tag_advanced_layout = QHBoxLayout()
-        tag_advanced_layout.setSpacing(8)
-
+        # 태그 고급 검색 (단순화)
+        tag_group = QWidget()
+        tag_layout = QVBoxLayout(tag_group)
+        tag_layout.setContentsMargins(0, 0, 0, 0)
+        tag_layout.setSpacing(8)
+        
+        # 그룹 제목
+        tag_title = QLabel("태그 고급 검색")
+        tag_title.setProperty("class", "level2-subtitle")
+        tag_layout.addWidget(tag_title)
+        
+        # 태그 입력 필드들
+        tag_inputs_layout = QHBoxLayout()
+        tag_inputs_layout.setSpacing(8)
+        
         self.and_tags_input = QLineEdit()
-        self.and_tags_input.setPlaceholderText("AND 조건 태그들 (쉼표로 구분)")
+        self.and_tags_input.setPlaceholderText("모두 포함할 태그 (쉼표로 구분)")
         self.and_tags_input.setMinimumHeight(36)
-        tag_advanced_layout.addWidget(self.and_tags_input)
-
+        tag_inputs_layout.addWidget(self.and_tags_input)
+        
         self.or_tags_input = QLineEdit()
-        self.or_tags_input.setPlaceholderText("OR 조건 태그들 (파이프로 구분)")
+        self.or_tags_input.setPlaceholderText("하나라도 포함할 태그 (쉼표로 구분)")
         self.or_tags_input.setMinimumHeight(36)
-        tag_advanced_layout.addWidget(self.or_tags_input)
-
+        tag_inputs_layout.addWidget(self.or_tags_input)
+        
         self.not_tags_input = QLineEdit()
-        self.not_tags_input.setPlaceholderText("제외할 태그들 (별표로 시작)")
+        self.not_tags_input.setPlaceholderText("제외할 태그 (쉼표로 구분)")
         self.not_tags_input.setMinimumHeight(36)
-        tag_advanced_layout.addWidget(self.not_tags_input)
-
-        advanced_layout.addLayout(tag_advanced_layout)
+        tag_inputs_layout.addWidget(self.not_tags_input)
+        
+        tag_layout.addLayout(tag_inputs_layout)
+        advanced_layout.addWidget(tag_group)
 
     def setup_connections(self):
         """시그널-슬롯 연결"""
@@ -232,7 +275,6 @@ class SearchWidget(QWidget):
         # 입력 필드 연결 (디바운싱 적용)
         self.filename_input.textChanged.connect(self._on_input_changed)
         self.tag_input.textChanged.connect(self._on_input_changed)
-        self.extensions_input.textChanged.connect(self._on_input_changed)
         
         # 태그 입력 필드 포커스 이벤트 연결
         self.tag_input.focusInEvent = self._on_tag_input_focus_in
@@ -240,11 +282,11 @@ class SearchWidget(QWidget):
         # Enter 키 연결
         self.filename_input.returnPressed.connect(self._on_search_requested)
         self.tag_input.returnPressed.connect(self._on_tag_input_return_pressed)
-        self.extensions_input.returnPressed.connect(self._on_search_requested)
         
         # 고급 검색 패널 Enter 키 연결
         self.exact_filename_input.returnPressed.connect(self._on_search_requested)
         self.partial_filename_input.returnPressed.connect(self._on_search_requested)
+        self.extensions_input.returnPressed.connect(self._on_search_requested)
         self.custom_extension_input.returnPressed.connect(self._on_search_requested)
         self.and_tags_input.returnPressed.connect(self._on_search_requested)
         self.or_tags_input.returnPressed.connect(self._on_search_requested)
@@ -282,7 +324,8 @@ class SearchWidget(QWidget):
         """디바운싱 타임아웃 시 실시간 검색"""
         if (self.filename_input.text().strip() or 
             self.tag_input.text().strip() or 
-            self.extensions_input.text().strip()):
+            self.extensions_input.text().strip() or
+            self.extension_filter_combo.currentText() != "모든 파일"):
             self._on_search_requested()
             
     def _on_search_requested(self):
@@ -310,10 +353,12 @@ class SearchWidget(QWidget):
         # 파일명 검색 조건
         filename = self.filename_input.text().strip()
         extensions = self.extensions_input.text().strip()
-        if filename or extensions:
+        extension_filter_extensions = self._get_extension_filter_extensions()
+        
+        if filename or extensions or extension_filter_extensions:
             conditions['filename'] = {
                 'name': filename,
-                'extensions': [ext.strip() for ext in extensions.split(',') if ext.strip()]
+                'extensions': [ext.strip() for ext in extensions.split(',') if ext.strip()] + extension_filter_extensions
             }
             
         # 태그 검색 조건
@@ -331,14 +376,12 @@ class SearchWidget(QWidget):
             exact_filename = self.exact_filename_input.text().strip()
             partial_filename = self.partial_filename_input.text().strip()
             use_regex = self.regex_checkbox.isChecked()
-            extension_filter_extensions = self._get_extension_filter_extensions()
             
-            if exact_filename or partial_filename or use_regex or extension_filter_extensions:
+            if exact_filename or partial_filename or use_regex:
                 advanced_conditions['filename'] = {
                     'exact': exact_filename,
                     'partial': partial_filename,
-                    'use_regex': use_regex,
-                    'extensions': extension_filter_extensions
+                    'use_regex': use_regex
                 }
                 
             # 태그 고급 검색
@@ -383,22 +426,6 @@ class SearchWidget(QWidget):
                 self.partial_filename_input.setText(filename_adv.get('partial', ''))
                 self.regex_checkbox.setChecked(filename_adv.get('use_regex', False))
                 
-                # 확장자 필터 설정
-                extensions = filename_adv.get('extensions', [])
-                if extensions:
-                    # 확장자 목록에 따라 콤보박스 설정
-                    if set(extensions) == set([".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg"]):
-                        self.extension_filter_combo.setCurrentText("이미지 파일")
-                    elif set(extensions) == set([".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt", ".xls", ".xlsx", ".ppt", ".pptx", ".md"]):
-                        self.extension_filter_combo.setCurrentText("문서 파일")
-                    else:
-                        self.extension_filter_combo.setCurrentText("사용자 정의")
-                        self.custom_extension_input.setText(', '.join(extensions))
-                        self.custom_extension_input.setVisible(True)
-                else:
-                    self.extension_filter_combo.setCurrentText("모든 파일")
-                    self.custom_extension_input.setVisible(False)
-                
             # 태그 고급 검색
             if 'tags' in advanced_cond:
                 tags_adv = advanced_cond['tags']
@@ -433,10 +460,14 @@ class SearchWidget(QWidget):
         # 파일명 검색 조건
         filename = self.filename_input.text().strip()
         extensions = self.extensions_input.text().strip()
+        extension_filter = self.extension_filter_combo.currentText()
+        
         if filename:
             display_conditions.append(f"파일명: '{filename}'")
         if extensions:
             display_conditions.append(f"확장자: {extensions}")
+        if extension_filter != "모든 파일":
+            display_conditions.append(f"필터: {extension_filter}")
                 
         # 태그 검색 조건
         tag_query = self.tag_input.text().strip()
@@ -447,7 +478,6 @@ class SearchWidget(QWidget):
         if self._advanced_panel_visible:
             exact_filename = self.exact_filename_input.text().strip()
             partial_filename = self.partial_filename_input.text().strip()
-            extension_filter = self.extension_filter_combo.currentText()
             custom_extensions = self.custom_extension_input.text().strip()
             and_tags = self.and_tags_input.text().strip()
             or_tags = self.or_tags_input.text().strip()
@@ -457,11 +487,8 @@ class SearchWidget(QWidget):
                 display_conditions.append(f"정확한 파일명: '{exact_filename}'")
             if partial_filename:
                 display_conditions.append(f"부분 파일명: '{partial_filename}'")
-            if extension_filter != "모든 파일":
-                if extension_filter == "사용자 정의" and custom_extensions:
-                    display_conditions.append(f"확장자 필터: {custom_extensions}")
-                else:
-                    display_conditions.append(f"확장자 필터: {extension_filter}")
+            if custom_extensions:
+                display_conditions.append(f"사용자 정의 확장자: {custom_extensions}")
             if and_tags:
                 display_conditions.append(f"AND: {and_tags}")
             if or_tags:

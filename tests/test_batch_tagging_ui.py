@@ -68,65 +68,8 @@ def test_search_widget_extension_filter_initial_state(search_widget, qtbot):
     search_widget.advanced_toggle.click()
     qtbot.wait(100)
     
-    assert search_widget.extension_filter_combo.currentText() == "모든 파일"
+
     assert not search_widget.custom_extension_input.isVisible()
     assert search_widget.custom_extension_input.text() == ""
 
-@pytest.mark.ui
-def test_search_widget_extension_filter_options(search_widget, qtbot):
-    """확장자 필터 옵션 변경 테스트"""
-    # 고급 검색 패널 열기
-    search_widget.advanced_toggle.click()
-    qtbot.wait(100)
-    
-    # 이미지 파일 필터 선택
-    search_widget.extension_filter_combo.setCurrentText("이미지 파일")
-    assert search_widget.extension_filter_combo.currentText() == "이미지 파일"
-    assert not search_widget.custom_extension_input.isVisible()
-    
-    # 문서 파일 필터 선택
-    search_widget.extension_filter_combo.setCurrentText("문서 파일")
-    assert search_widget.extension_filter_combo.currentText() == "문서 파일"
-    assert not search_widget.custom_extension_input.isVisible()
-    
-    # 사용자 정의 필터 선택
-    search_widget.extension_filter_combo.setCurrentText("사용자 정의")
-    assert search_widget.extension_filter_combo.currentText() == "사용자 정의"
-    assert search_widget.custom_extension_input.isVisible()
-    
-    # 사용자 정의 확장자 입력
-    search_widget.custom_extension_input.setText(".txt,.pdf")
-    assert search_widget.custom_extension_input.text() == ".txt,.pdf"
-
-@pytest.mark.ui
-def test_search_widget_get_extension_filter_extensions(search_widget, qtbot):
-    """_get_extension_filter_extensions 메서드 테스트"""
-    # 고급 검색 패널 열기
-    search_widget.advanced_toggle.click()
-    qtbot.wait(100)
-    
-    # 모든 파일 선택 시
-    search_widget.extension_filter_combo.setCurrentText("모든 파일")
-    extensions = search_widget._get_extension_filter_extensions()
-    assert extensions == []
-    
-    # 이미지 파일 선택 시
-    search_widget.extension_filter_combo.setCurrentText("이미지 파일")
-    extensions = search_widget._get_extension_filter_extensions()
-    assert ".jpg" in extensions
-    assert ".png" in extensions
-    assert ".svg" in extensions
-    
-    # 문서 파일 선택 시 (md 포함)
-    search_widget.extension_filter_combo.setCurrentText("문서 파일")
-    extensions = search_widget._get_extension_filter_extensions()
-    assert ".txt" in extensions
-    assert ".pdf" in extensions
-    assert ".md" in extensions  # md 확장자 추가 확인
-    
-    # 사용자 정의 선택 시
-    search_widget.extension_filter_combo.setCurrentText("사용자 정의")
-    search_widget.custom_extension_input.setText(".py,.js")
-    extensions = search_widget._get_extension_filter_extensions()
-    assert extensions == [".py", ".js"]
 

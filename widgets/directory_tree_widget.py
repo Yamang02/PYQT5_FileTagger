@@ -51,6 +51,10 @@ class DirectoryTreeWidget(QWidget):
         self.tree_view.hideColumn(2) # Type
         self.tree_view.hideColumn(3) # Date Modified
         
+        # 트리 뷰 확장/축소 기능 활성화
+        self.tree_view.setExpandsOnDoubleClick(True)
+        self.tree_view.setItemsExpandable(True)
+        
         # 컨텍스트 메뉴 활성화
         self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_view.customContextMenuRequested.connect(self._on_tree_view_context_menu_requested)
@@ -98,4 +102,12 @@ class DirectoryTreeWidget(QWidget):
     def _on_directory_clicked(self, index: QModelIndex):
         file_path = self.model.filePath(self.proxy_model.mapToSource(index))
         is_dir = self.model.isDir(self.proxy_model.mapToSource(index))
+        
+        # 디렉토리인 경우 자동으로 확장/축소
+        if is_dir:
+            if self.tree_view.isExpanded(index):
+                self.tree_view.collapse(index)
+            else:
+                self.tree_view.expand(index)
+        
         self.directory_selected.emit(file_path, is_dir)
