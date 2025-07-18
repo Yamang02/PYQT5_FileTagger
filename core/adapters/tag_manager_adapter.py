@@ -13,7 +13,10 @@ class TagManagerAdapter:
         return self._tag_service.remove_tag_from_file(file_path, tag)
 
     def get_tags_for_file(self, file_path: str) -> list:
-        return self._tag_service.get_tags_for_file(file_path)
+        # 파일 경로 정규화
+        from core.path_utils import normalize_path
+        normalized_path = normalize_path(file_path)
+        return self._tag_service.get_tags_for_file(normalized_path)
 
     def get_all_tags(self) -> list:
         return self._tag_service.get_all_tags()

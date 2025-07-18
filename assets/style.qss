@@ -305,6 +305,17 @@ QFrame#searchPanel QComboBox {
     line-height: 24px;
 }
 
+/* 필드 컨테이너 스타일 */
+QWidget#mainFieldsContainer,
+QWidget#advancedFieldsContainer {
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+
+
 QFrame#tagControlPanel {
     background-color: #ffffff;
     border: 1px solid #e0e0e0;

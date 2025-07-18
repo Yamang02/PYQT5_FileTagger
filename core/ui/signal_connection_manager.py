@@ -56,8 +56,10 @@ class SignalConnectionManager:
         
     def _connect_search_signals(self):
         """검색 위젯의 시그널을 연결합니다."""
-        
-        
+        # SearchViewModel의 검색 결과 시그널을 FileListViewModel에 연결
+        self.main_window.search_viewmodel.search_results_ready.connect(
+            self.main_window.file_list_viewmodel.set_search_results
+        )
         
     def disconnect_all_signals(self):
         """모든 시그널 연결을 해제합니다. (테스트나 정리 시 사용)"""

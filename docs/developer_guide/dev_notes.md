@@ -6,6 +6,110 @@
 
 ## 2025년 7월 15일 - Gemini AI
 
+### 부분일치 검색 로직 문제 분석 및 해결 과정
+
+**배경:**
+- 사용자가 "매위"로 태그 부분일치 검색을 수행했으나, 태그가 없는 파일들이 검색 결과에 나타나는 문제 발생
+- 이미지에서 확인된 문제: 4개의 파일이 검색되었지만 모든 파일의 "태그" 열이 비어있음
+- 부분일치 검색이 우선 적용된다는 메시지가 표시되지만 실제로는 태그가 없는 파일들이 포함됨
+
+**문제 분석 과정:**
+
+1. **초기 접근 - SearchWidget 로직 수정:**
+   - `get_search_conditions()` 메서드에서 `_advanced_panel_visible` 변수에 의존하는 문제 발견
+   - 부분일치 검색 조건이 있을 때만 처리하도록 로직 수정
+   - `update_search_results()` 메서드에서도 같은 로직 적용
+
+2. **SearchManager 로직 확인:**
+   - `_search_files_with_partial_conditions()` 메서드에서 태그가 없는 파일 제외 로직 확인
+   - 태그 부분일치 검색 로직이 올바르게 구현되어 있음을 확인
+
+3. **전체 검색 흐름 분석:**
+   ```
+   SearchWidget → SearchViewModel → SearchManager → TagManagerAdapter → TagService → TagRepository → MongoDB
+   ```
+
+4. **핵심 문제 발견 - SignalConnectionManager 시그널 연결 누락:**
+   - `SignalConnectionManager`의 `_connect_search_signals()` 메서드가 비어있음
+   - SearchViewModel의 `search_results_ready` 시그널이 FileListViewModel과 연결되지 않음
+   - 검색 결과가 FileListWidget에 전달되지 않는 구조적 문제
+
+**수정된 내용:**
+
+1. **SignalConnectionManager 검색 시그널 연결 추가:**
+   ```python
+   def _connect_search_signals(self):
+       """검색 위젯의 시그널을 연결합니다."""
+       # SearchViewModel의 검색 결과 시그널을 FileListViewModel에 연결
+       self.main_window.search_viewmodel.search_results_ready.connect(
+           self.main_window.file_list_viewmodel.set_search_results
+       )
+   ```
+
+2. **SearchWidget 조건 처리 로직 개선:**
+   ```python
+   # 기존: _advanced_panel_visible 변수에 의존
+   if self._advanced_panel_visible:
+       # 부분일치 검색 조건 처리
+   
+   # 수정: 실제 입력 필드 내용 확인
+   if partial_filename or partial_extensions or partial_tags:
+       # 부분일치 검색 조건 처리
+   ```
+
+**기술적 세부사항:**
+
+1. **검색 조건 생성 로직:**
+   ```python
+   # 부분일치 검색 조건
+   partial_conditions = {}
+   
+   # 고급 검색 패널이 보이거나 부분일치 검색 필드에 입력이 있으면 처리
+   partial_filename = self.partial_filename_input.text().strip()
+   partial_extensions = self.partial_extensions_input.text().strip()
+   partial_tags = self.partial_tag_input.text().strip()
+   
+   if partial_filename or partial_extensions or partial_tags:
+       # 각 조건별 처리
+   ```
+
+2. **SearchManager 태그 부분일치 검색 로직:**
+   ```python
+   # 태그 부분일치 검색
+   if 'tags' in partial_cond:
+       partial_tags = partial_cond['tags'].get('partial', [])
+       if partial_tags:
+           file_tags = self.tag_manager.get_tags_for_file(file_path)
+           
+           # 태그가 없는 파일은 제외
+           if not file_tags:
+               continue
+           
+           # 부분일치 검사 로직
+   ```
+
+**현재 상태:**
+- SignalConnectionManager에서 검색 시그널 연결을 추가했으나 문제가 완전히 해결되지 않음
+- 추가적인 분석이 필요한 상황
+
+**다음 단계:**
+- 애플리케이션 재실행 후 검색 동작 확인
+- 필요시 추가적인 디버깅 및 로직 수정
+- 검색 결과가 올바르게 FileListWidget에 전달되는지 확인
+
+**관련 파일:**
+- `core/ui/signal_connection_manager.py`: 검색 시그널 연결 추가
+- `widgets/search_widget.py`: 부분일치 검색 조건 처리 로직 개선
+- `core/search_manager.py`: 태그 부분일치 검색 로직 확인
+- `viewmodels/search_viewmodel.py`: 검색 결과 시그널 처리
+- `viewmodels/file_list_viewmodel.py`: 검색 결과 수신 및 처리
+
+---
+
+---
+
+## 2025년 7월 15일 - Gemini AI
+
 ### QCompleter 드롭다운 스타일링 및 파일 경로 링크 기능 개선
 
 **배경:**

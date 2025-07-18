@@ -48,12 +48,20 @@ class SearchWidget(QWidget):
         main_layout.setContentsMargins(16, 8, 16, 8)  # 상하 마진을 늘려서 여유 공간 확보
         main_layout.setSpacing(12)
 
+        # 필드 컨테이너 (전체창 너비의 50% 차지)
+        main_fields_container = QWidget()
+        main_fields_container.setObjectName("mainFieldsContainer")
+        main_fields_container.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        main_fields_layout = QHBoxLayout(main_fields_container)
+        main_fields_layout.setContentsMargins(0, 0, 0, 0)
+        main_fields_layout.setSpacing(12)
+
         # 파일명 입력 (20%)
         self.filename_input = QLineEdit()
         self.filename_input.setPlaceholderText("파일명 검색...")
         self.filename_input.setFixedHeight(36)
         self.filename_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        main_layout.addWidget(self.filename_input, 2)
+        main_fields_layout.addWidget(self.filename_input, 2)
 
         # 확장자 필터 콤보박스 (고정폭)
         self.extension_filter_combo = QComboBox()
@@ -67,7 +75,7 @@ class SearchWidget(QWidget):
         self.extension_filter_combo.setFixedWidth(120)
         self.extension_filter_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.extension_filter_combo.currentTextChanged.connect(self._on_extension_filter_changed)
-        main_layout.addWidget(self.extension_filter_combo)
+        main_fields_layout.addWidget(self.extension_filter_combo)
 
         # 태그 입력 (30%)
         self.tag_input = QLineEdit()
@@ -75,7 +83,9 @@ class SearchWidget(QWidget):
         self.tag_input.setFixedHeight(36)
         self.tag_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.tag_input.setToolTip("쉼표(,)는 AND, 파이프(|)는 OR, 별표(*)는 NOT 조건입니다.")
-        main_layout.addWidget(self.tag_input, 3)
+        main_fields_layout.addWidget(self.tag_input, 3)
+
+        main_layout.addWidget(main_fields_container, 65)  # stretch=65로 65% 차지
         
         # 자동완성 설정
         self._tag_completer_model = QStringListModel()
@@ -129,11 +139,14 @@ class SearchWidget(QWidget):
         self.advanced_toggle.setProperty("class", "search-button")  # CSS 클래스 설정
         button_layout.addWidget(self.advanced_toggle)
 
+        # 버튼 컨테이너 (고정 크기)
+        button_container.setFixedWidth(135)  # 3개 버튼(36px) + 간격(8px*2) + 여유공간 = 135px
+
         main_layout.addWidget(button_container)
 
-        # 결과 표시 영역 (고정 너비)
+        # 결과 표시 영역 (반응형 - 나머지 공간 차지)
         result_container = QWidget()
-        result_container.setFixedWidth(200)  # 고정 너비 설정
+        result_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         result_container.setFixedHeight(44)  # QLineEdit의 실제 높이에 맞춤 (36 + 테두리 4px)
         result_layout = QVBoxLayout(result_container)
         result_layout.setContentsMargins(0, 4, 0, 4)  # 상하 패딩 추가
@@ -147,12 +160,11 @@ class SearchWidget(QWidget):
         self.search_conditions_label = QLabel()
         self.search_conditions_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.search_conditions_label.setWordWrap(False)  # 줄바꿈 비활성화
-        self.search_conditions_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        self.search_conditions_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.search_conditions_label.setProperty("class", "search-conditions")
-        self.search_conditions_label.setFixedWidth(180)  # 명시적 너비 설정
         result_layout.addWidget(self.search_conditions_label)
 
-        main_layout.addWidget(result_container)
+        main_layout.addWidget(result_container, 35)  # stretch=35로 나머지 35% 차지
 
         # 고급 검색 패널 설정
         self.setup_advanced_panel()
@@ -162,108 +174,73 @@ class SearchWidget(QWidget):
         self.advanced_panel = QWidget()
         self.advanced_panel.setVisible(False)
         
-        advanced_layout = QVBoxLayout(self.advanced_panel)
+        advanced_layout = QHBoxLayout(self.advanced_panel)
         advanced_layout.setContentsMargins(16, 8, 16, 8)
-        advanced_layout.setSpacing(16)
+        advanced_layout.setSpacing(12)
 
-        # 파일명 고급 검색 (단순화)
-        filename_group = QWidget()
-        filename_layout = QVBoxLayout(filename_group)
-        filename_layout.setContentsMargins(0, 0, 0, 0)
-        filename_layout.setSpacing(8)
-        
-        # 그룹 제목
-        filename_title = QLabel("파일명 고급 검색")
-        filename_title.setProperty("class", "level2-subtitle")
-        filename_layout.addWidget(filename_title)
-        
-        # 파일명 입력 필드들
-        filename_inputs_layout = QHBoxLayout()
-        filename_inputs_layout.setSpacing(8)
-        
-        self.exact_filename_input = QLineEdit()
-        self.exact_filename_input.setPlaceholderText("정확한 파일명 (예: document.pdf)")
-        self.exact_filename_input.setMinimumHeight(36)
-        filename_inputs_layout.addWidget(self.exact_filename_input)
-        
+        # 고급 필드 컨테이너 (전체창 너비의 50% 차지)
+        advanced_fields_container = QWidget()
+        advanced_fields_container.setObjectName("advancedFieldsContainer")
+        advanced_fields_container.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        advanced_fields_layout = QHBoxLayout(advanced_fields_container)
+        advanced_fields_layout.setContentsMargins(0, 0, 0, 0)
+        advanced_fields_layout.setSpacing(12)
+
+        # 부분일치 파일명 입력 (메인과 동일한 비율: stretch=2)
         self.partial_filename_input = QLineEdit()
-        self.partial_filename_input.setPlaceholderText("부분 파일명 (예: report)")
-        self.partial_filename_input.setMinimumHeight(36)
-        filename_inputs_layout.addWidget(self.partial_filename_input)
-        
-        from PyQt5.QtWidgets import QCheckBox
-        self.regex_checkbox = QCheckBox("정규식 사용")
-        self.regex_checkbox.setMinimumHeight(36)
-        filename_inputs_layout.addWidget(self.regex_checkbox)
-        
-        filename_layout.addLayout(filename_inputs_layout)
-        advanced_layout.addWidget(filename_group)
+        self.partial_filename_input.setPlaceholderText("파일명 부분일치 검색...")
+        self.partial_filename_input.setFixedHeight(36)
+        self.partial_filename_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        advanced_fields_layout.addWidget(self.partial_filename_input, 2)
 
-        # 확장자 고급 검색
-        extension_group = QWidget()
-        extension_layout = QVBoxLayout(extension_group)
-        extension_layout.setContentsMargins(0, 0, 0, 0)
-        extension_layout.setSpacing(8)
-        
-        # 그룹 제목
-        extension_title = QLabel("확장자 고급 검색")
-        extension_title.setProperty("class", "level2-subtitle")
-        extension_layout.addWidget(extension_title)
-        
-        # 확장자 입력 필드들
-        extension_inputs_layout = QHBoxLayout()
-        extension_inputs_layout.setSpacing(8)
-        
-        # 확장자 입력 필드 (고급 검색 패널용)
-        self.extensions_input = QLineEdit()
-        self.extensions_input.setPlaceholderText("특정 확장자 (예: .jpg, .png, .pdf)")
-        self.extensions_input.setMinimumHeight(36)
-        self.extensions_input.textChanged.connect(self._on_input_changed)
-        extension_inputs_layout.addWidget(self.extensions_input)
-        
-        # 사용자 정의 확장자 입력 필드 (메인 콤보박스와 연동)
-        self.custom_extension_input = QLineEdit()
-        self.custom_extension_input.setPlaceholderText("사용자 정의 확장자 (예: .jpg, .png, .pdf)")
-        self.custom_extension_input.setMinimumHeight(36)
-        self.custom_extension_input.setVisible(False)
-        self.custom_extension_input.textChanged.connect(self._on_input_changed)
-        extension_inputs_layout.addWidget(self.custom_extension_input)
-        
-        extension_layout.addLayout(extension_inputs_layout)
-        advanced_layout.addWidget(extension_group)
+        # 부분일치 확장자 입력 (QLineEdit, 메인과 시각적으로 동일한 너비)
+        self.partial_extensions_input = QLineEdit()
+        self.partial_extensions_input.setPlaceholderText("확장자 부분일치 (예: jpg, png, pdf)")
+        self.partial_extensions_input.setFixedHeight(36)  # 메인과 동일한 높이
+        self.partial_extensions_input.setFixedWidth(120)  # 메인과 정확히 동일한 너비
+        self.partial_extensions_input.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.partial_extensions_input.textChanged.connect(self._on_input_changed)
+        advanced_fields_layout.addWidget(self.partial_extensions_input)
 
-        # 태그 고급 검색 (단순화)
-        tag_group = QWidget()
-        tag_layout = QVBoxLayout(tag_group)
-        tag_layout.setContentsMargins(0, 0, 0, 0)
-        tag_layout.setSpacing(8)
+        # 부분일치 태그 입력 (메인과 동일한 비율: stretch=3)
+        self.partial_tag_input = QLineEdit()
+        self.partial_tag_input.setPlaceholderText("태그 부분일치 검색...")
+        self.partial_tag_input.setFixedHeight(36)
+        self.partial_tag_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        advanced_fields_layout.addWidget(self.partial_tag_input, 3)
         
-        # 그룹 제목
-        tag_title = QLabel("태그 고급 검색")
-        tag_title.setProperty("class", "level2-subtitle")
-        tag_layout.addWidget(tag_title)
-        
-        # 태그 입력 필드들
-        tag_inputs_layout = QHBoxLayout()
-        tag_inputs_layout.setSpacing(8)
-        
-        self.and_tags_input = QLineEdit()
-        self.and_tags_input.setPlaceholderText("모두 포함할 태그 (쉼표로 구분)")
-        self.and_tags_input.setMinimumHeight(36)
-        tag_inputs_layout.addWidget(self.and_tags_input)
-        
-        self.or_tags_input = QLineEdit()
-        self.or_tags_input.setPlaceholderText("하나라도 포함할 태그 (쉼표로 구분)")
-        self.or_tags_input.setMinimumHeight(36)
-        tag_inputs_layout.addWidget(self.or_tags_input)
-        
-        self.not_tags_input = QLineEdit()
-        self.not_tags_input.setPlaceholderText("제외할 태그 (쉼표로 구분)")
-        self.not_tags_input.setMinimumHeight(36)
-        tag_inputs_layout.addWidget(self.not_tags_input)
-        
-        tag_layout.addLayout(tag_inputs_layout)
-        advanced_layout.addWidget(tag_group)
+        # 부분일치 검색 필드들에 자동완성 설정
+        self._setup_partial_search_completers()
+
+        advanced_layout.addWidget(advanced_fields_container, 65)  # stretch=65로 65% 차지
+
+        # 부분일치 검색 옵션 영역 (메인의 버튼 + 검색결과 영역과 동일한 구조)
+        # 버튼 컨테이너 (메인과 동일한 높이: 40px, 설명 라벨 포함)
+        advanced_button_container = QWidget()
+        advanced_button_container.setFixedHeight(40)  # 메인과 동일한 높이
+        advanced_button_layout = QHBoxLayout(advanced_button_container)
+        advanced_button_layout.setContentsMargins(0, 2, 0, 2)  # 메인과 동일한 마진
+        advanced_button_layout.setSpacing(8)  # 메인과 동일한 간격
+
+        # 부분일치 검색 설명 라벨
+        partial_search_label = QLabel("부분일치 검색 (우선 적용)")
+        partial_search_label.setStyleSheet("color: #666; font-size: 11px;")
+        partial_search_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        advanced_button_layout.addWidget(partial_search_label)
+
+        # 고급 버튼 컨테이너 (메인과 동일한 고정 크기)
+        advanced_button_container.setFixedWidth(135)  # 메인과 동일한 고정 크기
+        advanced_layout.addWidget(advanced_button_container)
+
+        # 부분일치 검색 결과 영역 (메인과 동일한 구조, 비어있음)
+        advanced_result_container = QWidget()
+        advanced_result_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        advanced_result_container.setFixedHeight(44)  # 메인과 동일한 높이
+        advanced_result_layout = QVBoxLayout(advanced_result_container)
+        advanced_result_layout.setContentsMargins(0, 4, 0, 4)  # 메인과 동일한 패딩
+        advanced_result_layout.setSpacing(2)
+
+        advanced_layout.addWidget(advanced_result_container, 35)  # stretch=35로 나머지 35% 차지
 
     def setup_connections(self):
         """시그널-슬롯 연결"""
@@ -276,21 +253,27 @@ class SearchWidget(QWidget):
         self.filename_input.textChanged.connect(self._on_input_changed)
         self.tag_input.textChanged.connect(self._on_input_changed)
         
+        # 부분일치 검색 필드 연결 (디바운싱 적용)
+        self.partial_filename_input.textChanged.connect(self._on_input_changed)
+        self.partial_extensions_input.textChanged.connect(self._on_input_changed)
+        self.partial_tag_input.textChanged.connect(self._on_input_changed)
+        
         # 태그 입력 필드 포커스 이벤트 연결
         self.tag_input.focusInEvent = self._on_tag_input_focus_in
+        
+        # 부분일치 태그 입력 필드 포커스 이벤트 연결
+        self.partial_tag_input.focusInEvent = self._on_partial_tag_input_focus_in
         
         # Enter 키 연결
         self.filename_input.returnPressed.connect(self._on_search_requested)
         self.tag_input.returnPressed.connect(self._on_tag_input_return_pressed)
         
-        # 고급 검색 패널 Enter 키 연결
-        self.exact_filename_input.returnPressed.connect(self._on_search_requested)
+        # 부분일치 검색 패널 Enter 키 연결
         self.partial_filename_input.returnPressed.connect(self._on_search_requested)
-        self.extensions_input.returnPressed.connect(self._on_search_requested)
-        self.custom_extension_input.returnPressed.connect(self._on_search_requested)
-        self.and_tags_input.returnPressed.connect(self._on_search_requested)
-        self.or_tags_input.returnPressed.connect(self._on_search_requested)
-        self.not_tags_input.returnPressed.connect(self._on_search_requested)
+        self.partial_extensions_input.returnPressed.connect(self._on_search_requested)
+        self.partial_tag_input.returnPressed.connect(self._on_search_requested)
+        
+
 
     def _on_extension_filter_changed(self):
         """확장자 필터 콤보박스 변경 시 호출됩니다."""
@@ -324,8 +307,10 @@ class SearchWidget(QWidget):
         """디바운싱 타임아웃 시 실시간 검색"""
         if (self.filename_input.text().strip() or 
             self.tag_input.text().strip() or 
-            self.extensions_input.text().strip() or
-            self.extension_filter_combo.currentText() != "모든 파일"):
+            self.extension_filter_combo.currentText() != "모든 파일" or
+            self.partial_filename_input.text().strip() or
+            self.partial_extensions_input.text().strip() or
+            self.partial_tag_input.text().strip()):
             self._on_search_requested()
             
     def _on_search_requested(self):
@@ -350,54 +335,62 @@ class SearchWidget(QWidget):
         """현재 검색 조건을 딕셔너리로 반환"""
         conditions = {}
         
+        # 기본 검색 조건 (완전일치)
+        basic_conditions = {}
+        
         # 파일명 검색 조건
         filename = self.filename_input.text().strip()
-        extensions = self.extensions_input.text().strip()
         extension_filter_extensions = self._get_extension_filter_extensions()
         
-        if filename or extensions or extension_filter_extensions:
-            conditions['filename'] = {
+        if filename or extension_filter_extensions:
+            basic_conditions['filename'] = {
                 'name': filename,
-                'extensions': [ext.strip() for ext in extensions.split(',') if ext.strip()] + extension_filter_extensions
+                'extensions': extension_filter_extensions
             }
             
         # 태그 검색 조건
         tag_query = self.tag_input.text().strip()
         if tag_query:
-            conditions['tags'] = {
+            basic_conditions['tags'] = {
                 'query': tag_query
             }
             
-        # 고급 검색 조건
-        if self._advanced_panel_visible:
-            advanced_conditions = {}
-            
-            # 파일명 고급 검색
-            exact_filename = self.exact_filename_input.text().strip()
-            partial_filename = self.partial_filename_input.text().strip()
-            use_regex = self.regex_checkbox.isChecked()
-            
-            if exact_filename or partial_filename or use_regex:
-                advanced_conditions['filename'] = {
-                    'exact': exact_filename,
-                    'partial': partial_filename,
-                    'use_regex': use_regex
+        # 부분일치 검색 조건
+        partial_conditions = {}
+        
+        # 고급 검색 패널이 보이거나 부분일치 검색 필드에 입력이 있으면 처리
+        partial_filename = self.partial_filename_input.text().strip()
+        partial_extensions = self.partial_extensions_input.text().strip()
+        partial_tags = self.partial_tag_input.text().strip()
+        
+        if partial_filename or partial_extensions or partial_tags:
+            # 파일명 부분일치 검색
+            if partial_filename:
+                partial_conditions['filename'] = {
+                    'partial': partial_filename
                 }
                 
-            # 태그 고급 검색
-            and_tags = self.and_tags_input.text().strip()
-            or_tags = self.or_tags_input.text().strip()
-            not_tags = self.not_tags_input.text().strip()
-            
-            if and_tags or or_tags or not_tags:
-                advanced_conditions['tags'] = {
-                    'and': [tag.strip() for tag in and_tags.split(',') if tag.strip()],
-                    'or': [tag.strip() for tag in or_tags.split('|') if tag.strip()],
-                    'not': [tag.strip() for tag in not_tags.split(',') if tag.strip()]
+            # 확장자 부분일치 검색
+            if partial_extensions:
+                partial_conditions['extensions'] = {
+                    'partial': [ext.strip() for ext in partial_extensions.split(',') if ext.strip()]
                 }
                 
-            if advanced_conditions:
-                conditions['advanced'] = advanced_conditions
+            # 태그 부분일치 검색
+            if partial_tags:
+                partial_conditions['tags'] = {
+                    'partial': [tag.strip() for tag in partial_tags.split(',') if tag.strip()]
+                }
+        
+        # 우선순위 결정: 부분일치 검색이 있으면 우선 처리
+        if partial_conditions:
+            conditions['partial'] = partial_conditions
+            # 부분일치 검색이 있을 때는 기본 검색 조건을 무시하고 사용자에게 알림
+            if basic_conditions:
+                self._show_search_mode_notification("부분일치 검색이 우선 적용됩니다.")
+        else:
+            # 부분일치 검색이 없으면 기본 검색 조건 사용
+            conditions.update(basic_conditions)
                 
         return conditions
         
@@ -408,45 +401,47 @@ class SearchWidget(QWidget):
             filename_cond = conditions['filename']
             self.filename_input.setText(filename_cond.get('name', ''))
             extensions = filename_cond.get('extensions', [])
-            self.extensions_input.setText(', '.join(extensions))
+            # 기본 검색에는 확장자 입력 필드가 없으므로 무시
+            
+
             
         # 태그 검색 조건
         if 'tags' in conditions:
             tag_cond = conditions['tags']
             self.tag_input.setText(tag_cond.get('query', ''))
             
-        # 고급 검색 조건
-        if 'advanced' in conditions:
-            advanced_cond = conditions['advanced']
+        # 부분일치 검색 조건
+        if 'partial' in conditions:
+            partial_cond = conditions['partial']
             
-            # 파일명 고급 검색
-            if 'filename' in advanced_cond:
-                filename_adv = advanced_cond['filename']
-                self.exact_filename_input.setText(filename_adv.get('exact', ''))
-                self.partial_filename_input.setText(filename_adv.get('partial', ''))
-                self.regex_checkbox.setChecked(filename_adv.get('use_regex', False))
+            # 파일명 부분일치 검색
+            if 'filename' in partial_cond:
+                filename_partial = partial_cond['filename']
+                self.partial_filename_input.setText(filename_partial.get('partial', ''))
                 
-            # 태그 고급 검색
-            if 'tags' in advanced_cond:
-                tags_adv = advanced_cond['tags']
-                self.and_tags_input.setText(', '.join(tags_adv.get('and', [])))
-                self.or_tags_input.setText('|'.join(tags_adv.get('or', [])))
-                self.not_tags_input.setText(', '.join(tags_adv.get('not', [])))
+            # 확장자 부분일치 검색
+            if 'extensions' in partial_cond:
+                extensions_partial = partial_cond['extensions']
+                self.partial_extensions_input.setText(', '.join(extensions_partial.get('partial', [])))
+                
+            # 태그 부분일치 검색
+            if 'tags' in partial_cond:
+                tags_partial = partial_cond['tags']
+                self.partial_tag_input.setText(', '.join(tags_partial.get('partial', [])))
                 
     def clear_search(self):
         """검색 조건 초기화"""
         self.filename_input.clear()
         self.tag_input.clear()
-        self.extensions_input.clear()
-        self.exact_filename_input.clear()
         self.partial_filename_input.clear()
-        self.regex_checkbox.setChecked(False)
+        self.partial_extensions_input.clear()
         self.extension_filter_combo.setCurrentText("모든 파일")
         self.custom_extension_input.clear()
         self.custom_extension_input.setVisible(False)
-        self.and_tags_input.clear()
-        self.or_tags_input.clear()
-        self.not_tags_input.clear()
+        self.partial_tag_input.clear()
+        
+
+        
         self.result_count_label.setText("검색 결과")
         self.search_conditions_label.clear()
         
@@ -459,42 +454,32 @@ class SearchWidget(QWidget):
         
         # 파일명 검색 조건
         filename = self.filename_input.text().strip()
-        extensions = self.extensions_input.text().strip()
         extension_filter = self.extension_filter_combo.currentText()
         
         if filename:
             display_conditions.append(f"파일명: '{filename}'")
-        if extensions:
-            display_conditions.append(f"확장자: {extensions}")
         if extension_filter != "모든 파일":
             display_conditions.append(f"필터: {extension_filter}")
+        
+
                 
         # 태그 검색 조건
         tag_query = self.tag_input.text().strip()
         if tag_query:
             display_conditions.append(f"태그: '{tag_query}'")
                 
-        # 고급 검색 조건
-        if self._advanced_panel_visible:
-            exact_filename = self.exact_filename_input.text().strip()
-            partial_filename = self.partial_filename_input.text().strip()
-            custom_extensions = self.custom_extension_input.text().strip()
-            and_tags = self.and_tags_input.text().strip()
-            or_tags = self.or_tags_input.text().strip()
-            not_tags = self.not_tags_input.text().strip()
-            
-            if exact_filename:
-                display_conditions.append(f"정확한 파일명: '{exact_filename}'")
+        # 부분일치 검색 조건
+        partial_filename = self.partial_filename_input.text().strip()
+        partial_extensions = self.partial_extensions_input.text().strip()
+        partial_tags = self.partial_tag_input.text().strip()
+        
+        if partial_filename or partial_extensions or partial_tags:
             if partial_filename:
                 display_conditions.append(f"부분 파일명: '{partial_filename}'")
-            if custom_extensions:
-                display_conditions.append(f"사용자 정의 확장자: {custom_extensions}")
-            if and_tags:
-                display_conditions.append(f"AND: {and_tags}")
-            if or_tags:
-                display_conditions.append(f"OR: {or_tags}")
-            if not_tags:
-                display_conditions.append(f"NOT: {not_tags}")
+            if partial_extensions:
+                display_conditions.append(f"부분 확장자: {partial_extensions}")
+            if partial_tags:
+                display_conditions.append(f"부분 태그: '{partial_tags}'")
                     
         if display_conditions:
             # 모든 조건을 하나의 줄로 표시
@@ -553,6 +538,9 @@ class SearchWidget(QWidget):
     def update_tag_completer(self, tags: list):
         """태그 자동완성 목록을 업데이트합니다."""
         self._tag_completer_model.setStringList(tags)
+        # 부분일치 검색의 태그 자동완성도 함께 업데이트
+        if hasattr(self, '_partial_tag_completer_model'):
+            self._partial_tag_completer_model.setStringList(tags)
     
     def _on_tag_input_focus_in(self, event):
         """태그 입력 필드에 포커스가 들어올 때 호출됩니다."""
@@ -568,4 +556,55 @@ class SearchWidget(QWidget):
             return
         
         # 자동완성 팝업이 닫혀있을 때만 검색 실행
-        self._on_search_requested() 
+        self._on_search_requested()
+    
+    def _on_partial_tag_input_focus_in(self, event):
+        """부분일치 태그 입력 필드에 포커스가 들어올 때 호출됩니다."""
+        # 원래 focusInEvent를 먼저 호출하여 기본 동작(커서 깜빡임 등) 보장
+        QLineEdit.focusInEvent(self.partial_tag_input, event)
+        # 포커스 인 시 자동완성 데이터 다시 로드
+        self._load_tag_completer_data()
+    
+    def _show_search_mode_notification(self, message: str):
+        """검색 모드 알림을 표시합니다."""
+        # 상태바나 알림 영역에 메시지 표시
+        # 현재는 간단히 print로 출력 (나중에 UI 알림으로 개선 가능)
+        print(f"검색 알림: {message}")
+    
+    def _setup_partial_search_completers(self):
+        """부분일치 검색 필드들에 자동완성을 설정합니다."""
+        # 태그 부분일치 자동완성
+        self._partial_tag_completer_model = QStringListModel()
+        self._partial_tag_completer = QCompleter(self._partial_tag_completer_model, self.partial_tag_input)
+        self._partial_tag_completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self._partial_tag_completer.setFilterMode(Qt.MatchContains)
+        self._partial_tag_completer.setCompletionMode(QCompleter.PopupCompletion)
+        self._partial_tag_completer.setMaxVisibleItems(6)
+        self._partial_tag_completer.setWrapAround(False)
+        
+        # QCompleter 팝업 뷰의 높이 설정
+        partial_popup = self._partial_tag_completer.popup()
+        partial_popup.setMinimumHeight(200)
+        partial_popup.setMaximumHeight(300)
+        
+        self.partial_tag_input.setCompleter(self._partial_tag_completer)
+        
+        # 확장자 부분일치 자동완성
+        common_extensions = [
+            "jpg", "jpeg", "png", "gif", "bmp", "tiff", "svg",
+            "pdf", "doc", "docx", "txt", "rtf", "odt", "xls", "xlsx", "ppt", "pptx", "md",
+            "mp3", "mp4", "avi", "mov", "wmv", "flv", "mkv",
+            "zip", "rar", "7z", "tar", "gz"
+        ]
+        self._partial_extension_completer_model = QStringListModel(common_extensions)
+        self._partial_extension_completer = QCompleter(self._partial_extension_completer_model, self.partial_extensions_input)
+        self._partial_extension_completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self._partial_extension_completer.setFilterMode(Qt.MatchContains)
+        self._partial_extension_completer.setCompletionMode(QCompleter.PopupCompletion)
+        self._partial_extension_completer.setMaxVisibleItems(8)
+        
+        partial_ext_popup = self._partial_extension_completer.popup()
+        partial_ext_popup.setMinimumHeight(200)
+        partial_ext_popup.setMaximumHeight(300)
+        
+        self.partial_extensions_input.setCompleter(self._partial_extension_completer) 
