@@ -1,63 +1,89 @@
-# FileTagger 프로젝트
+# FileTagger: 당신의 파일을 스마트하게 정리하는 새로운 방법
 
-## 소개
-FileTagger는 파일에 태그를 부여하고 관리할 수 있는 데스크탑 애플리케이션입니다. PyQt5 기반의 GUI와 MongoDB를 활용한 태그 관리 기능을 제공합니다.
+**FileTagger**는 흩어져 있는 수많은 파일을 태그 기반으로 체계적으로 관리하고, 필요한 파일을 즉시 찾아낼 수 있도록 돕는 데스크탑 애플리케이션입니다. 폴더 구조에만 의존하는 전통적인 파일 관리의 한계를 넘어, 여러 개의 태그를 파일에 자유롭게 부여하여 다차원적인 분류가 가능합니다.
 
-## 주요 기능
-- **파일 태그 관리**:
-    - **태그 추가**: 새로운 태그를 텍스트 입력 후 `Enter` 키로 추가하거나, 기존 태그 목록에서 선택하여 파일에 추가할 수 있습니다. 디렉토리별 일괄 태그 추가 기능도 지원합니다.
-    - **태그 수정/삭제**: 초기에는 태그 삭제만 가능하며, 여러 파일에 부여된 태그를 일괄 삭제하는 기능이 포함될 예정입니다.
-    - **태그 표시**: 파일에 부여된 태그는 "태그 칩" 형태로 시각적으로 표시됩니다.
-- **태그 검색**: 부여된 태그를 기반으로 파일을 효율적으로 검색할 수 있습니다.
-- **직관적인 GUI 환경**: 사용자 친화적인 그래픽 사용자 인터페이스를 통해 쉽게 파일을 관리하고 태그를 조작할 수 있습니다.
-- **MongoDB 연동**: 모든 태그 및 파일 정보는 MongoDB에 저장되어 데이터의 영속성과 안정성을 보장합니다.
+## ✨ 주요 기능
 
-## 프로젝트 문서
+### 1. 직관적인 태그 관리
 
-### 📋 기능 명세서 (Feature Specifications)
-- **FS-20250711-001**: [파일 태그 추가 및 일괄 추가 기능](docs/specifications/feature/FS-20250711-001_file_tag_addition_and_batch_addition.md)
-- **FS-20250711-002**: [파일 태그 수정/삭제 기능](docs/specifications/feature/FS-20250711-002_file_tag_modification_deletion.md)
-- **FS-20250711-003**: [작업 공간 설정 기능](docs/specifications/feature/FS-20250711-003_workspace_setting.md)
-- **FS-20250711-004**: [디렉토리 탐색 및 파일 목록 표시 기능](docs/specifications/feature/FS-20250711-004_directory_exploration_file_listing.md)
-- **FS-20250711-005**: [파일 상세 정보 및 태그 제어 기능](docs/specifications/feature/FS-20250711-005_file_detail_preview_tag_control.md)
-- **FS-20250711-006**: [전역 파일 검색 기능](docs/specifications/feature/FS-20250711-006_global_file_search.md)
-- **FS-20250711-007**: [사용자 정의 태그 관리 기능](docs/specifications/feature/FS-20250711-007_custom_tag_management.md)
-- **FS-20250711-008**: [일괄 태그 제거 기능](docs/specifications/feature/FS-20250711-008_batch_tag_removal.md)
+파일이나 폴더를 선택하고 원하는 태그를 입력하거나, 자주 사용하는 태그 목록에서 클릭 한 번으로 태그를 추가할 수 있습니다.
 
-### 🔧 기술 스펙 정의서 (Technical Specifications)
-- **TS-20250711-001**: [태그 관리 시스템](docs/specifications/technical/TS-20250711-001_tag_management_system.md)
-- **TS-20250711-002**: [UI 컴포넌트 시스템](docs/specifications/technical/TS-20250711-002_ui_component_system.md)
-- **TS-20250711-003**: [파일 시스템 및 미리보기 시스템](docs/specifications/technical/TS-20250711-003_file_system_preview_system.md)
+-   **개별/일괄 태그 추가**: 특정 파일은 물론, 디렉토리 전체에 공통 태그를 한 번에 추가하여 반복 작업을 최소화합니다.
+-   **시각적인 태그 확인**: 파일에 부여된 태그는 '태그 칩(Tag Chip)' 형태로 표시되어 어떤 태그가 적용되었는지 한눈에 파악할 수 있습니다.
+-   **사용자 정의 태그**: 자주 사용하는 태그들을 '사용자 정의 태그'로 등록해두고 필요할 때마다 빠르게 적용할 수 있습니다.
 
-### 📚 개발자 가이드 (Developer Guide)
-- [코딩 컨벤션](docs/developer_guide/coding_conventions.md)
-- [태깅 기능 상세 명세](docs/developer_guide/tagging_feature_spec.md)
-- [UI 위젯 및 시그널 참조](docs/developer_guide/ui_widgets_signals_reference.md)
-- [개발 요청 명세](docs/templates/development_request_spec_template.md)
-- [개발 노트](docs/developer_guide/dev_notes.md)
-- [에러 처리 가이드](docs/developer_guide/errors.md)
+*(스크린샷: 메인 화면에서 파일에 태그가 붙어있는 모습)*
 
-### 👥 사용자 가이드 (User Guide)
-- [태그 추가하기](docs/user_guide/adding_tags.md)
+### 2. 강력한 태그 기반 검색
 
-### 📊 프로젝트 관리
-- [프로젝트 개요](docs/portfolio/project_overview.md)
-- [개발 이슈](docs/issues.md) (docs/templates/issue_entry_template.md 템플릿 활용)
-- [대화 로그](docs/conversation_log.md) (docs/templates/conversation_log_entry_template.md 템플릿 활용)
-- [테스트 리포트](docs/qa/test_reports/test_report_20250705.md) (docs/templates/test_report_template.md 템플릿 활용)
+파일 이름이나 위치를 기억할 필요 없이, 태그 조합만으로 원하는 파일을 정확하고 빠르게 찾아낼 수 있습니다.
 
-## 개발 환경 설정
-1. **Python 및 Conda 설치**
-2. **필수 패키지 설치**
-   ```bash
-   pip install -r requirements.txt
-   pip install pymongo
-   ```
-3. **애플리케이션 실행**
-   ```bash
-   python main.py
-   ```
+-   **태그 검색**: 검색창에 태그를 입력하면 해당 태그가 부여된 모든 파일을 즉시 보여줍니다.
+-   **검색 결과 내 탐색**: 검색 결과 내에서 다시 폴더를 선택하여 파일 목록을 필터링할 수 있습니다.
 
-## 기타
-- MongoDB가 로컬에서 실행 중이어야 합니다.
-- 테스트 데이터 생성을 위해 `tests/test_data_generator.py` 스크립트를 사용할 수 있습니다.
+*(스크린샷: '중요', '프로젝트' 태그로 검색하여 결과가 나온 모습)*
+
+### 3. 효율적인 파일 탐색 및 미리보기
+
+-   **익숙한 디렉토리 구조**: 왼쪽 패널에 익숙한 트리 형태의 디렉토리 뷰를 제공하여 기존 파일 탐색 방식과 이질감 없이 사용할 수 있습니다.
+-   **파일 상세 정보 및 미리보기**: 파일을 선택하면 오른쪽 패널에서 파일 유형, 크기, 경로 등 상세 정보와 함께 이미지, 텍스트, PDF 파일의 내용을 바로 확인할 수 있어 파일을 직접 열어보지 않아도 내용을 파악할 수 있습니다.
+
+*(스크린샷: PDF 파일 미리보기가 보이는 모습)*
+
+### 4. 유연한 작업 공간(Workspace) 관리
+
+여러 개의 작업 공간을 설정하여 프로젝트별, 업무별로 파일을 분리하고 관리할 수 있습니다. 각 작업 공간은 독립적인 태그 데이터베이스를 가집니다.
+
+*(스크린샷: 작업 공간 설정 화면)*
+
+## 🛠️ 기술 스택 및 선정 이유
+
+| 기술 | 사용 목적 | 선정 이유 |
+| :--- | :--- | :--- |
+| **Python** | 애플리케이션 로직 개발 | 풍부한 라이브러리와 빠른 개발 속도를 제공하여 생산성을 높일 수 있었습니다. |
+| **PyQt5** | 데스크탑 GUI 프레임워크 | 크로스플랫폼을 지원하며, 강력하고 유연한 위젯 시스템을 통해 복잡한 UI를 효과적으로 구현할 수 있었습니다. |
+| **MongoDB** | 데이터베이스 | 스키마 제약이 없는 유연한 구조로 태그와 파일 메타데이터를 저장하기에 적합하며, 빠른 읽기/쓰기 성능을 보장합니다. |
+| **MVVM 패턴** | 아키텍처 디자인 | UI(View)와 비즈니스 로직(Model)의 의존성을 낮추고, ViewModel을 통해 데이터를 바인딩하여 코드의 테스트 용이성과 유지보수성을 높였습니다. |
+| **PyMuPDF** | PDF 처리 라이브러리 | PDF 파일의 텍스트 추출 및 이미지 변환을 통해 미리보기 기능을 구현하는 데 사용되었습니다. |
+
+## 🏗️ 아키텍처
+
+FileTagger는 **MVVM(Model-View-ViewModel)** 아키텍처 패턴을 기반으로 설계되었습니다. 각 컴포넌트의 역할을 명확히 분리하여 코드의 재사용성과 유지보수성을 극대화했습니다.
+
+더 상세한 아키텍처 정보는 [docs/developer_guide/architecture.md](docs/developer_guide/architecture.md) 문서를 참고해주세요.
+
+## 🚀 설치 및 실행
+
+FileTagger는 소스 코드를 직접 실행하거나, 빌드된 패키지 파일을 통해 실행할 수 있습니다.
+
+### 1. 소스 코드로 직접 실행 (개발자용)
+
+1.  **사전 준비**: 로컬 환경에 [Python](https://www.python.org/)과 [MongoDB](https://www.mongodb.com/try/download/community)가 설치되어 있어야 합니다.
+2.  **저장소 복제**:
+    ```bash
+    git clone https://github.com/your-username/FileTagger.git
+    cd FileTagger
+    ```
+3.  **필수 패키지 설치**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  **MongoDB 연결 확인**: `config.json` 파일의 `mongodb.uri` 또는 `mongodb.port` 값이 자신의 MongoDB 설정과 일치하는지 확인하세요. (기본 포트: `27017`, 현재 설정: `27018`)
+5.  **애플리케이션 실행**:
+    ```bash
+    python main.py
+    ```
+
+### 2. 패키지 배포판으로 실행 (사용자용)
+
+1.  **사전 준비**: 로컬 환경에 [MongoDB](https://www.mongodb.com/try/download/community)가 실행 중이어야 합니다.
+2.  **배포판 다운로드**: `dist` 디렉토리에서 `FileTagger` 배포판을 다운로드합니다.
+3.  **설정 확인**: `config.json` 파일을 열어 `mongodb.uri` 또는 `mongodb.port` 값이 자신의 MongoDB 설정과 일치하는지 확인합니다. (기본 포트: `27017`, 현재 설정: `27018`)
+4.  **실행**: `FileTagger.exe` 파일을 더블 클릭하여 실행합니다.
+
+## 📝 향후 계획
+
+-   **고급 검색 기능**: 여러 태그를 조합(AND, OR, NOT)하여 더욱 정교한 검색 기능 구현
+-   **태그 자동 추천**: 파일의 내용이나 속성을 분석하여 관련 태그를 자동으로 추천하는 기능
+-   **클라우드 동기화**: 여러 장치에서 태그 정보를 동기화하는 기능
+-   **플러그인 시스템**: 사용자가 직접 기능을 확장할 수 있는 플러그인 아키텍처 도입
