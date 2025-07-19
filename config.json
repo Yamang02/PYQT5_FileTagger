@@ -1,10 +1,10 @@
 {
   "mongodb": {
     "host": "localhost",
-    "port": 27018,
+    "port": 27017,
     "database": "file_tagger",
     "collection": "tags",
-    "uri": "mongodb://localhost:27018/"
+    "uri": "mongodb://localhost:27017/"
   },
   "application": {
     "default_workspace_path": "G:/내 드라이브/obsidian",
