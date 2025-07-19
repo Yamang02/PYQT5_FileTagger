@@ -35,6 +35,9 @@ class SearchWidget(QWidget):
         
         # 태그 자동완성 초기화
         self._initialize_tag_completer()
+        
+        # 기본 검색 패널 시그널 연결 상태 추적
+        self._basic_signals_connected = True
 
     def setup_ui(self):
         # Material Design 스타일 적용
@@ -209,6 +212,12 @@ class SearchWidget(QWidget):
         self.partial_tag_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         advanced_fields_layout.addWidget(self.partial_tag_input, 3)
         
+        # 디버깅: 부분일치 검색 필드들이 제대로 생성되었는지 확인
+        print(f"[DEBUG] 고급 검색 패널 설정 완료:")
+        print(f"  - partial_filename_input 생성됨: {hasattr(self, 'partial_filename_input')}")
+        print(f"  - partial_extensions_input 생성됨: {hasattr(self, 'partial_extensions_input')}")
+        print(f"  - partial_tag_input 생성됨: {hasattr(self, 'partial_tag_input')}")
+        
         # 부분일치 검색 필드들에 자동완성 설정
         self._setup_partial_search_completers()
 
@@ -253,10 +262,10 @@ class SearchWidget(QWidget):
         self.filename_input.textChanged.connect(self._on_input_changed)
         self.tag_input.textChanged.connect(self._on_input_changed)
         
-        # 부분일치 검색 필드 연결 (디바운싱 적용)
-        self.partial_filename_input.textChanged.connect(self._on_input_changed)
-        self.partial_extensions_input.textChanged.connect(self._on_input_changed)
-        self.partial_tag_input.textChanged.connect(self._on_input_changed)
+        # 부분일치 검색 필드 연결 (실시간 검색 비활성화 - Enter 키나 검색 버튼으로만 실행)
+        # self.partial_filename_input.textChanged.connect(self._on_input_changed)  # 주석 처리
+        # self.partial_extensions_input.textChanged.connect(self._on_input_changed)  # 주석 처리
+        # self.partial_tag_input.textChanged.connect(self._on_input_changed)  # 주석 처리
         
         # 태그 입력 필드 포커스 이벤트 연결
         self.tag_input.focusInEvent = self._on_tag_input_focus_in
@@ -305,13 +314,31 @@ class SearchWidget(QWidget):
         
     def _on_debounce_timeout(self):
         """디바운싱 타임아웃 시 실시간 검색"""
-        if (self.filename_input.text().strip() or 
-            self.tag_input.text().strip() or 
-            self.extension_filter_combo.currentText() != "모든 파일" or
-            self.partial_filename_input.text().strip() or
-            self.partial_extensions_input.text().strip() or
-            self.partial_tag_input.text().strip()):
+        # 디버깅: 모든 입력 필드의 값 확인
+        filename_text = self.filename_input.text().strip()
+        tag_text = self.tag_input.text().strip()
+        extension_filter = self.extension_filter_combo.currentText()
+        partial_filename_text = self.partial_filename_input.text().strip()
+        partial_extensions_text = self.partial_extensions_input.text().strip()
+        partial_tag_text = self.partial_tag_input.text().strip()
+        
+        print(f"[DEBUG] 디바운싱 타임아웃 - 입력값 확인:")
+        print(f"  - 기본 파일명: '{filename_text}'")
+        print(f"  - 기본 태그: '{tag_text}'")
+        print(f"  - 확장자 필터: '{extension_filter}'")
+        print(f"  - 부분일치 파일명: '{partial_filename_text}'")
+        print(f"  - 부분일치 확장자: '{partial_extensions_text}'")
+        print(f"  - 부분일치 태그: '{partial_tag_text}'")
+        
+        # 실시간 검색은 기본 검색 패널의 입력값만 대상으로 함
+        # 고급 검색 패널은 Enter 키나 검색 버튼으로만 실행
+        if (filename_text or 
+            tag_text or 
+            extension_filter != "모든 파일"):
+            print(f"[DEBUG] 기본 검색 조건이 있음 - 실시간 검색 실행")
             self._on_search_requested()
+        else:
+            print(f"[DEBUG] 기본 검색 조건이 없음 - 실시간 검색 실행 안함")
             
     def _on_search_requested(self):
         """검색 요청 처리"""
@@ -326,42 +353,67 @@ class SearchWidget(QWidget):
         # 아이콘 변경
         if self._advanced_panel_visible:
             self.advanced_toggle.setIcon(QIcon("assets/icons/expand_less.svg"))
+            # 고급 검색 패널이 활성화되면 기본 검색 패널 시그널 차단
+            self._block_basic_search_signals()
         else:
             self.advanced_toggle.setIcon(QIcon("assets/icons/expand_more.svg"))
+            # 고급 검색 패널이 비활성화되면 기본 검색 패널 시그널 복원
+            self._restore_basic_search_signals()
             
         self.show_advanced_panel(self._advanced_panel_visible)
+        
+    def _block_basic_search_signals(self):
+        """기본 검색 패널의 시그널을 차단합니다."""
+        if self._basic_signals_connected:
+            print("[DEBUG] 기본 검색 패널 시그널 차단")
+            # 기본 검색 패널의 textChanged 시그널 해제
+            self.filename_input.textChanged.disconnect(self._on_input_changed)
+            self.tag_input.textChanged.disconnect(self._on_input_changed)
+            self._basic_signals_connected = False
+            
+    def _restore_basic_search_signals(self):
+        """기본 검색 패널의 시그널을 복원합니다."""
+        if not self._basic_signals_connected:
+            print("[DEBUG] 기본 검색 패널 시그널 복원")
+            # 기본 검색 패널의 textChanged 시그널 재연결
+            self.filename_input.textChanged.connect(self._on_input_changed)
+            self.tag_input.textChanged.connect(self._on_input_changed)
+            self._basic_signals_connected = True
         
     def get_search_conditions(self) -> dict:
         """현재 검색 조건을 딕셔너리로 반환"""
         conditions = {}
         
-        # 기본 검색 조건 (완전일치)
-        basic_conditions = {}
-        
-        # 파일명 검색 조건
-        filename = self.filename_input.text().strip()
-        extension_filter_extensions = self._get_extension_filter_extensions()
-        
-        if filename or extension_filter_extensions:
-            basic_conditions['filename'] = {
-                'name': filename,
-                'extensions': extension_filter_extensions
-            }
-            
-        # 태그 검색 조건
-        tag_query = self.tag_input.text().strip()
-        if tag_query:
-            basic_conditions['tags'] = {
-                'query': tag_query
-            }
-            
-        # 부분일치 검색 조건
+        # 부분일치 검색 조건 먼저 확인
         partial_conditions = {}
         
         # 고급 검색 패널이 보이거나 부분일치 검색 필드에 입력이 있으면 처리
-        partial_filename = self.partial_filename_input.text().strip()
-        partial_extensions = self.partial_extensions_input.text().strip()
-        partial_tags = self.partial_tag_input.text().strip()
+        # 디버깅: 부분일치 검색 필드들의 존재 여부 확인
+        print(f"[DEBUG] 부분일치 검색 필드 존재 여부:")
+        print(f"  - partial_filename_input 존재: {hasattr(self, 'partial_filename_input')}")
+        print(f"  - partial_extensions_input 존재: {hasattr(self, 'partial_extensions_input')}")
+        print(f"  - partial_tag_input 존재: {hasattr(self, 'partial_tag_input')}")
+        
+        if hasattr(self, 'partial_filename_input'):
+            partial_filename = self.partial_filename_input.text().strip()
+        else:
+            partial_filename = ""
+            
+        if hasattr(self, 'partial_extensions_input'):
+            partial_extensions = self.partial_extensions_input.text().strip()
+        else:
+            partial_extensions = ""
+            
+        if hasattr(self, 'partial_tag_input'):
+            partial_tags = self.partial_tag_input.text().strip()
+        else:
+            partial_tags = ""
+        
+        # 디버깅: 부분일치 검색 입력값 출력
+        print(f"[DEBUG] 부분일치 검색 입력값:")
+        print(f"  - 파일명: '{partial_filename}'")
+        print(f"  - 확장자: '{partial_extensions}'")
+        print(f"  - 태그: '{partial_tags}'")
         
         if partial_filename or partial_extensions or partial_tags:
             # 파일명 부분일치 검색
@@ -382,15 +434,35 @@ class SearchWidget(QWidget):
                     'partial': [tag.strip() for tag in partial_tags.split(',') if tag.strip()]
                 }
         
-        # 우선순위 결정: 부분일치 검색이 있으면 우선 처리
+        # 우선순위 결정: 부분일치 검색이 있으면 우선 처리하고 기본 검색 조건은 완전히 무시
         if partial_conditions:
             conditions['partial'] = partial_conditions
-            # 부분일치 검색이 있을 때는 기본 검색 조건을 무시하고 사용자에게 알림
-            if basic_conditions:
-                self._show_search_mode_notification("부분일치 검색이 우선 적용됩니다.")
-        else:
-            # 부분일치 검색이 없으면 기본 검색 조건 사용
-            conditions.update(basic_conditions)
+            print(f"[DEBUG] 부분일치 검색 조건 설정: {conditions}")
+            return conditions  # 부분일치 검색이 있으면 여기서 바로 반환
+        
+        # 부분일치 검색이 없을 때만 기본 검색 조건 처리
+        basic_conditions = {}
+        
+        # 파일명 검색 조건
+        filename = self.filename_input.text().strip()
+        extension_filter_extensions = self._get_extension_filter_extensions()
+        
+        if filename or extension_filter_extensions:
+            basic_conditions['filename'] = {
+                'name': filename,
+                'extensions': extension_filter_extensions
+            }
+            
+        # 태그 검색 조건
+        tag_query = self.tag_input.text().strip()
+        if tag_query:
+            basic_conditions['tags'] = {
+                'query': tag_query
+            }
+        
+        # 기본 검색 조건 설정
+        conditions.update(basic_conditions)
+        print(f"[DEBUG] 기본 검색 조건 설정: {conditions}")
                 
         return conditions
         

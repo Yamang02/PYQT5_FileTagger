@@ -17,7 +17,9 @@ class SearchViewModel(QObject):
         self._search_manager = search_manager
 
     def perform_search(self, search_conditions: Dict):
+        print(f"[DEBUG] SearchViewModel.perform_search 호출: {search_conditions}")
         search_results = self._search_manager.search_files(search_conditions)
+        print(f"[DEBUG] 검색 결과: {len(search_results)}개 파일")
         summary = self._generate_summary(search_conditions)
         self.search_completed.emit(len(search_results), summary)
         self.search_results_ready.emit(search_results)

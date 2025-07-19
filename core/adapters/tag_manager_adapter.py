@@ -22,7 +22,11 @@ class TagManagerAdapter:
         return self._tag_service.get_all_tags()
 
     def get_files_by_tags(self, tags: list) -> list:
-        return self._tag_service.get_files_by_tags(tags)
+        # TagService에서 파일 경로를 가져온 후 DB 형식으로 정규화
+        files = self._tag_service.get_files_by_tags(tags)
+        # DB에 저장된 경로 형식(슬래시)으로 정규화
+        normalized_files = [file_path.replace('\\', '/') for file_path in files]
+        return normalized_files
 
     def delete_file_entry(self, file_path: str) -> bool:
         return self._tag_service.delete_file_entry(file_path)

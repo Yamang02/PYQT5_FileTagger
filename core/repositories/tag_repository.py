@@ -22,8 +22,11 @@ class TagRepository:
         return result.modified_count > 0
 
     def get_tags_for_file(self, file_path: str) -> list:
+        print(f"[DEBUG] TagRepository.get_tags_for_file 호출: {file_path}")
         doc = self._collection.find_one({"file_path": file_path})
-        return doc.get("tags", []) if doc else []
+        tags = doc.get("tags", []) if doc else []
+        print(f"[DEBUG] MongoDB 조회 결과: {tags}")
+        return tags
 
     def get_all_tags(self) -> list:
         # distinct 대신 find와 집합 연산을 사용

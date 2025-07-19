@@ -44,13 +44,19 @@ class TagService:
         return result
 
     def get_tags_for_file(self, file_path: str) -> list:
+        # 디버깅: 파일 경로 출력
+        print(f"[DEBUG] TagService.get_tags_for_file 호출: {file_path}")
+        
         # 캐시에서 먼저 확인
         if file_path in self._file_tags_cache:
-            return self._file_tags_cache[file_path].copy()
+            cached_tags = self._file_tags_cache[file_path].copy()
+            print(f"[DEBUG] 캐시에서 태그 조회: {cached_tags}")
+            return cached_tags
         
         # 캐시에 없으면 데이터베이스에서 조회
         tags = self._repository.get_tags_for_file(file_path)
         self._file_tags_cache[file_path] = tags.copy()
+        print(f"[DEBUG] DB에서 태그 조회: {tags}")
         return tags
 
     def get_all_tags(self) -> list:
