@@ -1,8 +1,9 @@
 from PyQt5.QtCore import QObject, pyqtSignal
-from typing import List
-
+from typing import List, Dict, Optional
 from core.services.tag_service import TagService
 from core.events import EventBus, TagAddedEvent, TagRemovedEvent
+from core.repositories.tag_repository import TagRepository
+
 
 class TagControlViewModel(QObject):
     # UI 업데이트를 위한 시그널
@@ -10,11 +11,18 @@ class TagControlViewModel(QObject):
     target_info_updated = pyqtSignal(str, bool) # target_label, is_dir
     enable_ui = pyqtSignal(bool)
     show_message = pyqtSignal(str, int) # message, duration
+    
+    # 새로운 시그널들
+    tag_suggestions_updated = pyqtSignal(list)  # 태그 자동완성 제안
+    tag_statistics_updated = pyqtSignal(dict)   # 태그 통계 정보
+    recent_tags_updated = pyqtSignal(list)      # 최근 사용된 태그
+    popular_tags_updated = pyqtSignal(list)     # 인기 태그
 
-    def __init__(self, tag_service: TagService, event_bus: EventBus):
+    def __init__(self, tag_service: TagService, event_bus: EventBus, tag_repository: TagRepository):
         super().__init__()
         self._tag_service = tag_service
         self._event_bus = event_bus
+        self._tag_repository = tag_repository
 
         self._current_target_path: str = None
         self._current_target_paths: List[str] = []
@@ -22,20 +30,131 @@ class TagControlViewModel(QObject):
 
         self._individual_tags: List[str] = []
         self._batch_tags: List[str] = []
+        
+        # 캐시된 데이터
+        self._cached_tag_suggestions: List[str] = []
+        self._cached_statistics: Dict = {}
+        self._cached_recent_tags: List[str] = []
+        self._cached_popular_tags: List[str] = []
 
         # EventBus 구독
         self._event_bus.tag_added.connect(self._on_tag_added)
         self._event_bus.tag_removed.connect(self._on_tag_removed)
+        
+        # 초기 데이터 로드
+        self._load_initial_data()
+
+    def _load_initial_data(self):
+        """초기 데이터 로드"""
+        try:
+            # 태그 통계 로드
+            self._load_tag_statistics()
+            
+            # 최근 태그 로드
+            self._load_recent_tags()
+            
+            # 인기 태그 로드
+            self._load_popular_tags()
+            
+        except Exception as e:
+            print(f"[ERROR] 초기 데이터 로드 실패: {e}")
+
+    def _load_tag_statistics(self):
+        """태그 통계 로드"""
+        try:
+            stats = self._tag_repository.get_tag_statistics()
+            self._cached_statistics = stats
+            self.tag_statistics_updated.emit(stats)
+        except Exception as e:
+            print(f"[ERROR] 태그 통계 로드 실패: {e}")
+
+    def _load_recent_tags(self):
+        """최근 사용된 태그 로드"""
+        try:
+            recent_files = self._tag_repository.get_recently_tagged_files(limit=20)
+            recent_tags = set()
+            
+            for file_path in recent_files:
+                tags = self._tag_service.get_tags_for_file(file_path)
+                recent_tags.update(tags)
+            
+            self._cached_recent_tags = list(recent_tags)[:10]
+            self.recent_tags_updated.emit(self._cached_recent_tags)
+        except Exception as e:
+            print(f"[ERROR] 최근 태그 로드 실패: {e}")
+
+    def _load_popular_tags(self):
+        """인기 태그 로드"""
+        try:
+            stats = self._tag_repository.get_tag_statistics()
+            popular_tags = [tag["tag_name"] for tag in stats.get("popular_tags", [])]
+            self._cached_popular_tags = popular_tags[:10]
+            self.popular_tags_updated.emit(self._cached_popular_tags)
+        except Exception as e:
+            print(f"[ERROR] 인기 태그 로드 실패: {e}")
+
+    def search_tag_suggestions(self, query: str, limit: int = 10) -> List[str]:
+        """태그 자동완성 제안"""
+        try:
+            if not query or len(query) < 2:
+                return []
+            
+            # 텍스트 검색으로 태그 찾기
+            suggestions = self._tag_repository.search_tags_by_text(query, limit=limit)
+            
+            # 최근 태그와 인기 태그에서도 검색
+            all_tags = self._tag_service.get_all_tags()
+            for tag in all_tags:
+                if query.lower() in tag.lower() and tag not in suggestions:
+                    suggestions.append(tag)
+                    if len(suggestions) >= limit:
+                        break
+            
+            self._cached_tag_suggestions = suggestions[:limit]
+            self.tag_suggestions_updated.emit(suggestions)
+            return suggestions
+            
+        except Exception as e:
+            print(f"[ERROR] 태그 제안 검색 실패: {e}")
+            return []
+
+    def get_tag_suggestions(self) -> List[str]:
+        """캐시된 태그 제안 반환"""
+        return self._cached_tag_suggestions
+
+    def get_tag_statistics(self) -> Dict:
+        """태그 통계 반환"""
+        return self._cached_statistics
+
+    def get_recent_tags(self) -> List[str]:
+        """최근 사용된 태그 반환"""
+        return self._cached_recent_tags
+
+    def get_popular_tags(self) -> List[str]:
+        """인기 태그 반환"""
+        return self._cached_popular_tags
+
+    def refresh_tag_data(self):
+        """태그 데이터 새로고침"""
+        self._load_tag_statistics()
+        self._load_recent_tags()
+        self._load_popular_tags()
 
     def _on_tag_added(self, event: TagAddedEvent):
         # 현재 대상 파일/디렉토리와 관련된 태그 변경 시 UI 업데이트
         if event.file_path == self._current_target_path or event.file_path in self._current_target_paths:
             self.update_tags_for_current_target()
+        
+        # 태그 데이터 새로고침
+        self.refresh_tag_data()
 
     def _on_tag_removed(self, event: TagRemovedEvent):
         # 현재 대상 파일/디렉토리와 관련된 태그 변경 시 UI 업데이트
         if event.file_path == self._current_target_path or event.file_path in self._current_target_paths:
             self.update_tags_for_current_target()
+        
+        # 태그 데이터 새로고침
+        self.refresh_tag_data()
 
     def update_for_target(self, target, is_dir):
         self._current_target_path = None

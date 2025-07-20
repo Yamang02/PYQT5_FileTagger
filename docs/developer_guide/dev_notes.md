@@ -1454,3 +1454,88 @@ def _get_common_tags_for_files(self, file_paths):
 2. **우클릭 메뉴**: 
    - "경로 복사" 선택 → 클립보드에 복사
    - "폴더 열기" 선택 → 탐색기에서 폴더 열기
+
+---
+
+## 2025년 7월 19일 - Gemini AI (Dev)
+
+### DRS-20250719-001 태그 아키텍처 리팩토링 작업 시작
+
+**배경:**
+- DRS-20250719-001이 승인되어 태그 아키텍처 리팩토링 작업 시작
+- 현재 태그가 파일 문서 내에 임베딩되어 있어 태그 메타데이터 관리 및 복잡한 검색에 한계
+- 파일 경로 정규화 문제로 검색 기능 신뢰성 저하
+- 향후 태그 관계 설정, 고급 검색 기능을 위한 확장성 확보 필요
+
+**구현 계획:**
+
+#### Phase 1: 핵심 인프라 구축 (우선순위 1) ✅ **완료**
+1. **파일 경로 정규화** (`core/path_utils.py` 수정) ✅
+   - 슬래시(`/`) 기반으로 통일
+   - 운영체제 독립적인 경로 형식
+   - 테스트 작성 및 통과
+
+2. **데이터 모델 변경** (`tags` 컬렉션 신설) ✅
+   ```json
+   {
+       "_id": ObjectId,
+       "name": "string",       // 필수, 고유, 최대 50자
+       "category": "string",   // 선택, 자유 입력, 최대 50자
+       "description": "string",// 선택, 최대 200자
+       "parent_tags": [ObjectId], // 향후 확장 고려
+       "child_tags": [ObjectId],  // 향후 확장 고려
+       "related_tags": [ObjectId], // 향후 확장 고려
+       "created_at": ISODate,
+       "updated_at": ISODate
+   }
+   ```
+   - `models/tag_model.py` 생성
+   - `Tag`, `TagMetadata` 클래스 정의
+   - 유틸리티 함수 구현
+   - 테스트 작성 및 통과
+
+3. **TagRepository 리팩토링** (기본 CRUD 메서드) ✅
+   - `add_tag`, `remove_tag`, `get_tags_for_file`, `get_all_tags`, `get_files_by_tags`
+   - MongoDB `$lookup` 연산자를 활용한 조인 기능
+   - 태그 이름 ↔ ObjectId 변환 헬퍼 메서드
+   - 파일 경로 정규화 적용
+   - 인덱스 자동 생성
+   - 테스트 작성 및 통과
+
+#### Phase 2: 서비스 계층 리팩토링 (우선순위 2) 🔄 **진행 중**
+1. **TagService 리팩토링**
+   - 새로운 Repository 인터페이스 적용
+   - 캐싱 메커니즘 유지
+   - 이벤트 기반 아키텍처 유지
+
+2. **SearchManager 개선**
+   - 효율적인 부분일치 검색
+   - 태그 컬렉션 텍스트 인덱스 활용
+
+#### Phase 3: 최적화 및 테스트 (우선순위 3)
+1. **MongoDB 인덱스 전략** 재검토
+2. **성능 테스트** 및 최적화
+3. **통합 테스트** 작성
+
+**현재 상태:**
+- ✅ Phase 1 완료: 핵심 인프라 구축 완료
+- 🔄 Phase 2 시작: TagService 리팩토링 준비
+- 모든 단위 테스트 통과
+
+**다음 단계:**
+- TagService 리팩토링 시작
+- 새로운 Repository 인터페이스에 맞춰 서비스 로직 수정
+
+**관련 파일:**
+- `core/path_utils.py`: 파일 경로 정규화 ✅
+- `models/tag_model.py`: 태그 데이터 모델 ✅
+- `core/repositories/tag_repository.py`: Repository 리팩토링 ✅
+- `core/services/tag_service.py`: Service 리팩토링 🔄
+- `core/search_manager.py`: 검색 로직 개선
+
+**테스트 결과:**
+- `tests/test_path_utils.py`: 10/10 통과 ✅
+- `tests/models/test_tag_model.py`: 21/21 통과 ✅
+- `tests/core/repositories/test_tag_repository.py`: 15/15 통과 ✅
+
+---
