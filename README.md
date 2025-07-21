@@ -13,6 +13,8 @@
 -   **사용자 정의 태그**: 자주 사용하는 태그들을 '사용자 정의 태그'로 등록해두고 필요할 때마다 빠르게 적용할 수 있습니다.
 
 *(스크린샷: 메인 화면에서 파일에 태그가 붙어있는 모습)*
+<img width="1410" height="939" alt="image" src="https://github.com/user-attachments/assets/0c87075b-14ea-44b7-a3cf-51574af8ffc9" />
+
 
 ### 2. 강력한 태그 기반 검색
 
@@ -22,6 +24,8 @@
 -   **검색 결과 내 탐색**: 검색 결과 내에서 다시 폴더를 선택하여 파일 목록을 필터링할 수 있습니다.
 
 *(스크린샷: '중요', '프로젝트' 태그로 검색하여 결과가 나온 모습)*
+<img width="1409" height="734" alt="image" src="https://github.com/user-attachments/assets/83f2b980-17a4-4862-bb6a-ea20646c4d03" />
+
 
 ### 3. 효율적인 파일 탐색 및 미리보기
 
@@ -29,12 +33,15 @@
 -   **파일 상세 정보 및 미리보기**: 파일을 선택하면 오른쪽 패널에서 파일 유형, 크기, 경로 등 상세 정보와 함께 이미지, 텍스트, PDF 파일의 내용을 바로 확인할 수 있어 파일을 직접 열어보지 않아도 내용을 파악할 수 있습니다.
 
 *(스크린샷: PDF 파일 미리보기가 보이는 모습)*
+<img width="1404" height="933" alt="image" src="https://github.com/user-attachments/assets/3892b147-782c-4a7e-b81d-e3c5b78513d3" />
+
 
 ### 4. 유연한 작업 공간(Workspace) 관리
-
-여러 개의 작업 공간을 설정하여 프로젝트별, 업무별로 파일을 분리하고 관리할 수 있습니다. 각 작업 공간은 독립적인 태그 데이터베이스를 가집니다.
+작업공간을 설정하여, 불필요한 파일들의 로드를 막습니다.
 
 *(스크린샷: 작업 공간 설정 화면)*
+<img width="1407" height="849" alt="image" src="https://github.com/user-attachments/assets/0591e65a-6e53-44fd-a601-d59335b94b97" />
+
 
 ## 🛠️ 기술 스택 및 선정 이유
 
@@ -76,10 +83,9 @@ FileTagger는 소스 코드를 직접 실행하거나, 빌드된 패키지 파�
 
 ### 2. 패키지 배포판으로 실행 (사용자용)
 
-1.  **사전 준비**: 로컬 환경에 [MongoDB](https://www.mongodb.com/try/download/community)가 실행 중이어야 합니다.
-2.  **배포판 다운로드**: `dist` 디렉토리에서 `FileTagger` 배포판을 다운로드합니다.
-3.  **설정 확인**: `config.json` 파일을 열어 `mongodb.uri` 또는 `mongodb.port` 값이 자신의 MongoDB 설정과 일치하는지 확인합니다. (기본 포트: `27017`, 현재 설정: `27018`)
-4.  **실행**: `FileTagger.exe` 파일을 더블 클릭하여 실행합니다.
+1.  **배포판 다운로드**: `dist` 디렉토리에서 `FileTagger` 배포판을 다운로드합니다.
+2.  **설정 확인**: `config.json` 파일을 열어 `mongodb.uri` 또는 `mongodb.port` 값이 자신의 MongoDB 설정과 일치하는지 확인합니다. (기본 포트: `27017')
+3.  **실행**: `start_filetagger.bat` 파일을 더블 클릭하여 실행합니다.
 
 ## 📝 향후 계획
 
